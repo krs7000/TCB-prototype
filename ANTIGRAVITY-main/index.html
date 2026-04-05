@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Creator's Bulwark — PSU IP Management System</title>
+  <meta name="description" content="Palawan State University's centralized Intellectual Property Management System for patents, trademarks, copyrights, utility models, and industrial designs." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ====== PUBLIC TOP NAV ====== -->
+    <nav id="public-nav">
+      <div class="nav-container">
+        <button id="ui-back-btn-public" onclick="goBack()" style="display: none; background: transparent; border: none; color: var(--navy, #1e293b); font-size: 1.2rem; cursor: pointer; margin-right: 15px;">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div class="nav-brand" onclick="navigateTo('landing')">
+          <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <div class="brand-text">
+            <span class="brand-name">The Creator's Bulwark</span>
+            <span class="brand-sub">PSU IP Management</span>
+          </div>
+        </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <ul class="nav-links" id="navLinks">
+          <li>
+            <select id="publicRoleSelect" onchange="switchRole(this.value)" style="background:var(--gray-50); border:1px solid var(--gray-200); padding:4px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none; cursor:pointer; font-family:'Inter', sans-serif; margin-right: 10px;">
+              <option value="client" style="color:#000">Client</option>
+              <option value="reviewer" style="color:#000">Reviewer</option>
+              <option value="pitbi_admin" style="color:#000">PITBI Admin</option>
+              <option value="superadmin" style="color:#000">Super Admin</option>
+            </select>
+          </li>
+          <li><a href="#" class="nav-link active" onclick="navigateTo('landing')">Home</a></li>
+          <li><a href="#" class="nav-link" onclick="navigateTo('services')">IP Services</a></li>
+          <li><a href="#" class="nav-link" onclick="navigateTo('marketplace')">Marketplace</a></li>
+          <li><a href="#" class="nav-link" onclick="navigateTo('about')">About</a></li>
+          <li><a href="#" class="nav-link btn-login" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- ====== DASHBOARD TOP BAR ====== -->
+    <header id="dashboard-topbar">
+      <div class="topbar-container">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <button id="ui-back-btn-dashboard" onclick="goBack()" style="display: none; background: transparent; border: none; color: var(--navy, #1e293b); font-size: 1.2rem; cursor: pointer; padding: 0 15px; border-right: 1px solid var(--gray-200); margin-right: 15px;">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div class="topbar-brand" onclick="navigateTo('landing')">
+          <div class="brand-icon small"><i class="fa-solid fa-shield-halved"></i></div>
+          <span class="brand-name">The Creator's Bulwark</span>
+        </div>
+        <div class="topbar-right">
+          <div class="demo-role-switch">
+            <span class="switch-label">Switch Role</span>
+            <select id="topbarRoleSelect" onchange="switchRole(this.value)" style="background:var(--gray-50); border:1px solid var(--gray-200); padding:6px 24px 6px 12px; border-radius:6px; font-size:0.85rem; font-weight:600; color:var(--navy); outline:none; cursor:pointer; font-family:'Inter', sans-serif;">
+              <option value="client">Client</option>
+              <option value="reviewer">Reviewer</option>
+              <option value="pitbi_admin">PITBI Admin</option>
+              <option value="superadmin">Super Admin</option>
+            </select>
+          </div>
+          <div class="topbar-user" onclick="navigateTo('user-profile')">
+            <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
+            <span class="user-name" id="topbarUserName">Juan dela Cruz</span>
+          </div>
+          <div class="notif-bell-wrap" id="notifBell" onclick="toggleNotifications()">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notif-badge" id="notifBadge">2</span>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <span><i class="fa-solid fa-bell" style="margin-right:6px;color:var(--gold)"></i>Notifications</span>
+                <span style="font-size:.75rem;color:var(--gray-400)">3 alerts</span>
+              </div>
+              <div id="notifList"></div>
+              <div style="padding:10px 16px;text-align:center;">
+                <button onclick="event.stopPropagation();showToast('All notifications cleared')" style="background:none;border:none;color:var(--gold-dark);font-size:.8rem;font-weight:600;cursor:pointer;">Clear All</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ====== DASHBOARD LAYOUT ====== -->
+    <div id="dashboard-layout">
+      <!-- SIDEBAR -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-brand">
+            <div class="brand-icon small"><i class="fa-solid fa-shield-halved"></i></div>
+            <span class="brand-name" id="sidebarBrandName">Creator's Bulwark</span>
+          </div>
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav">
+          <!-- Populated by JS based on role -->
+        </nav>
+        <div class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="user-avatar small"><i class="fa-solid fa-user"></i></div>
+            <div class="user-info">
+              <span class="user-name" id="sidebarUserName">Juan dela Cruz</span>
+              <span class="user-role" id="sidebarUserRole">Researcher</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT AREA -->
+      <main id="main-content">
+        <!-- Content injected by JS -->
+      </main>
+    </div>
+
+    <!-- ====== LANDING PAGE ====== -->
+    <section id="page-landing" class="page">
+      <!-- Hero Section -->
+      <div class="hero">
+        <div class="hero-bg-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+        </div>
+        <div class="hero-layout">
+          <div class="hero-content">
+            <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> Palawan State University</div>
+            <h1 class="hero-title">The Creator's<br/><span class="hero-highlight">Bulwark</span></h1>
+            <p class="hero-tagline">A multi-tiered pre-filing system for PSU patents, trademarks, copyrights, utility models, and industrial designs. It closes the knowledge gap, structures digital intake, and supports technology transfer through one secure institutional platform.</p>
+            <div class="hero-cta">
+              <button class="btn btn-primary btn-lg" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> Start a Submission</button>
+              <button class="btn btn-outline btn-lg" onclick="navigateTo('marketplace')"><i class="fa-solid fa-magnifying-glass"></i> Explore Innovations</button>
+            </div>
+          </div>
+        </div>
+        <div class="hero-logos">
+          <img src="images/partner_logo.png" alt="ITS Franchise Logo" class="hero-logo-item">
+          <img src="images/psu_logo_main.png" alt="Palawan State University Logo" class="hero-logo-item">
+          <img src="images/ipophl_logo.png" alt="IPOPHL Logo" class="hero-logo-item">
+        </div>
+      </div>
+
+      <!-- Quick Access Cards (IP Services) -->
+      <div class="section" id="ip-services-section">
+        <div class="container">
+          <h2 class="section-title">IP Services</h2>
+          <p class="section-subtitle">Enter the right pre-filing lane and build a complete packet before institutional review.</p>
+          <div class="service-cards">
+            <div class="service-card" onclick="navigateTo('login')">
+              <div class="service-icon patent"><i class="fa-solid fa-lightbulb"></i></div>
+              <h3>Patent</h3>
+              <p>Route invention disclosures, technical drawings, and claims into a structured patent pre-filing workflow.</p>
+              <span class="service-link">Open Patent Lane <i class="fa-solid fa-arrow-right"></i></span>
+            </div>
+            <div class="service-card" onclick="navigateTo('login')">
+              <div class="service-icon trademark"><i class="fa-solid fa-stamp"></i></div>
+              <h3>Trademark</h3>
+              <p>Prepare mark specimens, goods and services descriptions, and ownership details before endorsement.</p>
+              <span class="service-link">Open Trademark Lane <i class="fa-solid fa-arrow-right"></i></span>
+            </div>
+            <div class="service-card" onclick="navigateTo('login')">
+              <div class="service-icon copyright"><i class="fa-solid fa-copyright"></i></div>
+              <h3>Copyright</h3>
+              <p>Secure authorship records, declarations of originality, and complete copies of creative or software works.</p>
+              <span class="service-link">Open Copyright Lane <i class="fa-solid fa-arrow-right"></i></span>
+            </div>
+            <div class="service-card" onclick="navigateTo('login')">
+              <div class="service-icon utility"><i class="fa-solid fa-gears"></i></div>
+              <h3>Utility Model</h3>
+              <p>Package industrially applicable technical improvements through a shorter and more accessible protection track.</p>
+              <span class="service-link">Open Utility Lane <i class="fa-solid fa-arrow-right"></i></span>
+            </div>
+            <div class="service-card" onclick="navigateTo('login')">
+              <div class="service-icon industrial"><i class="fa-solid fa-pen-nib"></i></div>
+              <h3>Industrial Design</h3>
+              <p>Organize design representations, visual descriptions, and product category details for aesthetic protection.</p>
+              <span class="service-link">Open Design Lane <i class="fa-solid fa-arrow-right"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Banner -->
+      <div class="stats-banner">
+        <div class="container">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-number" data-count="156">0</div>
+              <div class="stat-label">Pre-Filing Packets</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" data-count="89">0</div>
+              <div class="stat-label">Certified Records</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" data-count="42">0</div>
+              <div class="stat-label">Marketplace Listings</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" data-count="12">0</div>
+              <div class="stat-label">Stakeholder Lanes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- IP Marketplace Section -->
+      <section id="marketplace-section" class="section">
+        <div class="container">
+          <h2 class="section-title">Innovation Marketplace</h2>
+          <p class="section-subtitle">Discover and connect with Palawan State University's research and innovation outputs.</p>
+          
+          <div class="marketplace-public-filters">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="landingSearch" placeholder="Search innovations..." oninput="filterLandingMarketplace()" />
+            </div>
+            <div class="filter-controls">
+              <select id="landingFilterType" onchange="filterLandingMarketplace()">
+                <option value="All">All Types</option>
+                <option>Patent</option>
+                <option>Utility Model</option>
+                <option>Industrial Design</option>
+                <option>Trademark</option>
+                <option>Copyright</option>
+              </select>
+              <select id="landingFilterCollege" onchange="filterLandingMarketplace()">
+                <option value="All">All Colleges</option>
+                <option>College of Engineering</option>
+                <option>College of Sciences</option>
+                <option>College of Agriculture</option>
+                <option>College of Arts</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="innovation-grid" id="landingInnovationGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+
+
+      <!-- Footer -->
+      <footer class="landing-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-col">
+              <div class="footer-brand">
+                <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div>
+                  <h4>The Creator's Bulwark</h4>
+                  <p>Palawan State University</p>
+                </div>
+              </div>
+              <p class="footer-desc">A Multi-Tiered Intellectual Property Management System designed to streamline IP registration, protection, and commercialization for the PSU community.</p>
+            </div>
+            <div class="footer-col">
+              <h4>Quick Links</h4>
+              <ul>
+                <li><a href="#" onclick="navigateTo('landing')">Home</a></li>
+                <li><a href="#" onclick="navigateTo('marketplace')">Marketplace</a></li>
+                <li><a href="#" onclick="navigateTo('login')">Login</a></li>
+              </ul>
+            </div>
+            <div class="footer-col">
+              <h4>IP Services</h4>
+              <ul>
+                <li><a href="#">Patent Filing</a></li>
+                <li><a href="#">Trademark Registration</a></li>
+                <li><a href="#">Copyright Protection</a></li>
+                <li><a href="#">Utility Model Registration</a></li>
+                <li><a href="#">Industrial Design Registration</a></li>
+              </ul>
+            </div>
+            <div class="footer-col">
+              <h4>Contact</h4>
+              <p><i class="fa-solid fa-location-dot"></i> Tiniguiban, Puerto Princesa City</p>
+              <p><i class="fa-solid fa-envelope"></i> ipo@psu.palawan.edu.ph</p>
+              <p><i class="fa-solid fa-phone"></i> (048) 433-2379</p>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <p>&copy; 2026 Palawan State University — The Creator's Bulwark. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ====== LOGIN PAGE ====== -->
+    <section id="page-login" class="page">
+      <div class="login-wrapper">
+        <div class="login-card">
+          <div class="login-header">
+            <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <h2>Welcome Back</h2>
+            <p>Sign in to The Creator's Bulwark</p>
+          </div>
+          <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="loginEmail">Email Address</label>
+              <div class="input-icon">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="loginEmail" placeholder="your.email@psu.edu.ph" required />
+              </div>
+              <span class="error-msg" id="loginEmailError"></span>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <div class="input-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="loginPassword" placeholder="Enter your password" required />
+              </div>
+              <span class="error-msg" id="loginPasswordError"></span>
+            </div>
+            <div class="form-options">
+              <label class="checkbox-label">
+                <input type="checkbox" /> Remember me
+              </label>
+              <a href="#" class="forgot-link">Forgot Password?</a>
+            </div>
+
+
+
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </button>
+          </form>
+          <div class="login-footer">
+            <p>Don't have an account? <a href="#">Contact the IP Office</a></p>
+            <a href="#" onclick="navigateTo('landing')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+          </div>
+        </div>
+        <!-- Bottom Decorative Shapes -->
+        <div class="hero-bg-shapes bottom-shapes">
+          <div class="shape shape-4"></div>
+          <div class="shape shape-5"></div>
+          <div class="shape shape-6"></div>
+        </div>
+      </section>
+
+    <!-- ====== MODALS ====== -->
+    <!-- Express Interest Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+      <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 id="modalTitle">Modal Title</h3>
+          <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="modalBody">
+          <!-- Content injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+      <div class="toast-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <span class="toast-message" id="toastMessage"></span>
+    </div>
+
+
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
