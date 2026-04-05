@@ -6,7 +6,7 @@
 // ===== STATE =====
 let currentPage = 'landing';
 let currentRole = 'client'; 
-// Supported RBAC roles: 'superadmin', 'pitbi_admin', 'reviewer', 'client'
+// Supported RBAC roles: 'superadmin', 'admin', 'reviewer', 'client'
 let isLoggedIn = true;
 let sidebarCollapsed = false;
 let selectedLoginRole = 'client';
@@ -18,16 +18,17 @@ let notifOpen = false;
 const ROLE_ALIASES = {
   superadmin: 'superadmin',
   'Super Admin': 'superadmin',
-  pitbi_admin: 'pitbi_admin',
-  admin: 'pitbi_admin',
-  'PITBI Admin': 'pitbi_admin',
+  admin: 'admin',
+  'Admin': 'admin',
+  pitbi_admin: 'admin',
+  'PITBI Admin': 'admin',
   reviewer: 'reviewer',
   specialist: 'reviewer',
   Reviewer: 'reviewer',
   client: 'client',
-  Client: 'client',
+  'Client': 'client',
   user: 'client',
-  User: 'client'
+  'User': 'client'
 };
 
 function normalizeRole(role) {
@@ -488,7 +489,7 @@ const marketplaceItems = [
 
 let systemUsers = [
   { id: 1, name: 'Engr. Super User', email: 'superadmin@psu.edu.ph', role: 'superadmin', dept: 'IT Office', status: 'Active', dateCreated: '2025-06-01' },
-  { id: 2, name: 'Dir. Garcia', email: 'director.garcia@psu.edu.ph', role: 'pitbi_admin', dept: 'IP Office', status: 'Active', dateCreated: '2025-07-15' },
+  { id: 2, name: 'Dir. Garcia', email: 'director.garcia@psu.edu.ph', role: 'admin', dept: 'IP Office', status: 'Active', dateCreated: '2025-07-15' },
   { id: 3, name: 'Engr. Tech Reviewer', email: 'reviewer@psu.edu.ph', role: 'reviewer', dept: 'Technical Review', status: 'Active', dateCreated: '2025-08-01' },
   { id: 8, name: 'Maria Santos', email: 'maria.santos@psu.edu.ph', role: 'client', dept: 'College of Engineering', status: 'Active', dateCreated: '2025-11-20' },
   { id: 9, name: 'Juan dela Cruz', email: 'juan.delacruz@psu.edu.ph', role: 'client', dept: 'College of Sciences', status: 'Active', dateCreated: '2025-12-01' },
@@ -510,14 +511,14 @@ const auditLogs = [
 
 const ROLE_META = {
   superadmin: { label: 'Super Admin', dashboard: 'admin-dashboard' },
-  pitbi_admin: { label: 'PITBI Admin', dashboard: 'admin-dashboard' },
+  admin: { label: 'Admin', dashboard: 'admin-dashboard' },
   reviewer: { label: 'Reviewer', dashboard: 'admin-dashboard' },
   client: { label: 'Client', dashboard: 'user-dashboard' }
 };
 
 const DASHBOARD_ACCESS = {
   superadmin: ['admin-dashboard', 'admin-submissions', 'admin-search', 'submission-detail', 'audit-log', 'user-profile', 'admin-records', 'admin-users', 'admin-settings', 'role-permissions', 'create-account', 'project-blueprint'],
-  pitbi_admin: ['admin-dashboard', 'admin-submissions', 'admin-search', 'submission-detail', 'audit-log', 'user-profile', 'admin-records', 'admin-users', 'role-permissions', 'create-account', 'project-blueprint'],
+  admin: ['admin-dashboard', 'admin-submissions', 'admin-search', 'submission-detail', 'audit-log', 'user-profile', 'admin-records', 'admin-users', 'role-permissions', 'create-account', 'project-blueprint'],
   reviewer: ['admin-dashboard', 'admin-submissions', 'admin-search', 'submission-detail', 'user-profile', 'project-blueprint'],
   client: ['user-dashboard', 'user-submissions', 'submission-detail', 'user-profile', 'patent-form', 'trademark-form', 'copyright-form', 'utility-form', 'industrial-form', 'faq-dash', 'ip-tutorial', 'project-blueprint']
 };
@@ -661,14 +662,14 @@ function isAssignedReviewerSubmission(submission, role = currentRole) {
 
 function getVisibleSubmissions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === 'superadmin' || normalizedRole === 'pitbi_admin') return submissions;
+  if (normalizedRole === 'superadmin' || normalizedRole === 'admin') return submissions;
   if (normalizedRole === 'reviewer') return submissions.filter(submission => isAssignedReviewerSubmission(submission, role));
   return submissions.filter(submission => isOwnSubmission(submission, role));
 }
 
 function canEditSubmission(submission, role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  return normalizedRole === 'superadmin' || normalizedRole === 'pitbi_admin' || (normalizedRole === 'reviewer' && isAssignedReviewerSubmission(submission, role));
+  return normalizedRole === 'superadmin' || normalizedRole === 'admin' || (normalizedRole === 'reviewer' && isAssignedReviewerSubmission(submission, role));
 }
 
 function canAdvanceSubmission(submission, role = currentRole) {
@@ -677,7 +678,7 @@ function canAdvanceSubmission(submission, role = currentRole) {
 
 function canArchiveSubmission(role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  return normalizedRole === 'superadmin' || normalizedRole === 'pitbi_admin';
+  return normalizedRole === 'superadmin' || normalizedRole === 'admin';
 }
 
 function canUploadDocuments(submission, role = currentRole) {
@@ -689,40 +690,40 @@ function canUploadDocuments(submission, role = currentRole) {
 function getDownloadAccess(submission, level, role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (level === 'confidential') {
-    if (normalizedRole === 'superadmin' || normalizedRole === 'pitbi_admin') return 'allow';
+    if (normalizedRole === 'superadmin' || normalizedRole === 'admin') return 'allow';
     if (normalizedRole === 'reviewer' && isAssignedReviewerSubmission(submission, role)) return 'allow';
     return 'deny';
   }
 
   if (normalizedRole === 'superadmin') return 'allow';
-  if (normalizedRole === 'pitbi_admin') return 'approval';
+  if (normalizedRole === 'admin') return 'approval';
   return 'deny';
 }
 
 function canManageUsers(role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  return normalizedRole === 'superadmin' || normalizedRole === 'pitbi_admin';
+  return normalizedRole === 'superadmin' || normalizedRole === 'admin';
 }
 
 function canManageTargetUser(user, role = currentRole) {
   const normalizedRole = normalizeRole(role);
   const targetRole = normalizeRole(user.role);
   if (normalizedRole === 'superadmin') return true;
-  if (normalizedRole === 'pitbi_admin') return !['superadmin', 'pitbi_admin'].includes(targetRole);
+  if (normalizedRole === 'admin') return !['superadmin', 'admin'].includes(targetRole);
   return false;
 }
 
 function getManageableRoleOptions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === 'superadmin') return ['superadmin', 'pitbi_admin', 'reviewer', 'client'];
-  if (normalizedRole === 'pitbi_admin') return ['reviewer', 'client'];
+  if (normalizedRole === 'superadmin') return ['superadmin', 'admin', 'reviewer', 'client'];
+  if (normalizedRole === 'admin') return ['reviewer', 'client'];
   return [];
 }
 
 function getVisibleAuditLogs(role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === 'superadmin') return auditLogs;
-  if (normalizedRole === 'pitbi_admin') {
+  if (normalizedRole === 'admin') {
     return auditLogs.filter(log => OPERATIONAL_AUDIT_MODULES.has(log.module));
   }
   return [];
@@ -1331,7 +1332,7 @@ function hideError(id) {
 
 function toggleRole() {
   // Cycle through main roles for the old toggle if it still exists
-  const roles = ['client', 'reviewer', 'pitbi_admin', 'superadmin'];
+  const roles = ['client', 'reviewer', 'admin', 'superadmin'];
   let idx = roles.indexOf(currentRole);
   currentRole = roles[(idx + 1) % roles.length];
   switchRole(currentRole);
@@ -1385,8 +1386,8 @@ function renderSidebar() {
       { page: 'admin-settings', icon: 'fa-gear', text: 'System Config' },
       { page: 'user-profile', icon: 'fa-user', text: 'Profile' }
     ],
-    pitbi_admin: [
-      { page: 'admin-dashboard', icon: 'fa-chart-line', text: 'PITBI Dashboard' },
+    admin: [
+      { page: 'admin-dashboard', icon: 'fa-chart-line', text: 'Admin Dashboard' },
       { page: 'admin-submissions', icon: 'fa-inbox', text: 'Manage Cases' },
       { page: 'admin-search', icon: 'fa-magnifying-glass', text: 'Patent Search' },
       { page: 'admin-records', icon: 'fa-folder-open', text: 'Records' },
@@ -1423,20 +1424,14 @@ function renderSidebar() {
     </a>
   `).join('');
 
-  // Hide sidebar completely for 'client' role to provide a cleaner layout
+  // Ensure sidebar visibility for all roles
   const sidebar = document.getElementById('sidebar');
   const mainContent = document.getElementById('main-content');
   const sidebarToggle = document.querySelector('.sidebar-toggle');
   
-  if (currentRole === 'client') {
-    if (sidebar) sidebar.style.display = 'none';
-    if (mainContent) mainContent.style.marginLeft = '0';
-    if (sidebarToggle) sidebarToggle.style.display = 'none';
-  } else {
-    if (sidebar) sidebar.style.display = '';
-    if (mainContent) mainContent.style.marginLeft = '';
-    if (sidebarToggle) sidebarToggle.style.display = '';
-  }
+  if (sidebar) sidebar.style.display = '';
+  if (mainContent) mainContent.style.marginLeft = '';
+  if (sidebarToggle) sidebarToggle.style.display = '';
 }
 
 function updateActiveSidebarLink(page) {
@@ -1555,19 +1550,30 @@ function renderUserDashboard() {
 }
 
 window.toggleFaq = function(btn) {
-  const answer = btn.nextElementSibling;
-  const icon = btn.querySelector('i.fa-chevron-down');
+  const item = btn.closest('.faq-item');
+  if (!item) return;
+  const answer = item.querySelector('.faq-a');
+  const wasOpen = item.classList.contains('open');
   
-  if (answer.style.maxHeight) {
-    answer.style.maxHeight = null;
-    answer.style.paddingTop = "0";
-    answer.style.paddingBottom = "0";
-    if(icon) icon.style.transform = "rotate(0deg)";
+  // Close others (Accordion behavior)
+  document.querySelectorAll('.faq-item.open').forEach(opened => {
+    if (opened !== item) {
+      opened.classList.remove('open');
+      const ans = opened.querySelector('.faq-a');
+      if (ans) ans.style.maxHeight = "0px";
+    }
+  });
+  
+  // Toggle the current item
+  if (wasOpen) {
+    item.classList.remove('open');
+    if (answer) answer.style.maxHeight = "0px";
   } else {
-    answer.style.maxHeight = answer.scrollHeight + 40 + "px";
-    answer.style.paddingTop = "10px";
-    answer.style.paddingBottom = "20px";
-    if(icon) icon.style.transform = "rotate(-180deg)";
+    item.classList.add('open');
+    if (answer) {
+      // Small timeout to ensure the browser has a starting point if it was just reset internally
+      answer.style.maxHeight = answer.scrollHeight + "px";
+    }
   }
 }
 
@@ -1589,9 +1595,9 @@ function renderFaq() {
     copyright: [
       { q: "What does Copyright protect?", a: "Copyright protects literary, scholarly, scientific and artistic works. It gives the creator the exclusive right to control the use of their work." },
       { q: "Is registration required to obtain copyright?", a: "No. Works are protected from the moment of their creation. However, registration provides a public record of your copyright claim and is highly recommended." },
-      { q: "How does the PSU copyright route move?", a: "The packet first goes to the reviewer for completeness checking, then to PITBI Admin for recording and payment-slip or fee-waiver routing, then to the cashier and back to PITBI Admin for OR recording before the super admin lane endorses filing with the National Library." },
+      { q: "How does the PSU copyright route move?", a: "The packet first goes to the reviewer for completeness checking, then to Admin for recording and payment-slip or fee-waiver routing, then to the cashier and back to Admin for OR recording before the super admin lane endorses filing with the National Library." },
       { q: "How long does copyright last?", a: "Copyright generally lasts for the lifetime of the author plus fifty (50) years after their death." },
-      { q: "What are the required documents to register a copyright?", a: "<strong>Required Documents:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>National Library application form for Copyright, ISSN, ISBN, or ISMN</li><li>Complete Copy of the Work</li><li>Valid Philippine ID (Digitized)</li><li>Declaration of Originality</li><li>Approved letter-request for official-duty works (if applicable)</li><li>Official Receipt copy after PITBI Admin issues the payment slip</li></ul>" }
+      { q: "What are the required documents to register a copyright?", a: "<strong>Required Documents:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>National Library application form for Copyright, ISSN, ISBN, or ISMN</li><li>Complete Copy of the Work</li><li>Valid Philippine ID (Digitized)</li><li>Declaration of Originality</li><li>Approved letter-request for official-duty works (if applicable)</li><li>Official Receipt copy after Admin issues the payment slip</li></ul>" }
     ],
     utilityModel: [
       { q: "What is a Utility Model?", a: "A utility model is an intellectual property right to protect inventions. It is similar to a patent but usually requires less stringent requirements for novelty and does not require an inventive step." },
@@ -1617,12 +1623,12 @@ function renderFaq() {
         </div>
         <div class="faq-list">
           ${data.map(item => `
-            <div class="faq-item" style="border-bottom: 1px solid var(--gray-100); margin-bottom: 10px;">
-              <button onclick="toggleFaq(this)" style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: none; border: none; font-size: 1.05rem; font-weight: 600; color: var(--navy); cursor: pointer; padding: 16px 0; text-align: left; font-family: 'Inter', sans-serif;">
-                <span style="padding-right: 20px; line-height: 1.4;">${item.q}</span>
-                <i class="fa-solid fa-chevron-down" style="transition: transform 0.3s ease; color: var(--gray-500); font-size: 0.9rem;"></i>
+            <div class="faq-item">
+              <button onclick="toggleFaq(this)" class="faq-q">
+                <span>${item.q}</span>
+                <i class="fa-solid fa-chevron-down"></i>
               </button>
-              <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: all 0.3s ease-in-out; color: var(--gray-600); line-height: 1.6; font-size: 0.95rem; padding: 0 10px;">
+              <div class="faq-a">
                 ${item.a}
               </div>
             </div>
@@ -1685,7 +1691,7 @@ function renderAdminDashboard() {
   const user = getCurrentUser(role);
   const roleCopy = {
     superadmin: 'Full governance across permissions, records, logs, and institutional configuration.',
-    pitbi_admin: 'Operate the administrative mitigation dashboard for intake control, verification, and progress monitoring.',
+    admin: 'Operate the administrative mitigation dashboard for intake control, verification, and progress monitoring.',
     reviewer: 'Handle assigned cases, advance review stages, and work within the confidentiality boundaries defined by the RBAC matrix.'
   };
 
@@ -1729,8 +1735,8 @@ function legacyGetRoleSpecificStats(role) {
         { label: 'Cloud Status', value: 'Active', icon: 'fa-cloud', color: 'indigo' }
       ]
     },
-    pitbi_admin: {
-      title: 'PITBI Operations', subtitle: 'Managing the university core IP portfolio.',
+    admin: {
+      title: 'Admin Operations', subtitle: 'Managing the university core IP portfolio.',
       cards: [
         { label: 'Total Files', value: total, icon: 'fa-inbox', color: 'blue' },
         { label: 'Pending Review', value: pending, icon: 'fa-hourglass-half', color: 'yellow' },
@@ -1855,8 +1861,8 @@ function getRoleSpecificStats(role) {
         { label: 'Security Keys', value: '2', icon: 'fa-key', color: 'indigo' }
       ]
     },
-    pitbi_admin: {
-      title: 'PITBI Operations', subtitle: 'Managing the university core IP portfolio.',
+    admin: {
+      title: 'Admin Operations', subtitle: 'Managing the university core IP portfolio.',
       cards: [
         { label: 'Visible Cases', value: total, icon: 'fa-inbox', color: 'blue' },
         { label: 'Pending Review', value: pending, icon: 'fa-hourglass-half', color: 'yellow' },
@@ -2167,7 +2173,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     key: 'mis-recording',
     step: 3,
     title: 'Admin Staff/MIS receives application from Technical Expert',
-    owner: 'PITBI Admin',
+    owner: 'Admin',
     lane: 'Admin Staff / MIS',
     description: 'Record in logbook and encode in database. Prepare payment slip and inform author to pay basic fees at cashier\'s office. (Note: those with approved letter-request as mentioned in step 1b shall proceed to step 7b).'
   },
@@ -2199,7 +2205,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     key: 'mis-forwarding',
     step: 7,
     title: 'Admin Staff/MIS receives photocopied official receipt from author',
-    owner: 'PITBI Admin',
+    owner: 'Admin',
     lane: 'Admin Staff / MIS',
     description: 'Record O.R. in logbook and encode in database. Forward application to IP Director for action.'
   },
@@ -2215,7 +2221,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     key: 'certificate-received',
     step: 9,
     title: 'Admin Staff/MIS receives Certificate of Registration from National Library',
-    owner: 'PITBI Admin',
+    owner: 'Admin',
     lane: 'Admin Staff / MIS',
     description: 'Record C.O.R. in logbook and encode in database. Release C.O.R. to author.'
   },
@@ -2233,7 +2239,7 @@ const COPYRIGHT_TRACKING_GROUPS = [
   { label: 'Submitted to Reviewer', keys: ['author-submission'] },
   { label: 'Completeness Checked', keys: ['technical-review', 'mis-recording'] },
   { label: 'Payment and OR Route', keys: ['payment-slip-issued', 'cashier-receipt', 'receipt-submitted'] },
-  { label: 'PITBI Admin Forwarding', keys: ['mis-forwarding'] },
+  { label: 'Admin Forwarding', keys: ['mis-forwarding'] },
   { label: 'National Library Filing', keys: ['ip-director-action', 'certificate-received'] },
   { label: 'Certificate Released', keys: ['certificate-released'] }
 ];
@@ -2259,7 +2265,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: 'mis-recording',
     step: 3,
     title: 'Admin Staff/MIS receives and records application',
-    owner: 'PITBI Admin',
+    owner: 'Admin',
     lane: 'Admin Staff / MIS',
     description: 'Records the application in the logbook and database, prepares the payment slip, and informs the inventor to pay basic fees at the cashier. Approved letter-request holders proceed directly to Step 7.'
   },
@@ -2291,7 +2297,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: 'mis-forwarding',
     step: 7,
     title: 'Admin Staff/MIS records OR and forwards application',
-    owner: 'PITBI Admin',
+    owner: 'Admin',
     lane: 'Admin Staff / MIS',
     description: 'Records the official receipt in the logbook and database, then forwards the application to the IP Director for action.'
   },
@@ -2307,7 +2313,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: 'certificate-received',
     step: 9,
     title: 'Admin Staff/MIS receives Certificate from IPOPHL',
-    owner: 'PITBI Admin',
+    owner: 'Admin',
     lane: 'Admin Staff / MIS',
     description: 'Receives the Certificate of Registration from IPOPHL, records it in the logbook and database, and prepares release to the inventor.'
   },
@@ -2461,7 +2467,7 @@ function getSubmissionPaymentMeta(submission) {
         theme: 'blue',
         icon: 'fa-file-signature',
         title: 'Fee-waived route recorded',
-        detail: 'An approved university letter-request is on file, so PITBI Admin may route the packet without cashier payment.',
+        detail: 'An approved university letter-request is on file, so Admin may route the packet without cashier payment.',
         actionLabel: ''
       };
     }
@@ -2470,7 +2476,7 @@ function getSubmissionPaymentMeta(submission) {
         theme: 'red',
         icon: 'fa-receipt',
         title: 'Awaiting payment slip and OR copy',
-        detail: 'After reviewer clearance, PITBI Admin issues the payment slip. The applicant then pays the university cashier and submits the official receipt copy.',
+        detail: 'After reviewer clearance, Admin issues the payment slip. The applicant then pays the university cashier and submits the official receipt copy.',
         actionLabel: 'Record OR Copy'
       };
     }
@@ -2609,8 +2615,8 @@ function togglePaymentStatus(id) {
   const submission = submissions.find(entry => entry.id === id);
   if (!submission) return;
   const normalizedRole = normalizeRole(currentRole);
-  if (!['pitbi_admin', 'superadmin'].includes(normalizedRole)) {
-    showToast('Only PITBI Admin or Super Admin can record payment status.');
+  if (!['admin', 'superadmin'].includes(normalizedRole)) {
+    showToast('Only Admin or Super Admin can record payment status.');
     return;
   }
   if (submission.type === 'Copyright' && submission.paymentExempt) {
@@ -2749,7 +2755,7 @@ function renderSubmissionDetail() {
           <div style="padding:14px;background:${paymentVerified ? 'rgba(22,163,74,0.06)' : 'rgba(239,68,68,0.06)'};border:1px solid ${paymentVerified ? 'rgba(22,163,74,0.2)' : 'rgba(239,68,68,0.2)'};border-radius:8px;display:flex;align-items:center;gap:10px">
             <i class="fa-solid fa-${paymentVerified ? 'circle-check' : 'circle-xmark'}" style="color:var(--${paymentVerified ? 'green' : 'red'});font-size:1.2rem"></i>
             <div><div style="font-weight:700;font-size:.9rem;color:var(--${paymentVerified ? 'green' : 'red'})">${paymentVerified ? 'Payment Verified' : 'Awaiting Proof of Deposit'}</div><div style="font-size:.8rem;color:var(--gray-400)">proof_of_deposit.pdf — Official Receipt #2026-0321</div></div>
-            ${(normalizedRole === 'pitbi_admin' || normalizedRole === 'superadmin') ? `<button class="btn btn-sm btn-success" style="margin-left:auto" onclick="showToast('Payment status updated')"><i class="fa-solid fa-${paymentVerified ? 'check' : 'upload'}"></i> ${paymentVerified ? 'Verified' : 'Mark Verified'}</button>` : ''}
+            ${(normalizedRole === 'admin' || normalizedRole === 'superadmin') ? `<button class="btn btn-sm btn-success" style="margin-left:auto" onclick="showToast('Payment status updated')"><i class="fa-solid fa-${paymentVerified ? 'check' : 'upload'}"></i> ${paymentVerified ? 'Verified' : 'Mark Verified'}</button>` : ''}
           </div>
         </div>
       </div>
@@ -3354,10 +3360,10 @@ function renderAdminRecords() {
 
 function legacyRenderAdminUsers() {
   const roleBadge = (r, u) => {
-    const m = {'superadmin':'badge-rejected','pitbi_admin':'badge-review','specialist':'badge-pending','client':'badge-approved', 'Super Admin':'badge-rejected','PITBI Admin':'badge-review','Reviewer':'badge-pending','Client':'badge-approved'};
+    const m = {'superadmin':'badge-rejected','admin':'badge-review','specialist':'badge-pending','client':'badge-approved', 'Super Admin':'badge-rejected','Admin':'badge-review','Reviewer':'badge-pending','Client':'badge-approved'};
     let label = r;
     if (r === 'superadmin') label = 'Super Admin';
-    if (r === 'pitbi_admin') label = 'PITBI Admin';
+    if (r === 'admin') label = 'Admin';
     if (r === 'specialist') label = 'Specialist';
     if (r === 'client') label = 'Client';
     
@@ -3397,7 +3403,7 @@ function legacyEditUserRole(userId) {
     <div class="form-group"><label>Assign Role</label>
       <select id="newRoleSelect" onchange="toggleSpecialistSettings(this.value)">
         <option value="superadmin" ${u.role==='superadmin' ? 'selected':''}>Super Admin</option>
-        <option value="pitbi_admin" ${u.role==='pitbi_admin' ? 'selected':''}>PITBI Admin</option>
+        <option value="admin" ${u.role==='admin' ? 'selected':''}>Admin</option>
         <option value="specialist" ${(u.role==='specialist'||u.role==='Reviewer') ? 'selected':''}>Specialist</option>
         <option value="client" ${u.role==='client' ? 'selected':''}>Client</option>
       </select>
@@ -3571,7 +3577,7 @@ function formatRoleLabel(role) {
 function renderAdminUsers() {
   const roleBadgeClass = {
     superadmin: 'badge-rejected',
-    pitbi_admin: 'badge-review',
+    admin: 'badge-review',
     reviewer: 'badge-pending',
     client: 'badge-approved'
   };
@@ -4392,7 +4398,7 @@ function renderSubmissionDetail() {
           <div style="padding:14px;background:${paymentStyles.bg};border:1px solid ${paymentStyles.border};border-radius:8px;display:flex;align-items:center;gap:10px">
             <i class="fa-solid ${paymentMeta.icon}" style="color:${paymentStyles.color};font-size:1.2rem"></i>
             <div><div style="font-weight:700;font-size:.9rem;color:${paymentStyles.color}">${paymentMeta.title}</div><div style="font-size:.8rem;color:var(--gray-400)">${paymentMeta.detail}</div></div>
-            ${(normalizedRole === 'pitbi_admin' || normalizedRole === 'superadmin') && paymentMeta.actionLabel ? `<button class="btn btn-sm btn-success" style="margin-left:auto" onclick="togglePaymentStatus('${s.id}')"><i class="fa-solid fa-${paymentVerified ? 'check' : 'upload'}"></i> ${paymentMeta.actionLabel}</button>` : ''}
+            ${(normalizedRole === 'admin' || normalizedRole === 'superadmin') && paymentMeta.actionLabel ? `<button class="btn btn-sm btn-success" style="margin-left:auto" onclick="togglePaymentStatus('${s.id}')"><i class="fa-solid fa-${paymentVerified ? 'check' : 'upload'}"></i> ${paymentMeta.actionLabel}</button>` : ''}
           </div>
         </div>
       </div>
@@ -4454,7 +4460,7 @@ function renderIpTutorial() {
   const types = [
     { id: 'patent', icon: 'fa-lightbulb', color: '#3b82f6', gradient: 'linear-gradient(135deg,#3b82f6,#1d4ed8)', title: 'Patent', subtitle: 'Protect inventions & technical innovations', term: '20 years from filing date', requirements: ['Novelty - new to the world', 'Inventive Step - non-obvious', 'Industrial Applicability'], process: [{ n:1, t:'Prepare Disclosure', d:'Write Invention Disclosure Statement with technical details.' },{ n:2, t:'Fill Application Form', d:'Complete PSU-IPO-PAT-01 with full inventor details.' },{ n:3, t:'Prepare Drawings', d:'Prepare technical drawings, diagrams, and abstract.' },{ n:4, t:'Submit & Pay', d:'Upload all documents + proof-of-deposit filing fee.' },{ n:5, t:'IPOPHL Filing', d:'IP Office forwards verified packet to national registry.' }], docs: ['Patent Application Form (PSU-IPO-PAT-01)', 'Invention Disclosure Statement (min 2 pages)', 'Technical Drawings / Diagrams', 'Abstract (150 words max)', 'Claims Statement', 'Proof-of-Deposit / Official Receipt'] },
     { id: 'trademark', icon: 'fa-stamp', color: '#f59e0b', gradient: 'linear-gradient(135deg,#f59e0b,#d97706)', title: 'Trademark', subtitle: 'Register brands, logos & identifiers', term: '10 years (renewable)', requirements: ['Distinctiveness', 'Non-descriptive of goods/services', 'Non-deceptive in nature'], process: [{ n:1, t:'Define the Mark', d:'Identify whether it is a word, logo, or combination mark.' },{ n:2, t:'Prepare Specimen', d:'Prepare high-resolution mark file (300+ DPI).' },{ n:3, t:'Fill Application Form', d:'Complete PSU-IPO-TM-01 with goods/services description.' },{ n:4, t:'Submit & Pay', d:'Upload mark + proof-of-deposit.' },{ n:5, t:'IPOPHL Review', d:'IP Office submits to IPOPHL for official registration.' }], docs: ['Trademark Application Form (PSU-IPO-TM-01)', 'Mark Specimen / Logo File (min 300 DPI)', 'Description of Goods/Services', 'Declaration of First Use', 'Color Claim Statement (if applicable)', 'Proof-of-Deposit / Official Receipt'] },
-    { id: 'copyright', icon: 'fa-copyright', color: '#10b981', gradient: 'linear-gradient(135deg,#10b981,#059669)', title: 'Copyright', subtitle: 'Safeguard creative works, software, and publications', term: 'Lifetime + 50 years', requirements: ['Original work of the author', 'Fixed in tangible form', 'Creative expression (not just ideas)'], process: [{ n:1, t:'Submit to Reviewer', d:'The author files the National Library packet to the reviewer for completeness checking.' },{ n:2, t:'PITBI Admin Recording', d:'Complete packets are logged by PITBI Admin and assigned the cashier or fee-waived route.' },{ n:3, t:'Cashier and OR Return', d:'If payment is required, the author pays the cashier and returns the official receipt copy.' },{ n:4, t:'National Library Filing', d:'The super admin lane acts as the IP Director authority for endorsement and filing.' },{ n:5, t:'Certificate Release', d:'PITBI Admin records the Certificate of Registration and releases it to the author.' }], docs: ['National Library application form (Copyright / ISSN / ISBN / ISMN)', 'Complete Copy of the Work', 'Valid Philippine ID (Digitized)', 'Declaration of Originality', 'Approved letter-request for official-duty works (conditional)', 'Official Receipt / cashier receipt copy'] },
+    { id: 'copyright', icon: 'fa-copyright', color: '#10b981', gradient: 'linear-gradient(135deg,#10b981,#059669)', title: 'Copyright', subtitle: 'Safeguard creative works, software, and publications', term: 'Lifetime + 50 years', requirements: ['Original work of the author', 'Fixed in tangible form', 'Creative expression (not just ideas)'], process: [{ n:1, t:'Submit to Reviewer', d:'The author files the National Library packet to the reviewer for completeness checking.' },{ n:2, t:'Admin Recording', d:'Complete packets are logged by Admin and assigned the cashier or fee-waived route.' },{ n:3, t:'Cashier and OR Return', d:'If payment is required, the author pays the cashier and returns the official receipt copy.' },{ n:4, t:'National Library Filing', d:'The super admin lane acts as the IP Director authority for endorsement and filing.' },{ n:5, t:'Certificate Release', d:'Admin records the Certificate of Registration and releases it to the author.' }], docs: ['National Library application form (Copyright / ISSN / ISBN / ISMN)', 'Complete Copy of the Work', 'Valid Philippine ID (Digitized)', 'Declaration of Originality', 'Approved letter-request for official-duty works (conditional)', 'Official Receipt / cashier receipt copy'] },
     { id: 'utility', icon: 'fa-gears', color: '#6366f1', gradient: 'linear-gradient(135deg,#6366f1,#4338ca)', title: 'Utility Model', subtitle: 'Faster protection for technical innovations', term: '7 years (no renewal)', requirements: ['Novelty - new to the world', 'Industrial Applicability', 'No inventive step required (easier than patent)'], process: [{ n:1, t:'Document Innovation', d:'Write technical description of the model and its use.' },{ n:2, t:'Prepare Drawings', d:'Create technical drawings or illustrations of the model.' },{ n:3, t:'Fill Application Form', d:'Complete the Utility Model Application Form.' },{ n:4, t:'Write Claims', d:'Define the specific claims and novelty statement.' },{ n:5, t:'Submit & Pay', d:'Upload all documents + proof-of-deposit.' }], docs: ['Utility Model Application Form', 'Technical Description', 'Technical Drawings / Illustrations', 'Claims Statement', 'Novelty Statement', 'Proof-of-Deposit / Official Receipt'] },
     { id: 'industrial', icon: 'fa-pen-nib', color: '#ec4899', gradient: 'linear-gradient(135deg,#ec4899,#be185d)', title: 'Industrial Design', subtitle: 'Protect the aesthetic appearance of products', term: '5 years (renewable up to 15 yrs)', requirements: ['Visual/ornamental novelty', 'Applied to an article/product', 'Not dictated solely by function'], process: [{ n:1, t:'Photograph the Design', d:'Take clear photos from all angles: front, back, top, sides, perspective.' },{ n:2, t:'Write Design Statement', d:'Describe the ornamental features that give the design its appearance.' },{ n:3, t:'Fill Application Form', d:'Complete the Industrial Design Application Form.' },{ n:4, t:'Submit & Pay', d:'Upload all files + proof-of-deposit.' },{ n:5, t:'IPOPHL Registration', d:'Design is examined and registered if qualifying.' }], docs: ['Industrial Design Application Form', 'Design Representation Files (Photos/3D renders)', 'Description of Design - ornamental aspects', 'Product Category Statement', 'Proof-of-Deposit / Official Receipt'] }
   ];

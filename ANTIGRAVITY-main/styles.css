@@ -612,14 +612,60 @@ textarea { min-height: 100px; resize: vertical; }
 .doc-item p { font-size: .8rem; color: var(--gray-500); margin: 0; }
 
 /* =============== FAQ ACCORDION =============== */
-.faq-list { display: flex; flex-direction: column; gap: 8px; }
-.faq-item { border: 1px solid var(--gray-200); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; transition: var(--transition); }
-.faq-item:hover { border-color: var(--gold); }
-.faq-q { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; font-weight: 600; font-size: .9rem; color: var(--navy); }
-.faq-q i { transition: var(--transition); color: var(--gray-400); font-size: .8rem; }
-.faq-item.open .faq-q i { transform: rotate(180deg); color: var(--gold); }
-.faq-a { max-height: 0; overflow: hidden; transition: max-height .3s ease, padding .3s ease; font-size: .85rem; color: var(--gray-600); line-height: 1.7; padding: 0 18px; }
-.faq-item.open .faq-a { max-height: 300px; padding: 0 18px 16px; }
+.faq-list { display: flex; flex-direction: column; gap: 12px; }
+.faq-item { 
+  border: 1.5px solid #f8a170; 
+  border-radius: 12px; 
+  overflow: hidden; 
+  background: white;
+  cursor: pointer; 
+  transition: all 0.3s ease; 
+}
+.faq-item:hover { 
+  border-color: #e68d5a; 
+  box-shadow: 0 4px 12px rgba(248, 161, 112, 0.1);
+}
+.faq-q { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 20px 24px; 
+  font-weight: 700; 
+  font-size: 1rem; 
+  color: #8a4b2d; 
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+.faq-q i { 
+  transition: transform 0.3s ease; 
+  color: #8a4b2d; 
+  font-size: 0.9rem; 
+}
+.faq-item.open {
+  border-color: #f8a170;
+}
+.faq-a { 
+  max-height: 0; 
+  overflow: hidden; 
+  transition: all 0.3s ease; 
+  font-size: .95rem; 
+  color: var(--gray-600); 
+  line-height: 1.6; 
+  padding: 0 24px;
+  opacity: 0;
+}
+.faq-item.open .faq-a { 
+  max-height: 1000px; 
+  padding: 0 24px 24px;
+  opacity: 1;
+}
+.faq-item.open .faq-q i {
+  transform: rotate(180deg);
+}
 
 /* =============== DASHBOARD GUIDE CARDS =============== */
 .guide-section { margin-bottom: 32px; }
