@@ -36,14 +36,15 @@
             <select id="publicRoleSelect" onchange="switchRole(this.value)" style="background:var(--gray-50); border:1px solid var(--gray-200); padding:4px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none; cursor:pointer; font-family:'Inter', sans-serif; margin-right: 10px;">
               <option value="client" style="color:#000">Client</option>
               <option value="reviewer" style="color:#000">Reviewer</option>
-              <option value="admin" style="color:#000">Admin</option>
-              <option value="superadmin" style="color:#000">Super Admin</option>
+              <option value="superadmin" style="color:#000">Admin</option>
             </select>
           </li>
-          <li><a href="#" class="nav-link active" onclick="navigateTo('landing')">Home</a></li>
+          <li><a href="#" class="nav-link" onclick="navigateTo('landing')">Home</a></li>
           <li><a href="#" class="nav-link" onclick="navigateTo('services')">IP Services</a></li>
           <li><a href="#" class="nav-link" onclick="navigateTo('marketplace')">Marketplace</a></li>
+          <li><a href="#" class="nav-link" onclick="navigateTo('news')">News</a></li>
           <li><a href="#" class="nav-link" onclick="navigateTo('about')">About</a></li>
+          <li><a href="#" class="nav-link" onclick="navigateTo('faq')" title="FAQ"><i class="fa-solid fa-circle-question" style="font-size: 1.1rem;"></i></a></li>
           <li><a href="#" class="nav-link btn-login" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
         </ul>
       </div>
@@ -68,8 +69,7 @@
             <select id="topbarRoleSelect" onchange="switchRole(this.value)" style="background:var(--gray-50); border:1px solid var(--gray-200); padding:6px 24px 6px 12px; border-radius:6px; font-size:0.85rem; font-weight:600; color:var(--navy); outline:none; cursor:pointer; font-family:'Inter', sans-serif;">
               <option value="client">Client</option>
               <option value="reviewer">Reviewer</option>
-              <option value="admin">Admin</option>
-              <option value="superadmin">Super Admin</option>
+              <option value="superadmin">Admin</option>
             </select>
           </div>
           <div class="topbar-user" onclick="navigateTo('user-profile')">
@@ -144,11 +144,11 @@
               <button class="btn btn-outline btn-lg" onclick="navigateTo('marketplace')"><i class="fa-solid fa-magnifying-glass"></i> Explore Innovations</button>
             </div>
           </div>
-        </div>
-        <div class="hero-logos">
-          <img src="images/partner_logo.png" alt="ITS Franchise Logo" class="hero-logo-item">
-          <img src="images/psu_logo_main.png" alt="Palawan State University Logo" class="hero-logo-item">
-          <img src="images/ipophl_logo.png" alt="IPOPHL Logo" class="hero-logo-item">
+          <div class="hero-logos">
+            <img src="images/partner_logo.png" alt="ITS Franchise Logo" class="hero-logo-item">
+            <img src="images/psu_logo_main.png" alt="Palawan State University Logo" class="hero-logo-item">
+            <img src="images/IPTTO-logo.jpg" alt="IPTTO Logo" class="hero-logo-item">
+          </div>
         </div>
       </div>
 
@@ -192,6 +192,48 @@
         </div>
       </div>
 
+      <!-- Project Overview (About) -->
+      <section class="section bg-light" id="project-overview-section">
+        <div class="container project-overview-container">
+          <div class="overview-content">
+            <span class="m-eyebrow">Our Mission</span>
+            <h2 class="section-title" style="text-align:left; margin-left:0;">Securing PSU's Intellectual Legacy</h2>
+            <p class="section-desc">The Creator's Bulwark is more than just a filing system; it is a strategic initiative by the PSU Intellectual Property Office to transform how research and creative works are managed across our institution.</p>
+            
+            <div class="overview-features">
+              <div class="overview-feature">
+                <div class="feature-icon"><i class="fa-solid fa-microchip"></i></div>
+                <div>
+                  <h4>Bridging the Knowledge Gap</h4>
+                  <p>Translating complex IP requirements into structured, guided workflows for every researcher.</p>
+                </div>
+              </div>
+              <div class="overview-feature">
+                <div class="feature-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                <div>
+                  <h4>Centralized IP Governance</h4>
+                  <p>A unified command center for admins and reviewers to track progress and maintain records.</p>
+                </div>
+              </div>
+              <div class="overview-feature">
+                <div class="feature-icon"><i class="fa-solid fa-handshake-angle"></i></div>
+                <div>
+                  <h4>Technology Transfer Enablement</h4>
+                  <p>Direct integration with our Innovation Marketplace to turn protected works into market solutions.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="overview-image-wrap">
+            <div class="overview-card-stack">
+              <div class="stack-card card-1"><i class="fa-solid fa-shield-halved"></i> <span>Institutional Protection</span></div>
+              <div class="stack-card card-2"><i class="fa-solid fa-file-invoice"></i> <span>Drafting Excellence</span></div>
+              <div class="stack-card card-3"><i class="fa-solid fa-certificate"></i> <span>Certified Records</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Stats Banner -->
       <div class="stats-banner">
         <div class="container">
@@ -218,43 +260,43 @@
 
 
 
-      <!-- IP Marketplace Section -->
-      <section id="marketplace-section" class="section">
+      <!-- Featured Innovation Spotlight -->
+      <section id="featured-marketplace-section" class="section">
         <div class="container">
-          <h2 class="section-title">Innovation Marketplace</h2>
-          <p class="section-subtitle">Discover and connect with Palawan State University's research and innovation outputs.</p>
-          
-          <div class="marketplace-public-filters">
-            <div class="search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="landingSearch" placeholder="Search innovations..." oninput="filterLandingMarketplace()" />
+          <div class="section-header-inline">
+            <div>
+              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">Featured Innovations</h2>
+              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Highlighting top-tier research and inventions from PSU researchers.</p>
             </div>
-            <div class="filter-controls">
-              <select id="landingFilterType" onchange="filterLandingMarketplace()">
-                <option value="All">All Types</option>
-                <option>Patent</option>
-                <option>Utility Model</option>
-                <option>Industrial Design</option>
-                <option>Trademark</option>
-                <option>Copyright</option>
-              </select>
-              <select id="landingFilterCollege" onchange="filterLandingMarketplace()">
-                <option value="All">All Colleges</option>
-                <option>College of Engineering</option>
-                <option>College of Sciences</option>
-                <option>College of Agriculture</option>
-                <option>College of Arts</option>
-              </select>
-            </div>
+            <button class="btn btn-outline" onclick="navigateTo('marketplace')">Browse Full Marketplace <i class="fa-solid fa-arrow-right"></i></button>
           </div>
           
-          <div class="innovation-grid" id="landingInnovationGrid">
+          <div class="innovation-grid" id="featuredInnovationGrid" style="margin-top: 40px;">
             <!-- Populated by JS -->
           </div>
         </div>
       </section>
 
 
+
+      <!-- News & Announcements Section -->
+      <section id="announcements-landing-section" class="section bg-light">
+        <div class="container">
+          <div class="section-header-inline">
+            <div>
+              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">News & Announcements</h2>
+              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Stay updated with the latest institutional IP activities, events, and important alerts.</p>
+            </div>
+            <div class="header-actions">
+              <span class="pulse-indicator"></span>
+              <span style="font-size: 0.85rem; font-weight: 600; color: var(--gold-dark);">Live Updates</span>
+            </div>
+          </div>
+          <div class="announcement-grid" id="announcementGrid" style="margin-top: 40px;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
 
       <!-- Footer -->
       <footer class="landing-footer">
@@ -354,6 +396,79 @@
         </div>
       </section>
 
+    <!-- FAQ PAGE -->
+    <section id="page-faq" class="page container py-lg">
+      <div id="faqPublicContent"></div>
+    </section>
+
+    <!-- MARKETPLACE PAGE -->
+    <section id="page-marketplace" class="page">
+      <div class="marketplace-header-bg">
+        <div class="container">
+          <div class="marketplace-hero">
+            <span class="m-eyebrow">Institutional Repository</span>
+            <h1>Innovation Marketplace</h1>
+            <p>Direct access to Palawan State University's portfolio of patents, research outputs, and commercializable technology.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="container marketplace-container">
+        <aside class="marketplace-sidebar">
+          <div class="filter-group">
+            <label>Search Innovations</label>
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="marketSearch" placeholder="Keywords, titles..." oninput="filterFullMarketplace()" />
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label>IP Category</label>
+            <div class="filter-chips" id="typeFilters">
+              <button class="filter-chip active" data-type="All" onclick="setMarketType('All', this)">All</button>
+              <button class="filter-chip" data-type="Patent" onclick="setMarketType('Patent', this)">Patent</button>
+              <button class="filter-chip" data-type="Utility Model" onclick="setMarketType('Utility Model', this)">Utility Model</button>
+              <button class="filter-chip" data-type="Copyright" onclick="setMarketType('Copyright', this)">Copyright</button>
+              <button class="filter-chip" data-type="Trademark" onclick="setMarketType('Trademark', this)">Trademark</button>
+              <button class="filter-chip" data-type="Industrial Design" onclick="setMarketType('Industrial Design', this)">Industrial Design</button>
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label>Originating College</label>
+            <select id="marketCollege" onchange="filterFullMarketplace()">
+              <option value="All">All Colleges</option>
+              <option>College of Engineering</option>
+              <option>College of Sciences</option>
+              <option>College of Agriculture</option>
+              <option>College of Arts</option>
+            </select>
+          </div>
+
+          <div class="sidebar-info-card">
+            <i class="fa-solid fa-circle-info"></i>
+            <p>Interested in a specific technology? Sign in to express interest and connect with the inventors.</p>
+          </div>
+        </aside>
+
+        <main class="marketplace-main">
+          <div class="marketplace-results-header">
+            <div class="results-info">
+              <span id="marketResultsCount">Showing all innovations</span>
+            </div>
+            <div class="market-view-options">
+              <button class="btn-icon view-btn active" id="view-grid-btn" title="Grid View" onclick="setMarketView('grid')"><i class="fa-solid fa-grip"></i></button>
+              <button class="btn-icon view-btn" id="view-list-btn" title="List View" onclick="setMarketView('list')"><i class="fa-solid fa-list"></i></button>
+            </div>
+          </div>
+          <div class="innovation-grid" id="marketInnovationGrid">
+            <!-- Populated by JS -->
+          </div>
+        </main>
+      </div>
+    </section>
+
     <!-- ====== MODALS ====== -->
     <!-- Express Interest Modal -->
     <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
@@ -378,6 +493,6 @@
 
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
