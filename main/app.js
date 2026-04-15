@@ -25,14 +25,18 @@ const ROLE_ALIASES = {
   reviewer: "reviewer",
   specialist: "reviewer",
   Reviewer: "reviewer",
-  client: "client",
-  Client: "client",
-  user: "client",
-  User: "client",
+  applicant: "applicant",
+  inventor: "applicant",
+  author: "applicant",
+  creator: "applicant",
+  client: "applicant",
+  Client: "applicant",
+  user: "applicant",
+  User: "applicant",
 };
 
 function normalizeRole(role) {
-  return ROLE_ALIASES[role] || "client";
+  return ROLE_ALIASES[role] || "applicant";
 }
 const mockNotifications = [
   {
@@ -838,7 +842,7 @@ let systemUsers = [
     id: 9,
     name: "Juan dela Cruz",
     email: "juan.delacruz@psu.edu.ph",
-    role: "client",
+    role: "applicant",
     dept: "College of Sciences",
     status: "Active",
     dateCreated: "2025-12-01",
@@ -847,7 +851,7 @@ let systemUsers = [
     id: 8,
     name: "Maria Santos",
     email: "maria.santos@psu.edu.ph",
-    role: "client",
+    role: "applicant",
     dept: "College of Engineering",
     status: "Active",
     dateCreated: "2025-11-20",
@@ -856,7 +860,7 @@ let systemUsers = [
     id: 10,
     name: "Anna Reyes",
     email: "anna.reyes@psu.edu.ph",
-    role: "client",
+    role: "applicant",
     dept: "Research Office",
     status: "Active",
     dateCreated: "2025-12-05",
@@ -950,7 +954,7 @@ const ROLE_META = {
   superadmin: { label: "Super Admin", dashboard: "admin-dashboard" },
   admin: { label: "Admin", dashboard: "admin-dashboard" },
   reviewer: { label: "Reviewer", dashboard: "admin-dashboard" },
-  client: { label: "Client", dashboard: "user-dashboard" },
+  applicant: { label: "Applicant", dashboard: "user-dashboard" },
 };
 
 const DASHBOARD_ACCESS = {
@@ -978,7 +982,7 @@ const DASHBOARD_ACCESS = {
     "user-profile",
     "project-blueprint",
   ],
-  client: [
+  applicant: [
     "user-dashboard",
     "user-submissions",
     "submission-detail",
@@ -1121,7 +1125,7 @@ systemUsers = systemUsers.map((user) => ({
 }));
 
 function getRoleMeta(role = currentRole) {
-  return ROLE_META[normalizeRole(role)] || ROLE_META.client;
+  return ROLE_META[normalizeRole(role)] || ROLE_META.applicant;
 }
 
 function getCurrentUser(role = currentRole) {
@@ -1182,7 +1186,7 @@ function canArchiveSubmission(role = currentRole) {
 
 function canUploadDocuments(submission, role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === "client") return isOwnSubmission(submission, role);
+  if (normalizedRole === "applicant") return isOwnSubmission(submission, role);
   return canEditSubmission(submission, role);
 }
 
@@ -1221,8 +1225,8 @@ function canManageTargetUser(user, role = currentRole) {
 function getManageableRoleOptions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === "superadmin")
-    return ["superadmin", "admin", "reviewer", "client"];
-  if (normalizedRole === "admin") return ["reviewer", "client"];
+    return ["superadmin", "admin", "reviewer", "applicant"];
+  if (normalizedRole === "admin") return ["reviewer", "applicant"];
   return [];
 }
 
@@ -2344,8 +2348,8 @@ function renderUserDashboard() {
 
   return `
     <div class="page-header">
-      <h1>My Dashboard</h1>
-      <p>Welcome back, <strong>${user.name}</strong>. This workspace follows the proposal's applicant flow: guided intake, receipt verification, and protected tracking.</p>
+      <h1>Applicant Portal</h1>
+      <p>Welcome back, <strong>${user.name}</strong>. Manage your intellectual property assets and track active applications.</p>
     </div>
 
     <div class="stats-cards">
@@ -3274,14 +3278,8 @@ function refreshAdminTable() {
   }
 }
 
-function filterUserTable(type, btn) {
+function filterUserTable(type) {
   userFilterType = type;
-  if (btn) {
-    btn.parentElement
-      .querySelectorAll(".filter-btn")
-      .forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-  }
   refreshUserTable();
 }
 function filterUserStatus(status) {
@@ -3370,7 +3368,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     key: "author-submission",
     step: 1,
     title: "Author submits application to Technical Expert",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Author / Applicant",
     description:
       "Properly filled out application for Copyright, ISSN, ISBN, or ISMN together with other requirements of the National Library; and letter-request approved by the University President through the Quality Assurance Director for the registration of the intellectual property material and payment of basic fees to the National Library in the case of faculty or staff whose work is part of his/her regular official duties. (Other clients must pay basic fees and cost of courier).",
@@ -3398,7 +3396,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     key: "payment-slip-issued",
     step: 4,
     title: "Author receives payment slip and pays basic fees to cashier",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Author / Applicant",
     description:
       "The applicant receives the payment slip and pays the basic fees to the university cashier.",
@@ -3418,7 +3416,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     step: 6,
     title:
       "Author receives official receipt from cashier and submit photocopy to Admin Staff/MIS",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Author / Applicant",
     description:
       "The applicant submits the photocopied official receipt to Admin Staff/MIS after cashier payment.",
@@ -3455,7 +3453,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     key: "certificate-released",
     step: 10,
     title: "Author receives Certificate of Registration from Admin Staff",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Author / Applicant",
     description:
       "The author receives the Certificate of Registration from Admin Staff, completing the registration process.",
@@ -3485,7 +3483,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: "inventor-submission",
     step: 1,
     title: "Inventor submits application to Technical Expert",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Inventor / Applicant",
     description:
       "Submit a properly filled-out application for Patent, UM, ID, or Trademark together with other requirements of the IPOPHL, and a letter-request approved by the University President through the VP for R&D (if applicable).",
@@ -3512,7 +3510,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: "payment-slip-issued",
     step: 4,
     title: "Inventor receives payment slip and pays basic fees",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Inventor / Applicant",
     description:
       "The inventor receives the payment slip and pays the basic fees to the university cashier.",
@@ -3530,7 +3528,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: "receipt-submitted",
     step: 6,
     title: "Inventor submits official receipt copy to Admin Staff/MIS",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Inventor / Applicant",
     description:
       "The inventor receives the official receipt from the cashier and submits a photocopy to Admin Staff/MIS.",
@@ -3566,7 +3564,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: "certificate-released",
     step: 10,
     title: "Inventor receives Certificate of Registration",
-    owner: "Client",
+    owner: "Applicant",
     lane: "Inventor / Applicant",
     description:
       "The inventor receives the Certificate of Registration from Admin Staff, completing the IP registration process.",
@@ -4900,13 +4898,15 @@ function renderUserSubmissions() {
           <option value="Awaiting Documents">Awaiting Docs</option>
         </select>
       </div>
-      <div class="filter-tabs" style="display:flex; gap:8px;">
-        <button class="filter-btn active" onclick="filterUserTable('All', this)">All</button>
-        <button class="filter-btn" onclick="filterUserTable('Patent', this)">Patent</button>
-        <button class="filter-btn" onclick="filterUserTable('Trademark', this)">TM</button>
-        <button class="filter-btn" onclick="filterUserTable('Copyright', this)">CR</button>
-        <button class="filter-btn" onclick="filterUserTable('Utility Model', this)">UM</button>
-        <button class="filter-btn" onclick="filterUserTable('Industrial Design', this)">ID</button>
+      <div class="filter-dropdown-group" style="display:flex; gap:8px;">
+        <select class="filter-select" id="userTypeSelect" onchange="filterUserTable(this.value)" style="width:160px;">
+          <option value="All" ${userFilterType === "All" ? "selected" : ""}>All Cases</option>
+          <option value="Patent" ${userFilterType === "Patent" ? "selected" : ""}>Patent</option>
+          <option value="Trademark" ${userFilterType === "Trademark" ? "selected" : ""}>Trademark</option>
+          <option value="Copyright" ${userFilterType === "Copyright" ? "selected" : ""}>Copyright</option>
+          <option value="Utility Model" ${userFilterType === "Utility Model" ? "selected" : ""}>Utility Model</option>
+          <option value="Industrial Design" ${userFilterType === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
+        </select>
       </div>
     </div>
 
@@ -4918,7 +4918,7 @@ function renderUserSubmissions() {
 
 function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
   try {
-    let filtered = [...getVisibleSubmissions("client")];
+    let filtered = [...getVisibleSubmissions("applicant")];
 
     const ft = filterType || userFilterType;
     const fs = filterStatus || userFilterStatus;
@@ -5116,17 +5116,17 @@ function legacyRenderAdminUsers() {
       superadmin: "badge-rejected",
       admin: "badge-review",
       specialist: "badge-pending",
-      client: "badge-approved",
+      applicant: "badge-approved",
       "Super Admin": "badge-rejected",
       Admin: "badge-review",
       Reviewer: "badge-pending",
-      Client: "badge-approved",
+      Applicant: "badge-approved",
     };
     let label = r;
     if (r === "superadmin") label = "Super Admin";
     if (r === "admin") label = "Admin";
     if (r === "specialist") label = "Specialist";
-    if (r === "client") label = "Client";
+    if (r === "applicant") label = "Applicant";
 
     let ipLabel = "";
     if (r === "specialist" || r === "Reviewer") {
@@ -5178,8 +5178,8 @@ function legacyEditUserRole(userId) {
       <select id="newRoleSelect" onchange="toggleSpecialistSettings(this.value)">
         <option value="superadmin" ${u.role === "superadmin" ? "selected" : ""}>Super Admin</option>
         <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option>
-        <option value="specialist" ${u.role === "specialist" || u.role === "Reviewer" ? "selected" : ""}>Specialist</option>
-        <option value="client" ${u.role === "client" ? "selected" : ""}>Client</option>
+        <option value="specialist" ${u.role === "specialist" || u.role === "Reviewer" ? "selected" : ""}>Reviewer</option>
+        <option value="applicant" ${u.role === "applicant" ? "selected" : ""}>Applicant</option>
       </select>
     </div>
     
@@ -5360,7 +5360,7 @@ function legacyRenderRolePermissions() {
       <th style="text-align:center;color:var(--green)">SUPER ADMIN</th>
       <th style="text-align:center;color:var(--blue)">PITBI ADMIN</th>
       <th style="text-align:center;color:var(--gold)">REVIEWER</th>
-      <th style="text-align:center;color:var(--gold-dark)">CLIENT</th>
+      <th style="text-align:center;color:var(--gold-dark)">APPLICANT</th>
     </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
@@ -5391,7 +5391,7 @@ function legacyRenderCreateAccount() {
         <div class="form-group" id="dept-group"><label>Department *</label>
           <select id="newUserDept"><option value="">Select Department</option><option>IT Office</option><option>IP Office</option><option>Research Office</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option></select></div>
         <div class="form-group" id="role-group"><label>Assign Role *</label>
-          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option>Super Admin</option><option>PITBI Admin</option><option>Reviewer</option><option>Client</option></select></div>
+          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option>Super Admin</option><option>PITBI Admin</option><option>Reviewer</option><option>Applicant</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Temporary Password *</label><input type="password" id="newUserPass" placeholder="Min 8 characters" /></div>
@@ -5458,7 +5458,7 @@ function renderAdminUsers() {
     superadmin: "badge-rejected",
     admin: "badge-review",
     reviewer: "badge-pending",
-    client: "badge-approved",
+    applicant: "badge-approved",
   };
   return `<div class="page-header"><h1>User Management</h1><p>Manage registered system users according to the RBAC matrix.</p></div>
     ${canManageUsers() ? `<button class="btn btn-primary" style="margin-bottom:20px" onclick="navigateTo('create-account')"><i class="fa-solid fa-user-plus"></i> Create Account</button>` : ""}
@@ -5755,7 +5755,7 @@ function renderRolePermissions() {
       <th style="text-align:center;color:var(--green)">SUPER ADMIN</th>
       <th style="text-align:center;color:var(--blue)">PITBI ADMIN</th>
       <th style="text-align:center;color:var(--gold)">REVIEWER</th>
-      <th style="text-align:center;color:var(--gold-dark)">CLIENT</th>
+      <th style="text-align:center;color:var(--gold-dark)">APPLICANT</th>
     </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
