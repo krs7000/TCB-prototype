@@ -7,7 +7,7 @@
 let currentPage = "landing";
 let currentRole = "client";
 // Supported RBAC roles: 'superadmin', 'admin', 'reviewer', 'client'
-let isLoggedIn = true;
+let isLoggedIn = false;
 let sidebarCollapsed = false;
 let selectedLoginRole = "client";
 let currentWizardStep = 1;
@@ -15,6 +15,7 @@ let currentFormType = "";
 let selectedSubmissionId = null;
 let wizardData = {};
 let notifOpen = false;
+let pendingSignupData = null; // Holds signup data during OTP verification
 const ROLE_ALIASES = {
   superadmin: "superadmin",
   "Admin": "superadmin",
@@ -238,7 +239,28 @@ let submissions = [
     date: "2026-03-25",
     description:
       "A foldable hand tractor designed for easier transport in small-scale Palawan farms.",
-    field: "Agri-Machinery",
+
+    contact: "09261234567",
+    status: "Approved",
+    date: "2026-03-30",
+    description:
+      "A modular furniture system inspired by tectonic formations and traditional Palawan weaving patterns.",
+    field: "Product Design",
+  },
+  {
+    id: "EXT-PAT-2026-011",
+    type: "Patent",
+    title: "Zero-Emission Seaweed Processor",
+    applicant: "Dr. Elena Vance",
+    department: "External Research Partner",
+    email: "elena.vance@globalresearch.org",
+    contact: "09995551234",
+    status: "Under Review",
+    date: "2026-04-05",
+    description:
+      "A specialized mechanical processor for extracting agar from seaweed with zero waste discharge, developed in collaboration with PSU marine labs.",
+    field: "Marine Tech",
+    dateConceived: "2026-01-12",
   },
   {
     id: "PSU-ID-2026-010",
@@ -812,6 +834,15 @@ const marketplaceItems = [
 
 let systemUsers = [
   {
+    id: 0,
+    name: "Dr. Elena Vance",
+    email: "elena.vance@globalresearch.org",
+    role: "applicant",
+    dept: "External Partner",
+    status: "Active",
+    dateCreated: "2026-04-05",
+  },
+  {
     id: 1,
     name: "Engr. Super User",
     email: "superadmin@psu.edu.ph",
@@ -995,6 +1026,8 @@ const DASHBOARD_ACCESS = {
     "faq-dash",
     "ip-tutorial",
     "project-blueprint",
+    "marketplace-dash",
+    "filing-hub",
   ],
 };
 
@@ -1285,7 +1318,7 @@ const proposalBlueprint = {
       icon: "fa-list-check",
       title: "Requirement Intelligence",
       description:
-        "Guided checklists classify the exact documents and legal artifacts needed for each IP service before intake begins.",
+        "Guided checklists classify the exact documents and legal artifacts needed for each service before intake begins.",
     },
     {
       icon: "fa-table-columns",
@@ -1308,7 +1341,7 @@ const proposalBlueprint = {
   ],
   workflow: [
     {
-      title: "Choose the right IP service",
+      title: "Choose the right service",
       description:
         "The applicant starts with the correct filing path and reviews the exact category-specific requirements.",
     },
@@ -1403,7 +1436,7 @@ const proposalBlueprint = {
     },
   ],
   scope: [
-    "Centralized access to IP services, forms, records, and filing procedures through a web-based platform.",
+    "Centralized access to services, forms, records, and filing procedures through a web-based platform.",
     "Secure document storage, submission tracking, and searchable university innovation listings.",
     "User authentication and role-based access controls designed to protect sensitive institutional information.",
   ],
@@ -1495,7 +1528,6 @@ window.goBack = function () {
 
 function navigateTo(page, isBack = false) {
   const landingSections = {
-    services: "ip-services-section",
     about: "project-overview-section",
     news: "announcements-landing-section",
   };
@@ -1558,7 +1590,14 @@ function navigateTo(page, isBack = false) {
     "ip-tutorial",
     "project-blueprint",
     "admin-announcements",
+    "filing-hub",
+    "notifications",
   ];
+
+  if (page === "notifications") {
+    toggleNotifications();
+    return;
+  }
 
   if (page === "landing") {
     document.getElementById("public-nav").classList.add("active");
@@ -1567,16 +1606,27 @@ function navigateTo(page, isBack = false) {
     renderLandingAnnouncements();
     initLandingProposalSections();
     animateStats();
-  } else if (page === "marketplace") {
-    document.getElementById("public-nav").classList.add("active");
-    document.getElementById("page-marketplace").classList.add("active");
-    initFullMarketplace();
   } else if (page === "faq") {
     document.getElementById("public-nav").classList.add("active");
     document.getElementById("page-faq").classList.add("active");
     document.getElementById("faqPublicContent").innerHTML = renderFaq();
+  } else if (page === "guidelines") {
+    document.getElementById("public-nav").classList.add("active");
+    document.getElementById("page-guidelines").classList.add("active");
+    document.getElementById("guidelinesPublicContent").innerHTML = renderIpTutorial();
+  } else if (page === "contact") {
+    document.getElementById("public-nav").classList.add("active");
+    document.getElementById("page-contact").classList.add("active");
+    document.getElementById("contactPublicContent").innerHTML = renderContactUs();
+  } else if (page === "forms") {
+    document.getElementById("public-nav").classList.add("active");
+    document.getElementById("page-forms").classList.add("active");
+    document.getElementById("formsPublicContent").innerHTML = renderForms();
   } else if (page === "login") {
     document.getElementById("page-login").classList.add("active");
+  } else if (page === "signup") {
+    initSignupWizard();
+    document.getElementById("page-signup").classList.add("active");
   } else if (dashboardPages.includes(page)) {
     if (!isLoggedIn) {
       navigateTo("login");
@@ -1596,6 +1646,8 @@ function navigateTo(page, isBack = false) {
     renderDashboardContent(page);
     updateTopbarRole();
     updateActiveSidebarLink(page);
+    // NEW: Sync the Shopee-style bottom nav active state
+    if (typeof updateBottomNavItemActive === 'function') updateBottomNavItemActive(page);
   }
 
   // Close mobile menu
@@ -1609,6 +1661,18 @@ function navigateTo(page, isBack = false) {
   if (pubBack) pubBack.style.display = showBack ? "block" : "none";
   if (dashBack) dashBack.style.display = showBack ? "block" : "none";
   if (page === "landing") navHistory = []; // Reset history
+}
+
+function updateBottomNavItemActive(page) {
+  const items = document.querySelectorAll(".bottom-nav-item");
+  items.forEach((item) => {
+    const onc = item.getAttribute("onclick");
+    if (onc && onc.includes(`'${page}'`)) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
 }
 
 function initFeaturedMarketplace() {
@@ -1974,6 +2038,162 @@ function selectLoginRole(role) {
   if (topSelect) topSelect.value = selectedLoginRole;
 }
 
+window.initSignupWizard = function() {
+  const step1 = document.getElementById('signup-step-1');
+  const step2 = document.getElementById('signup-step-2');
+  const title = document.getElementById('signup-title');
+  const subtitle = document.getElementById('signup-subtitle');
+  
+  if (step1) step1.style.display = 'block';
+  if (step2) step2.style.display = 'none';
+  if (title) title.innerText = 'Create Account';
+  if (subtitle) subtitle.innerText = "Join The Creator's Bulwark Community";
+  
+  document.getElementById('signupForm')?.reset();
+  document.getElementById('regEmailHint').innerHTML = '';
+  document.getElementById('regEmailError').innerText = '';
+};
+
+window.selectSignUpRole = function(role) {
+  const step1 = document.getElementById('signup-step-1');
+  const step2 = document.getElementById('signup-step-2');
+  const title = document.getElementById('signup-title');
+  const subtitle = document.getElementById('signup-subtitle');
+  const regTypeInput = document.getElementById('regType');
+  
+  if (regTypeInput) regTypeInput.value = role;
+  
+  // Update Header for Step 2
+  const roleNames = {
+    'psu_member': 'PSU Community',
+    'outsider': 'External User'
+  };
+  
+  if (title) title.innerText = `Sign up as ${roleNames[role]}`;
+  if (subtitle) subtitle.innerText = 'Please provide your account details below.';
+  
+  // Transition
+  if (step1) step1.style.display = 'none';
+  if (step2) step2.style.display = 'block';
+  
+  updateRegEmailHint();
+};
+
+window.goBackToStep1 = function() {
+  initSignupWizard();
+};
+
+window.updateRegEmailHint = function() {
+  const type = document.getElementById('regType').value;
+  const emailInput = document.getElementById('regEmail');
+  const hintEl = document.getElementById('regEmailHint');
+  
+  if (type === 'psu_member') {
+    emailInput.placeholder = 'your.name@psu.palawan.edu.ph';
+    hintEl.innerHTML = '<i class="fa-solid fa-building-columns"></i> PSU Students/Faculty must use their <strong>@psu.palawan.edu.ph</strong> corporate email.';
+    hintEl.style.color = 'var(--blue)';
+  } else if (type === 'outsider') {
+    emailInput.placeholder = 'your.email@example.com';
+    hintEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> You can use any valid personal or professional email.';
+    hintEl.style.color = 'var(--gray-500)';
+  }
+};
+
+window.handleSignUp = function(e) {
+  e.preventDefault();
+  const username = document.getElementById('regUsername').value;
+  const type = document.getElementById('regType').value;
+  const email = document.getElementById('regEmail').value.toLowerCase();
+  const pass = document.getElementById('regPassword').value;
+  const passConfirm = document.getElementById('regPasswordConfirm').value;
+  const emailError = document.getElementById('regEmailError');
+  const passError = document.getElementById('regPasswordError');
+  
+  if (emailError) emailError.innerText = '';
+  if (passError) passError.innerText = '';
+  
+  // Validation: PSU Email
+  if (type === 'psu_member') {
+    if (!email.endsWith('@psu.palawan.edu.ph')) {
+      if (emailError) emailError.innerText = 'PSU Institutional members must use a @psu.palawan.edu.ph email address.';
+      return;
+    }
+  }
+  
+  // Validation: Passwords Match
+  if (pass !== passConfirm) {
+    if (passError) passError.innerText = 'Passwords do not match. Please re-enter.';
+    return;
+  }
+  
+  // Store data for later
+  pendingSignupData = {
+    username: username,
+    email: email,
+    password: pass,
+    type: type
+  };
+  
+  // Prepare and switch to Step 3
+  document.getElementById('displayRegEmail').innerText = email;
+  document.getElementById('signup-step-2').style.display = 'none';
+  document.getElementById('signup-step-3').style.display = 'block';
+  showToast("Verification code sent to your email!");
+};
+
+window.verifySignupOtp = function() {
+  const boxes = document.querySelectorAll("#signup-step-3 .otp-box");
+  const code = Array.from(boxes).map(b => b.value).join("");
+  
+  if (code.length < 6) {
+    showToast("Please enter the full 6-digit verification code.", "warning");
+    return;
+  }
+  
+  // In a real app, we'd verify the 'code' here.
+  // For the prototype, any 6-digit code works.
+  
+  const newUser = {
+    id: systemUsers.length + 1,
+    name: pendingSignupData.username, // Using username as name for simplicity in this prototype
+    username: pendingSignupData.username,
+    email: pendingSignupData.email,
+    role: 'applicant',
+    dept: pendingSignupData.type === 'psu_member' ? 'PSU Community' : 'External',
+    status: 'Active',
+    dateCreated: new Date().toISOString().split('T')[0]
+  };
+  
+  systemUsers.push(newUser);
+  
+  // AUTOMATIC LOGIN
+  isLoggedIn = true;
+  currentRole = 'applicant'; // Standard applicant role
+  updateTopbarRole();
+  
+  showToast(`Account verified! Welcome, ${pendingSignupData.username}. Logging you in...`);
+  
+  // Reset and navigate to Dashboard
+  pendingSignupData = null;
+  navigateTo(getDefaultDashboardPage(currentRole));
+};
+
+window.signupOtpAutoFocus = function(el) {
+  if (el.value.length === 1 && el.nextElementSibling) {
+    el.nextElementSibling.focus();
+  }
+};
+
+window.signupOtpBackspace = function(e, el) {
+  if (e.key === "Backspace" && el.value === "" && el.previousElementSibling) {
+    el.previousElementSibling.focus();
+  }
+};
+
+window.resendSignupOtp = function() {
+  showToast("A new verification code has been sent to your email.");
+};
+
 function handleLogin(e) {
   e.preventDefault();
   const email = document.getElementById("loginEmail").value;
@@ -2070,6 +2290,15 @@ function logout() {
   selectedLoginRole = "client";
   navigateTo("landing");
   showToast("Logged out successfully");
+}
+
+function handleMarketplaceAccess() {
+  if (isLoggedIn) {
+    navigateTo('marketplace-dash');
+  } else {
+    showToast("Please login or sign up first to access the full marketplace.", "warning");
+    navigateTo('login');
+  }
 }
 
 function showError(id, msg) {
@@ -2169,43 +2398,103 @@ function renderSidebar() {
       },
       { page: "user-profile", icon: "fa-user", text: "Profile" },
     ],
-    client: [
-      { page: "user-dashboard", icon: "fa-chart-line", text: "My Dashboard" },
+    applicant: [
+      { page: "user-dashboard", icon: "fa-house", text: "Home" },
+      { page: "filing-hub", icon: "fa-plus-circle", text: "Start Submission" },
       { page: "user-submissions", icon: "fa-file-lines", text: "My Cases" },
-      { page: "patent-form", icon: "fa-lightbulb", text: "File Patent" },
-      { page: "trademark-form", icon: "fa-stamp", text: "File Trademark" },
-      { page: "copyright-form", icon: "fa-copyright", text: "File Copyright" },
-      { page: "utility-form", icon: "fa-gears", text: "File Utility Model" },
-      {
-        page: "industrial-form",
-        icon: "fa-pen-nib",
-        text: "File Industrial Design",
-      },
+      { page: "marketplace-dash", icon: "fa-shop", text: "Marketplace" },
       { page: "ip-tutorial", icon: "fa-book-open", text: "IP Tutorial" },
       { page: "faq-dash", icon: "fa-circle-question", text: "FAQ" },
+      { page: "notifications", icon: "fa-bell", text: "Notification" },
+      { page: "user-profile", icon: "fa-user", text: "Profile" },
     ],
   };
 
-  const menu = menuMap[normalizeRole(currentRole)] || menuMap.client;
-  nav.innerHTML = menu
-    .map(
-      (m) => `
-    <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}">
-      <i class="fa-solid ${m.icon}"></i>
-      <span class="nav-text">${m.text}</span>
-    </a>
-  `,
-    )
-    .join("");
+  const menu = menuMap[normalizeRole(currentRole)] || menuMap.applicant;
+  const isApplicant = normalizeRole(currentRole) === "client" || normalizeRole(currentRole) === "applicant";
 
-  // Ensure sidebar visibility for all roles
+  if (isApplicant) {
+    // Compact Vertical Template
+    nav.innerHTML = menu
+      .map(
+        (m) => `
+      <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="nav-item-compact">
+        <div class="nav-icon-wrapper"><i class="fa-solid ${m.icon}"></i></div>
+        <span class="nav-text-compact">${m.text === "Dashboard" ? "Home" : m.text}</span>
+      </a>
+    `,
+      )
+      .join("");
+  } else {
+    // Standard Horizontal Template
+    nav.innerHTML = menu
+      .map(
+        (m) => `
+      <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}">
+        <i class="fa-solid ${m.icon}"></i>
+        <span class="nav-text">${m.text}</span>
+      </a>
+    `,
+      )
+      .join("");
+  }
+
   const sidebar = document.getElementById("sidebar");
   const mainContent = document.getElementById("main-content");
   const sidebarToggle = document.querySelector(".sidebar-toggle");
+  const bottomNav = document.getElementById("bottom-nav");
 
-  if (sidebar) sidebar.style.display = "";
-  if (mainContent) mainContent.style.marginLeft = "";
-  if (sidebarToggle) sidebarToggle.style.display = "";
+  if (isApplicant) {
+    document.body.classList.add("compact-layout");
+    if (sidebar) {
+      sidebar.style.display = "flex";
+      sidebar.classList.add("compact");
+      
+      // Ensure we have a compact footer if it doesn't exist
+      // No longer need footer button as it's in the main list
+    }
+    if (mainContent) mainContent.style.marginLeft = "90px";
+    if (sidebarToggle) sidebarToggle.style.display = "none";
+    if (bottomNav) bottomNav.style.display = "none"; // Hide bottom nav in favor of compact sidebar
+  } else {
+    if (sidebar) {
+      sidebar.style.display = "";
+      sidebar.classList.remove("compact");
+      const footer = sidebar.querySelector(".sidebar-footer-compact");
+      if (footer) footer.remove();
+    }
+    document.body.classList.remove("compact-layout");
+    if (mainContent) mainContent.style.marginLeft = "";
+    if (sidebarToggle) sidebarToggle.style.display = "";
+    if (bottomNav) bottomNav.style.display = "none";
+  }
+}
+
+function renderFilingHub() {
+  const options = [
+    { id: 'patent-form', title: 'Patent', icon: 'fa-lightbulb', desc: 'Inventions and technical solutions' },
+    { id: 'trademark-form', title: 'Trademark', icon: 'fa-stamp', desc: 'Brand names, logos, and marks' },
+    { id: 'copyright-form', title: 'Copyright', icon: 'fa-copyright', desc: 'Creative and literary works' },
+    { id: 'utility-form', title: 'Utility Model', icon: 'fa-gears', desc: 'Practical improvements' },
+    { id: 'industrial-form', title: 'Industrial Design', icon: 'fa-pen-nib', desc: 'Aesthetic designs' }
+  ];
+
+  return `
+    <div class="page-header">
+      <h1>New IP Submission</h1>
+      <p>Select the protective lane that best suits your creation to begin the pre-filing process.</p>
+    </div>
+
+    <div class="filing-hub-grid">
+      ${options.map(opt => `
+        <div class="filing-card" onclick="navigateTo('${opt.id}')">
+          <div class="filing-card-icon"><i class="fa-solid ${opt.icon}"></i></div>
+          <h3 style="color:var(--navy); font-weight:800; margin-bottom:8px;">${opt.title}</h3>
+          <p style="color:var(--gray-500); font-size:0.9rem;">${opt.desc}</p>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 function updateActiveSidebarLink(page) {
@@ -2220,6 +2509,9 @@ function renderDashboardContent(page) {
   switch (page) {
     case "user-dashboard":
       mc.innerHTML = renderUserDashboard();
+      break;
+    case "filing-hub":
+      mc.innerHTML = renderFilingHub();
       break;
     case "admin-dashboard":
       mc.innerHTML = renderAdminDashboard();
@@ -3284,7 +3576,19 @@ function filterUserTable(type) {
 }
 function filterUserStatus(status) {
   userFilterStatus = status;
-  refreshUserTable();
+  // Re-render the whole page to update tab active states and counts
+  const mc = document.getElementById("main-content");
+  if (mc) {
+    mc.innerHTML = renderUserSubmissions();
+    // After re-rendering, focus search input if it was active
+    if (userSearchQuery) {
+      const si = document.getElementById("userSearchInput");
+      if (si) {
+        si.value = userSearchQuery;
+        si.focus();
+      }
+    }
+  }
 }
 function filterUserSearch(q) {
   userSearchQuery = q;
@@ -4870,6 +5174,22 @@ function getPreciseSubmissionSteps(s) {
   });
 }
 
+function getStatusCounts() {
+  const visible = getVisibleSubmissions("applicant");
+  const counts = {
+    All: visible.length,
+    Pending: 0,
+    "Under Review": 0,
+    Approved: 0,
+    Rejected: 0,
+    "Awaiting Documents": 0,
+  };
+  visible.forEach((s) => {
+    if (counts[s.status] !== undefined) counts[s.status]++;
+  });
+  return counts;
+}
+
 function renderUserSubmissions() {
   // Filters are now maintained globally to prevent reset on navigation
   if (typeof userFilterType === "undefined") {
@@ -4877,30 +5197,50 @@ function renderUserSubmissions() {
     userFilterStatus = "All";
     userSearchQuery = "";
   }
+
+  const counts = getStatusCounts();
+  const statuses = [
+    { id: "All", label: "All" },
+    { id: "Pending", label: "Pending" },
+    { id: "Under Review", label: "Reviewing" },
+    { id: "Approved", label: "Approved" },
+    { id: "Rejected", label: "Rejected" },
+    { id: "Awaiting Documents", label: "Action Needed" },
+  ];
+
   return `
     <div class="page-header">
       <h1>My IP Applications</h1>
       <p>Track the real-time status and operational precision of your submissions.</p>
+    </div>
+
+    <!-- Shopee-style Status Tabs -->
+    <div class="status-hub-container">
+      <div class="status-hub-bar">
+        ${statuses
+          .map(
+            (st) => `
+          <div class="status-tab ${userFilterStatus === st.id ? "active" : ""}" 
+               onclick="filterUserStatus('${st.id}')">
+            ${st.label} <span class="tab-count">${counts[st.id]}</span>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
     </div>
     
     <div class="user-controls-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:16px; flex-wrap:wrap;">
       <div style="display:flex; gap:12px; align-items:center; flex:1;">
         <div class="search-box" style="max-width:350px; width:100%;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="userSearchInput" placeholder="Search your cases..." oninput="filterUserSearch(this.value)" />
+          <input type="text" id="userSearchInput" value="${userSearchQuery || ""}" placeholder="Search your cases..." oninput="filterUserSearch(this.value)" />
         </div>
-        <select class="filter-select" id="userStatusSelect" onchange="filterUserStatus(this.value)" style="width:160px;">
-          <option value="All">All Statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="Under Review">Under Review</option>
-          <option value="Approved">Approved</option>
-          <option value="Rejected">Rejected</option>
-          <option value="Awaiting Documents">Awaiting Docs</option>
-        </select>
       </div>
-      <div class="filter-dropdown-group" style="display:flex; gap:8px;">
+      <div class="filter-dropdown-group" style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:0.85rem; font-weight:600; color:var(--gray-500);">Category:</span>
         <select class="filter-select" id="userTypeSelect" onchange="filterUserTable(this.value)" style="width:160px;">
-          <option value="All" ${userFilterType === "All" ? "selected" : ""}>All Cases</option>
+          <option value="All" ${userFilterType === "All" ? "selected" : ""}>All Types</option>
           <option value="Patent" ${userFilterType === "Patent" ? "selected" : ""}>Patent</option>
           <option value="Trademark" ${userFilterType === "Trademark" ? "selected" : ""}>Trademark</option>
           <option value="Copyright" ${userFilterType === "Copyright" ? "selected" : ""}>Copyright</option>
@@ -5621,6 +5961,71 @@ function createNewAccount() {
   navigateTo("admin-users");
 }
 
+function renderContactUs() {
+  return `
+    <div class="page-header" style="text-align:center;">
+      <h1 style="color:var(--navy); font-weight:800;">Contact Us</h1>
+      <p style="color:var(--gray-500); max-width:600px; margin:0 auto;">Have questions about IP protection or need assistance with your application? Our team is ready to guide you.</p>
+    </div>
+    
+    <div class="contact-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:40px; margin-top:50px;">
+      <div class="contact-info-card" style="background:white; padding:40px; border-radius:24px; border:1px solid var(--gray-200); box-shadow:0 15px 40px -15px rgba(0,0,0,0.08);">
+        <h3 style="color:var(--navy); margin-bottom:32px; font-weight:800; font-size:1.5rem;">Information Hub</h3>
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          <div style="display:flex; align-items:center; gap:20px;">
+            <div style="width:56px; height:56px; border-radius:14px; background:rgba(99,102,241,0.1); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0;">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div>
+              <h5 style="margin:0 0 4px 0; color:var(--navy); font-weight:700; font-size:1rem;">Campus Address</h5>
+              <p style="margin:0; color:var(--gray-500); font-size:0.9rem; line-height:1.4;">Palawan State University - IPO<br>Santa Monica, Puerto Princesa City</p>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:20px;">
+            <div style="width:56px; height:56px; border-radius:14px; background:rgba(245,158,11,0.1); color:var(--gold-dark); display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0;">
+              <i class="fa-solid fa-envelope"></i>
+            </div>
+            <div>
+              <h5 style="margin:0 0 4px 0; color:var(--navy); font-weight:700; font-size:1rem;">Email Channel</h5>
+              <p style="margin:0; color:var(--gray-500); font-size:0.9rem;">ipo@psu.palawan.edu.ph</p>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:20px;">
+            <div style="width:56px; height:56px; border-radius:14px; background:rgba(34,197,94,0.1); color:var(--green); display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0;">
+              <i class="fa-solid fa-phone"></i>
+            </div>
+            <div>
+              <h5 style="margin:0 0 4px 0; color:var(--navy); font-weight:700; font-size:1rem;">Institutional Support</h5>
+              <p style="margin:0; color:var(--gray-500); font-size:0.9rem;">+63 (048) 433 2162</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="contact-form-card" style="background:white; padding:40px; border-radius:24px; border:1px solid var(--gray-200); box-shadow:0 15px 40px -15px rgba(0,0,0,0.08);">
+        <h3 style="color:var(--navy); margin-bottom:32px; font-weight:800; font-size:1.5rem;">Direct Message</h3>
+        <form onsubmit="event.preventDefault(); showToast('Your inquiry has been logged. We will contact you via email shortly.')">
+          <div class="form-group">
+            <label style="font-weight:700; font-size:0.85rem; color:var(--navy-dark);">Sender Profile</label>
+            <input type="text" placeholder="Your full name" required style="border-radius:12px; border:1px solid var(--gray-200); padding:12px 16px;">
+          </div>
+          <div class="form-group">
+            <label style="font-weight:700; font-size:0.85rem; color:var(--navy-dark);">Connectivity Lead</label>
+            <input type="email" placeholder="your@email.com" required style="border-radius:12px; border:1px solid var(--gray-200); padding:12px 16px;">
+          </div>
+          <div class="form-group">
+            <label style="font-weight:700; font-size:0.85rem; color:var(--navy-dark);">Inquiry Details</label>
+            <textarea placeholder="Describe your technical or legal concern..." style="border-radius:12px; border:1px solid var(--gray-200); padding:12px 16px; min-height:140px; resize:vertical;" required></textarea>
+          </div>
+          <button class="btn btn-primary" style="width:100%; justify-content:center; padding:16px; border-radius:12px; font-weight:700; font-size:1rem; margin-top:8px;">
+            <i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i> Broadcast Inquiry
+          </button>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
 function renderRolePermissions() {
   const permissions = [
     {
@@ -5809,308 +6214,7 @@ function animateStats() {
   });
 }
 
-// ===== IP TUTORIAL =====
-function renderIpTutorial() {
-  const types = [
-    {
-      id: "patent",
-      icon: "fa-lightbulb",
-      color: "#3b82f6",
-      gradient: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
-      title: "Patent",
-      subtitle: "Protect inventions & technical innovations",
-      term: "20 years from filing date",
-      requirements: [
-        "Novelty — new to the world",
-        "Inventive Step — non-obvious",
-        "Industrial Applicability",
-      ],
-      process: [
-        {
-          n: 1,
-          t: "Prepare Disclosure",
-          d: "Write Invention Disclosure Statement with technical details.",
-        },
-        {
-          n: 2,
-          t: "Fill Application Form",
-          d: "Complete PSU-IPO-PAT-01 with full inventor details.",
-        },
-        {
-          n: 3,
-          t: "Prepare Drawings",
-          d: "Prepare technical drawings, diagrams, and abstract.",
-        },
-        {
-          n: 4,
-          t: "Submit & Pay",
-          d: "Upload all documents + proof-of-deposit filing fee.",
-        },
-        {
-          n: 5,
-          t: "IPOPHL Filing",
-          d: "IP Office forwards verified packet to national registry.",
-        },
-      ],
-      docs: [
-        "Patent Application Form (PSU-IPO-PAT-01)",
-        "Invention Disclosure Statement (min 2 pages)",
-        "Technical Drawings / Diagrams",
-        "Abstract (150 words max)",
-        "Claims Statement",
-        "Proof-of-Deposit / Official Receipt ⭐",
-      ],
-    },
-    {
-      id: "trademark",
-      icon: "fa-stamp",
-      color: "#f59e0b",
-      gradient: "linear-gradient(135deg,#f59e0b,#d97706)",
-      title: "Trademark",
-      subtitle: "Register brands, logos & identifiers",
-      term: "10 years (renewable)",
-      requirements: [
-        "Distinctiveness",
-        "Non-descriptive of goods/services",
-        "Non-deceptive in nature",
-      ],
-      process: [
-        {
-          n: 1,
-          t: "Define the Mark",
-          d: "Identify whether it is a word, logo, or combination mark.",
-        },
-        {
-          n: 2,
-          t: "Prepare Specimen",
-          d: "Prepare high-resolution mark file (300+ DPI).",
-        },
-        {
-          n: 3,
-          t: "Fill Application Form",
-          d: "Complete PSU-IPO-TM-01 with goods/services description.",
-        },
-        { n: 4, t: "Submit & Pay", d: "Upload mark + proof-of-deposit." },
-        {
-          n: 5,
-          t: "IPOPHL Review",
-          d: "IP Office submits to IPOPHL for official registration.",
-        },
-      ],
-      docs: [
-        "Trademark Application Form (PSU-IPO-TM-01)",
-        "Mark Specimen / Logo File (min 300 DPI)",
-        "Description of Goods/Services",
-        "Declaration of First Use",
-        "Color Claim Statement (if applicable)",
-        "Proof-of-Deposit / Official Receipt ⭐",
-      ],
-    },
-    {
-      id: "copyright",
-      icon: "fa-copyright",
-      color: "#10b981",
-      gradient: "linear-gradient(135deg,#10b981,#059669)",
-      title: "Copyright",
-      subtitle: "Safeguard creative works, software & publications",
-      term: "Lifetime + 50 years",
-      requirements: [
-        "Original work of the author",
-        "Fixed in tangible form",
-        "Creative expression (not just ideas)",
-      ],
-      process: [
-        {
-          n: 1,
-          t: "Complete the Work",
-          d: "Ensure the work is finished and in its final form.",
-        },
-        {
-          n: 2,
-          t: "Fill Registration Form",
-          d: "Complete PSU-IPO-CR-01 with author/creator details.",
-        },
-        {
-          n: 3,
-          t: "Upload Work & ID",
-          d: "Submit a complete copy of the work + digitized valid ID.",
-        },
-        {
-          n: 4,
-          t: "Submit & Pay",
-          d: "Upload proof-of-deposit for the registration fee.",
-        },
-        {
-          n: 5,
-          t: "Certificate Issuance",
-          d: "IPOPHL issues official Certificate of Registration.",
-        },
-      ],
-      docs: [
-        "Copyright Registration Form (PSU-IPO-CR-01)",
-        "Complete Copy of the Work",
-        "Valid Philippine ID (Digitized)",
-        "Declaration of Originality",
-        "Authorship Agreement (multiple authors)",
-        "Proof-of-Deposit / Official Receipt ⭐",
-      ],
-    },
-    {
-      id: "utility",
-      icon: "fa-gears",
-      color: "#6366f1",
-      gradient: "linear-gradient(135deg,#6366f1,#4338ca)",
-      title: "Utility Model",
-      subtitle: "Faster protection for technical innovations",
-      term: "7 years (no renewal)",
-      requirements: [
-        "Novelty — new to the world",
-        "Industrial Applicability",
-        "No inventive step required (easier than patent)",
-      ],
-      process: [
-        {
-          n: 1,
-          t: "Document Innovation",
-          d: "Write technical description of the model and its use.",
-        },
-        {
-          n: 2,
-          t: "Prepare Drawings",
-          d: "Create technical drawings or illustrations of the model.",
-        },
-        {
-          n: 3,
-          t: "Fill Application Form",
-          d: "Complete the Utility Model Application Form.",
-        },
-        {
-          n: 4,
-          t: "Write Claims",
-          d: "Define the specific claims and novelty statement.",
-        },
-        {
-          n: 5,
-          t: "Submit & Pay",
-          d: "Upload all documents + proof-of-deposit.",
-        },
-      ],
-      docs: [
-        "Utility Model Application Form",
-        "Technical Description",
-        "Technical Drawings / Illustrations",
-        "Claims Statement",
-        "Novelty Statement",
-        "Proof-of-Deposit / Official Receipt ⭐",
-      ],
-    },
-    {
-      id: "industrial",
-      icon: "fa-pen-nib",
-      color: "#ec4899",
-      gradient: "linear-gradient(135deg,#ec4899,#be185d)",
-      title: "Industrial Design",
-      subtitle: "Protect the aesthetic appearance of products",
-      term: "5 years (renewable up to 15 yrs)",
-      requirements: [
-        "Visual/ornamental novelty",
-        "Applied to an article/product",
-        "Not dictated solely by function",
-      ],
-      process: [
-        {
-          n: 1,
-          t: "Photograph the Design",
-          d: "Take clear photos from all angles: front, back, top, sides, perspective.",
-        },
-        {
-          n: 2,
-          t: "Write Design Statement",
-          d: "Describe the ornamental features that give the design its appearance.",
-        },
-        {
-          n: 3,
-          t: "Fill Application Form",
-          d: "Complete the Industrial Design Application Form.",
-        },
-        { n: 4, t: "Submit & Pay", d: "Upload all files + proof-of-deposit." },
-        {
-          n: 5,
-          t: "IPOPHL Registration",
-          d: "Design is examined and registered if qualifying.",
-        },
-      ],
-      docs: [
-        "Industrial Design Application Form",
-        "Design Representation Files (Photos/3D renders)",
-        "Description of Design — ornamental aspects",
-        "Product Category Statement",
-        "Proof-of-Deposit / Official Receipt ⭐",
-      ],
-    },
-  ];
 
-  return `
-    <div class="page-header" style="margin-bottom:36px">
-      <h1><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:10px"></i>IP Application Tutorial</h1>
-      <p>A step-by-step guide to all five IP types, their requirements, and filing procedures at PSU.</p>
-    </div>
-    <div style="background:linear-gradient(135deg,var(--navy),var(--navy-dark));border-radius:16px;padding:28px 32px;margin-bottom:36px;color:white;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;background:rgba(255,255,255,0.04);border-radius:50%;pointer-events:none;"></div>
-      <h2 style="font-size:1.1rem;font-weight:800;margin-bottom:10px;"><i class="fa-solid fa-shield-halved" style="color:var(--gold);margin-right:8px;"></i>Before You Begin — Important Notes</h2>
-      <ul style="color:rgba(255,255,255,0.8);font-size:0.88rem;line-height:1.8;padding-left:20px;margin:0;">
-        <li>This system is a <strong style="color:var(--gold)">pre-filing optimization engine</strong> — not a final registration site. Verified packets are forwarded to <strong style="color:white">IPOPHL</strong> by IP Office staff.</li>
-        <li>All submissions require a <strong style="color:var(--gold)">Proof-of-Deposit or Official Receipt</strong> before they are considered complete for review.</li>
-        <li>Review is performed <strong style="color:white">manually by authorized IP Office personnel</strong> — no automated or AI-driven assessment is used.</li>
-        <li>Once a submission is approved and certified, its core metadata is <strong style="color:white">frozen and cannot be altered</strong>.</li>
-      </ul>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:24px;padding-bottom:60px;">
-      ${types
-        .map(
-          (t) => `
-        <div style="background:#fff;border-radius:16px;border:1px solid var(--gray-200);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.04);">
-          <div style="background:${t.gradient};padding:22px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
-            <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:white;font-size:1.4rem;flex-shrink:0;">
-              <i class="fa-solid ${t.icon}"></i>
-            </div>
-            <div style="flex:1">
-              <h2 style="color:white;font-size:1.25rem;font-weight:800;margin:0;">${t.title}</h2>
-              <p style="color:rgba(255,255,255,0.8);font-size:0.85rem;margin:3px 0 0;">${t.subtitle}</p>
-            </div>
-            <div style="background:rgba(255,255,255,0.15);padding:6px 16px;border-radius:20px;color:white;font-size:0.8rem;font-weight:600;white-space:nowrap;">
-              <i class="fa-solid fa-clock" style="margin-right:5px;"></i>Protection: ${t.term}
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">
-            <div style="padding:24px 28px;border-right:1px solid var(--gray-100);">
-              <h4 style="font-size:0.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-list-check" style="color:${t.color};"></i>Requirements</h4>
-              <ul style="padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;">
-                ${t.requirements.map((r) => `<li style="display:flex;align-items:flex-start;gap:8px;font-size:0.875rem;color:var(--gray-700);"><i class="fa-solid fa-circle-check" style="color:${t.color};margin-top:3px;font-size:0.7rem;flex-shrink:0;"></i>${r}</li>`).join("")}
-              </ul>
-            </div>
-            <div style="padding:24px 28px;border-right:1px solid var(--gray-100);">
-              <h4 style="font-size:0.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-list-ol" style="color:${t.color};"></i>Filing Process</h4>
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                ${t.process.map((p) => `<div style="display:flex;gap:10px;"><span style="width:22px;height:22px;border-radius:50%;background:${t.color};color:white;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${p.n}</span><div><strong style="color:var(--navy);display:block;font-size:0.85rem;">${p.t}</strong><span style="color:var(--gray-500);font-size:0.8rem;">${p.d}</span></div></div>`).join("")}
-              </div>
-            </div>
-            <div style="padding:24px 28px;">
-              <h4 style="font-size:0.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-paperclip" style="color:${t.color};"></i>Required Documents</h4>
-              <ul style="padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:16px;">
-                ${t.docs.map((d) => `<li style="display:flex;align-items:flex-start;gap:8px;font-size:0.82rem;color:var(--gray-600);"><i class="fa-solid fa-file-lines" style="color:${t.color};margin-top:3px;font-size:0.65rem;flex-shrink:0;"></i>${d}</li>`).join("")}
-              </ul>
-              <button style="background:${t.gradient};color:white;border:none;padding:9px 18px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;" onclick="navigateTo('${t.id}-form')">
-                <i class="fa-solid fa-file-circle-plus"></i> Start ${t.title} Application
-              </button>
-            </div>
-          </div>
-        </div>
-      `,
-        )
-        .join("")}
-    </div>`;
-}
 
 function isCopyrightFeeWaivedRoute() {
   return (
@@ -6882,142 +6986,26 @@ function renderIpTutorial() {
       color: "#3b82f6",
       gradient: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
       title: "Patent",
-      subtitle: "Protect inventions & technical innovations",
+      subtitle: "Protect original inventions & technical breakthroughs",
       term: "20 years from filing date",
       requirements: [
-        "Novelty - new to the world",
-        "Inventive Step - non-obvious",
-        "Industrial Applicability",
+        "Global Novelty — never before disclosed",
+        "Inventive Step — non-obvious to experts",
+        "Industrial Applicability — can be manufactured",
       ],
       process: [
-        {
-          n: 1,
-          t: "Prepare Disclosure",
-          d: "Write Invention Disclosure Statement with technical details.",
-        },
-        {
-          n: 2,
-          t: "Fill Application Form",
-          d: "Complete PSU-IPO-PAT-01 with full inventor details.",
-        },
-        {
-          n: 3,
-          t: "Prepare Drawings",
-          d: "Prepare technical drawings, diagrams, and abstract.",
-        },
-        {
-          n: 4,
-          t: "Submit & Pay",
-          d: "Upload all documents + proof-of-deposit filing fee.",
-        },
-        {
-          n: 5,
-          t: "IPOPHL Filing",
-          d: "IP Office forwards verified packet to national registry.",
-        },
+        { n: 1, t: "Disclosure", d: "Document technical details and field of use." },
+        { n: 2, t: "Verification", d: "IP Office checks for novelty and completeness." },
+        { n: 3, t: "Drafting", d: "Prepare formal claims and technical drawings." },
+        { n: 4, t: "Filing", d: "Submit finalized packet + proof of payment." },
+        { n: 5, t: "Endorsement", d: "IP Office forwards to IPOPHL for registration." }
       ],
       docs: [
-        "Patent Application Form (PSU-IPO-PAT-01)",
-        "Invention Disclosure Statement (min 2 pages)",
-        "Technical Drawings / Diagrams",
-        "Abstract (150 words max)",
-        "Claims Statement",
-        "Proof-of-Deposit / Official Receipt",
-      ],
-    },
-    {
-      id: "trademark",
-      icon: "fa-stamp",
-      color: "#f59e0b",
-      gradient: "linear-gradient(135deg,#f59e0b,#d97706)",
-      title: "Trademark",
-      subtitle: "Register brands, logos & identifiers",
-      term: "10 years (renewable)",
-      requirements: [
-        "Distinctiveness",
-        "Non-descriptive of goods/services",
-        "Non-deceptive in nature",
-      ],
-      process: [
-        {
-          n: 1,
-          t: "Define the Mark",
-          d: "Identify whether it is a word, logo, or combination mark.",
-        },
-        {
-          n: 2,
-          t: "Prepare Specimen",
-          d: "Prepare high-resolution mark file (300+ DPI).",
-        },
-        {
-          n: 3,
-          t: "Fill Application Form",
-          d: "Complete PSU-IPO-TM-01 with goods/services description.",
-        },
-        { n: 4, t: "Submit & Pay", d: "Upload mark + proof-of-deposit." },
-        {
-          n: 5,
-          t: "IPOPHL Review",
-          d: "IP Office submits to IPOPHL for official registration.",
-        },
-      ],
-      docs: [
-        "Trademark Application Form (PSU-IPO-TM-01)",
-        "Mark Specimen / Logo File (min 300 DPI)",
-        "Description of Goods/Services",
-        "Declaration of First Use",
-        "Color Claim Statement (if applicable)",
-        "Proof-of-Deposit / Official Receipt",
-      ],
-    },
-    {
-      id: "copyright",
-      icon: "fa-copyright",
-      color: "#10b981",
-      gradient: "linear-gradient(135deg,#10b981,#059669)",
-      title: "Copyright",
-      subtitle: "Safeguard creative works, software, and publications",
-      term: "Lifetime + 50 years",
-      requirements: [
-        "Original work of the author",
-        "Fixed in tangible form",
-        "Creative expression (not just ideas)",
-      ],
-      process: [
-        {
-          n: 1,
-          t: "Submit to Reviewer",
-          d: "The author files the National Library packet to the reviewer for completeness checking.",
-        },
-        {
-          n: 2,
-          t: "Admin Recording",
-          d: "Complete packets are logged by Admin and assigned the cashier or fee-waived route.",
-        },
-        {
-          n: 3,
-          t: "Cashier and OR Return",
-          d: "If payment is required, the author pays the cashier and returns the official receipt copy.",
-        },
-        {
-          n: 4,
-          t: "National Library Filing",
-          d: "The super admin lane acts as the IP Director authority for endorsement and filing.",
-        },
-        {
-          n: 5,
-          t: "Certificate Release",
-          d: "Admin records the Certificate of Registration and releases it to the author.",
-        },
-      ],
-      docs: [
-        "National Library application form (Copyright / ISSN / ISBN / ISMN)",
-        "Complete Copy of the Work",
-        "Valid Philippine ID (Digitized)",
-        "Declaration of Originality",
-        "Approved letter-request for official-duty works (conditional)",
-        "Official Receipt / cashier receipt copy",
-      ],
+        "Invention Disclosure Form (PSU-IPO-PAT-01)",
+        "Technical Drawings / Schematics (PDF)",
+        "Claims & Abstract Document",
+        "Valid ID & Proof of Payment"
+      ]
     },
     {
       id: "utility",
@@ -7025,48 +7013,26 @@ function renderIpTutorial() {
       color: "#6366f1",
       gradient: "linear-gradient(135deg,#6366f1,#4338ca)",
       title: "Utility Model",
-      subtitle: "Faster protection for technical innovations",
-      term: "7 years (no renewal)",
+      subtitle: "Rapid protection for practical innovations",
+      term: "7 years (non-renewable)",
       requirements: [
-        "Novelty - new to the world",
+        "Novelty — new to the world",
         "Industrial Applicability",
-        "No inventive step required (easier than patent)",
+        "Lower 'Inventive Step' threshold than patents"
       ],
       process: [
-        {
-          n: 1,
-          t: "Document Innovation",
-          d: "Write technical description of the model and its use.",
-        },
-        {
-          n: 2,
-          t: "Prepare Drawings",
-          d: "Create technical drawings or illustrations of the model.",
-        },
-        {
-          n: 3,
-          t: "Fill Application Form",
-          d: "Complete the Utility Model Application Form.",
-        },
-        {
-          n: 4,
-          t: "Write Claims",
-          d: "Define the specific claims and novelty statement.",
-        },
-        {
-          n: 5,
-          t: "Submit & Pay",
-          d: "Upload all documents + proof-of-deposit.",
-        },
+        { n: 1, t: "Prototype", d: "Ensure the model is functional and documented." },
+        { n: 2, t: "Drawings", d: "Prepare technical illustrations of the model." },
+        { n: 3, t: "Application", d: "Fill form with specific use-case descriptions." },
+        { n: 4, t: "Review", d: "IP Office verifies the novelty of the model." },
+        { n: 5, t: "Submission", d: "Direct forwarding to IPOPHL registry." }
       ],
       docs: [
-        "Utility Model Application Form",
-        "Technical Description",
-        "Technical Drawings / Illustrations",
-        "Claims Statement",
-        "Novelty Statement",
-        "Proof-of-Deposit / Official Receipt",
-      ],
+        "UM Application Form (PSU-IPO-UM-01)",
+        "Technical Description of Utility",
+        "Functional Drawings / Photos",
+        "Proof of Deposit / Receipt"
+      ]
     },
     {
       id: "industrial",
@@ -7074,105 +7040,280 @@ function renderIpTutorial() {
       color: "#ec4899",
       gradient: "linear-gradient(135deg,#ec4899,#be185d)",
       title: "Industrial Design",
-      subtitle: "Protect the aesthetic appearance of products",
-      term: "5 years (renewable up to 15 yrs)",
+      subtitle: "Safeguard the unique visual style of products",
+      term: "5 years (renewable up to 15)",
       requirements: [
-        "Visual/ornamental novelty",
-        "Applied to an article/product",
-        "Not dictated solely by function",
+        "Ornamental Novelty — unique visual appeal",
+        "Applied to a practical article",
+        "Non-functional aesthetics only"
       ],
       process: [
-        {
-          n: 1,
-          t: "Photograph the Design",
-          d: "Take clear photos from all angles: front, back, top, sides, perspective.",
-        },
-        {
-          n: 2,
-          t: "Write Design Statement",
-          d: "Describe the ornamental features that give the design its appearance.",
-        },
-        {
-          n: 3,
-          t: "Fill Application Form",
-          d: "Complete the Industrial Design Application Form.",
-        },
-        { n: 4, t: "Submit & Pay", d: "Upload all files + proof-of-deposit." },
-        {
-          n: 5,
-          t: "IPOPHL Registration",
-          d: "Design is examined and registered if qualifying.",
-        },
+        { n: 1, t: "Photography", d: "Capture high-res photos from 7 standard angles." },
+        { n: 2, t: "Statement", d: "Describe the specific ornamental features." },
+        { n: 3, t: "Checklist", d: "Finalize high-fidelity 3D renders or images." },
+        { n: 4, t: "Submission", d: "Upload visual representations to the hub." },
+        { n: 5, t: "Registration", d: "Verified design is sent for national protection." }
       ],
       docs: [
-        "Industrial Design Application Form",
-        "Design Representation Files (Photos/3D renders)",
-        "Description of Design - ornamental aspects",
-        "Product Category Statement",
-        "Proof-of-Deposit / Official Receipt",
-      ],
+        "ID Application Form (PSU-IPO-ID-01)",
+        "7-Angle Representation (Front, Back, Top, etc)",
+        "Description of Ornamental Aspects",
+        "Proof of Payment"
+      ]
     },
+    {
+      id: "trademark",
+      icon: "fa-stamp",
+      color: "#f59e0b",
+      gradient: "linear-gradient(135deg,#f59e0b,#d97706)",
+      title: "Trademark",
+      subtitle: "Protect brands, logos, and corporate identity",
+      term: "10 years (renewable)",
+      requirements: [
+        "Distinctiveness — unique in the marketplace",
+        "Non-descriptive of the actual goods",
+        "Non-deceptive to consumers"
+      ],
+      process: [
+        { n: 1, t: "Mark Design", d: "Define color, font, and icon specifics." },
+        { n: 2, t: "Classification", d: "Identify Nice Classification (goods/services)." },
+        { n: 3, t: "Search", d: "Confirm no conflicting marks exist locally." },
+        { n: 4, t: "Submission", d: "Upload mark specimen + owner details." },
+        { n: 5, t: "Endorsement", d: "IPOPHL receives the verified brand packet." }
+      ],
+      docs: [
+        "TM Application Form (PSU-IPO-TM-01)",
+        "High-Res Logo/Mark Specimen (300DPI)",
+        "Declaration of Intent to Use",
+        "Proof of Payment"
+      ]
+    },
+    {
+      id: "copyright",
+      icon: "fa-copyright",
+      color: "#10b981",
+      gradient: "linear-gradient(135deg,#10b981,#059669)",
+      title: "Copyright",
+      subtitle: "Protect creative works, code, and literature",
+      term: "Lifetime + 50 years",
+      requirements: [
+        "Originality — must be your own creation",
+        "Fixation in tangible form",
+        "Creative expression (not just logic)"
+      ],
+      process: [
+        { n: 1, t: "Finalization", d: "Ensure the work is complete in its final form." },
+        { n: 2, t: "Compilation", d: "Prepare the 'Best Copy' of the work for filing." },
+        { n: 3, t: "Review", d: "IP Office verifies author IDs and affiliations." },
+        { n: 4, t: "Deposit", d: "Pay registration fee or apply for waiver." },
+        { n: 5, t: "Certified", d: "Sent to National Library of the Philippines." }
+      ],
+      docs: [
+        "CR Registration Form (PSU-IPO-CR-01)",
+        "Full Digital Copy of the Work",
+        "Notarized Declaration (Automatic generation)",
+        "Approved Waiver (if applicable)"
+      ]
+    }
   ];
 
   return `
     <div class="page-header" style="margin-bottom:36px">
-      <h1><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:10px"></i>IP Application Tutorial</h1>
-      <p>A step-by-step guide to all five IP types, their requirements, and filing procedures at PSU.</p>
+      <span class="m-eyebrow" style="display:block; margin-bottom:12px;">Pre-Filing Intelligence</span>
+      <h1 style="color:var(--navy); font-weight:800; font-size:2.2rem;"><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:12px"></i>IP Application Tutorial</h1>
+      <p style="color:var(--gray-500); font-size:1.05rem;">A comprehensive guide to Intellectual Property protection and filing procedures at Palawan State University.</p>
     </div>
-    <div style="background:linear-gradient(135deg,var(--navy),var(--navy-dark));border-radius:16px;padding:28px 32px;margin-bottom:36px;color:white;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:-30px;right:-30px;width:180px;height:180px;background:rgba(255,255,255,0.04);border-radius:50%;pointer-events:none;"></div>
-      <h2 style="font-size:1.1rem;font-weight:800;margin-bottom:10px;"><i class="fa-solid fa-shield-halved" style="color:var(--gold);margin-right:8px;"></i>Before You Begin - Important Notes</h2>
-      <ul style="color:rgba(255,255,255,0.8);font-size:0.88rem;line-height:1.8;padding-left:20px;margin:0;">
-        <li>This system is a <strong style="color:var(--gold)">pre-filing optimization engine</strong> - not a final registration site. Verified packets are forwarded to <strong style="color:white">IPOPHL</strong> or the <strong style="color:white">National Library</strong>, depending on the IP type.</li>
-        <li>All submissions require a <strong style="color:var(--gold)">Proof-of-Deposit or Official Receipt</strong> before they are considered complete for review, unless a copyright fee-waiver route is approved through an official letter-request.</li>
-        <li>Review is performed <strong style="color:white">manually by authorized IP Office personnel</strong> - no automated or AI-driven assessment is used.</li>
-        <li>Once a submission is approved and certified, its core metadata is <strong style="color:white">frozen and cannot be altered</strong>.</li>
+
+    <div style="background:linear-gradient(135deg, var(--navy-dark), var(--navy)); border-radius:24px; padding:32px 40px; margin-bottom:48px; color:white; position:relative; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.1);">
+      <div style="position:absolute; top:-40px; right:-40px; width:200px; height:200px; background:rgba(255,127,80,0.1); border-radius:50%;"></div>
+      <h2 style="font-size:1.2rem; font-weight:800; margin-bottom:16px; color:var(--gold); display:flex; align-items:center; gap:10px;">
+        <i class="fa-solid fa-shield-halved"></i> Institutional Protocol
+      </h2>
+      <ul style="color:rgba(255,255,255,0.85); font-size:0.92rem; line-height:1.8; padding-left:20px; list-style:none;">
+        <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> This system is a <strong>pre-filing optimization engine</strong>. Verified packets are forwarded to <strong>IPOPHL</strong> or the <strong>National Library</strong>.</li>
+        <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> All submissions require a <strong>Proof-of-Deposit</strong> or <strong>Official Receipt</strong> unless a waiver is granted.</li>
+        <li><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Review is performed <strong>manually</strong> by PSU IP Office specialists.</li>
       </ul>
     </div>
-    <div style="display:flex;flex-direction:column;gap:24px;padding-bottom:60px;">
-      ${types
-        .map(
-          (t) => `
-        <div style="background:#fff;border-radius:16px;border:1px solid var(--gray-200);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.04);">
-          <div style="background:${t.gradient};padding:22px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
-            <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:white;font-size:1.4rem;flex-shrink:0;">
+
+    <div style="display:flex; flex-direction:column; gap:32px; padding-bottom:80px;">
+      ${types.map(t => `
+        <div style="background:white; border-radius:24px; border:1px solid var(--gray-200); overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.03); transition:transform 0.3s ease;">
+          <div style="background:${t.gradient}; padding:28px 36px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+            <div style="width:60px; height:60px; border-radius:18px; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; color:white; font-size:1.6rem;">
               <i class="fa-solid ${t.icon}"></i>
             </div>
             <div style="flex:1">
-              <h3 style="font-size:1.2rem;font-weight:800;color:white;margin-bottom:4px;">${t.title}</h3>
-              <p style="color:rgba(255,255,255,0.82);font-size:0.86rem;margin:0;">${t.subtitle}</p>
+              <h3 style="color:white; font-size:1.4rem; font-weight:800; margin:0;">${t.title}</h3>
+              <p style="color:rgba(255,255,255,0.85); font-size:0.9rem; margin:4px 0 0;">${t.subtitle}</p>
             </div>
-            <div style="padding:10px 14px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:0.78rem;font-weight:700;">Term: ${t.term}</div>
+            <div style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); padding:8px 18px; border-radius:50px; color:white; font-size:0.8rem; font-weight:700;">
+              Protection: ${t.term}
+            </div>
           </div>
-          <div style="display:grid;grid-template-columns:1.1fr 1.25fr 1fr;">
-            <div style="padding:24px 28px;border-right:1px solid var(--gray-100);">
-              <h4 style="font-size:0.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-shield-check" style="color:${t.color};"></i>Qualification Checklist</h4>
-              <ul style="padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
-                ${t.requirements.map((r) => `<li style="display:flex;align-items:flex-start;gap:8px;font-size:0.875rem;color:var(--gray-700);"><i class="fa-solid fa-circle-check" style="color:${t.color};margin-top:3px;font-size:0.7rem;flex-shrink:0;"></i>${r}</li>`).join("")}
+          
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:0;">
+            <div style="padding:32px; border-right:1px solid var(--gray-100);">
+              <h4 style="font-size:0.85rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:1px; margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-clipboard-check" style="color:${t.color}"></i> Qualification
+              </h4>
+              <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+                ${t.requirements.map(r => `
+                  <li style="display:flex; gap:10px; font-size:0.9rem; color:var(--gray-700);">
+                    <i class="fa-solid fa-circle" style="color:${t.color}; font-size:0.4rem; margin-top:8px;"></i> ${r}
+                  </li>
+                `).join('')}
               </ul>
             </div>
-            <div style="padding:24px 28px;border-right:1px solid var(--gray-100);">
-              <h4 style="font-size:0.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-list-ol" style="color:${t.color};"></i>Filing Process</h4>
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                ${t.process.map((p) => `<div style="display:flex;gap:10px;"><span style="width:22px;height:22px;border-radius:50%;background:${t.color};color:white;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${p.n}</span><div><strong style="color:var(--navy);display:block;font-size:0.85rem;">${p.t}</strong><span style="color:var(--gray-500);font-size:0.8rem;">${p.d}</span></div></div>`).join("")}
+            
+            <div style="padding:32px; border-right:1px solid var(--gray-100); background:rgba(250,250,250,0.5);">
+              <h4 style="font-size:0.85rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:1px; margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-stairs" style="color:${t.color}"></i> Filing Procedure
+              </h4>
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                ${t.process.map(p => `
+                  <div style="display:flex; gap:14px;">
+                    <span style="width:24px; height:24px; border-radius:6px; background:${t.color}; color:white; font-size:0.75rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${p.n}</span>
+                    <div>
+                      <strong style="display:block; font-size:0.88rem; color:var(--navy);">${p.t}</strong>
+                      <span style="font-size:0.82rem; color:var(--gray-500); line-height:1.4;">${p.d}</span>
+                    </div>
+                  </div>
+                `).join('')}
               </div>
             </div>
-            <div style="padding:24px 28px;">
-              <h4 style="font-size:0.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-paperclip" style="color:${t.color};"></i>Required Documents</h4>
-              <ul style="padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:16px;">
-                ${t.docs.map((d) => `<li style="display:flex;align-items:flex-start;gap:8px;font-size:0.82rem;color:var(--gray-600);"><i class="fa-solid fa-file-lines" style="color:${t.color};margin-top:3px;font-size:0.65rem;flex-shrink:0;"></i>${d}</li>`).join("")}
-              </ul>
-              <button style="background:${t.gradient};color:white;border:none;padding:9px 18px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;" onclick="navigateTo('${t.id}-form')">
-                <i class="fa-solid fa-file-circle-plus"></i> Start ${t.title} Application
+
+            <div style="padding:32px;">
+              <h4 style="font-size:0.85rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:1px; margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-file-invoice" style="color:${t.color}"></i> Documentation
+              </h4>
+              <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+                ${t.docs.map(d => `
+                  <div style="display:flex; align-items:center; gap:10px; font-size:0.88rem; color:var(--gray-600); background:var(--gray-50); padding:10px 14px; border-radius:10px; border:1px solid var(--gray-200);">
+                    <i class="fa-solid fa-file-lines" style="color:${t.color}; font-size:0.9rem;"></i> ${d}
+                  </div>
+                `).join('')}
+              </div>
+              <button class="btn btn-primary" style="width:100%; justify-content:center; background:${t.gradient}; border:none;" onclick="navigateTo('login')">
+                <i class="fa-solid fa-plus-circle"></i> Init ${t.title} Sequence
               </button>
             </div>
           </div>
         </div>
-      `,
-        )
-        .join("")}
-    </div>`;
+      `).join('')}
+    </div>
+  `;
 }
+
+function renderForms() {
+  const categories = [
+    {
+      title: "Patent",
+      id: "patent",
+      icon: "fa-lightbulb",
+      color: "#3b82f6",
+      gradient: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+      forms: [
+        "Request Form", "Supplemental Sheet", "Annual Fees (New Law RA 8293)", 
+        "Annual Fees (Old Law RA 165)", "Assignment of Application for Letters Patent", 
+        "Assignment of Letters Patent", "JPIP Score Sheet", "JPIP Request for Waiver of Fees", 
+        "Request for Entry in PPH ASPEC", "Request for Substantive Examination", 
+        "Waiver of Confidentiality", "Petition for Cancellation", "GreenTech Incentive Program Request Form"
+      ]
+    },
+    {
+      title: "Utility Model",
+      id: "utility",
+      icon: "fa-gears",
+      color: "#6366f1",
+      gradient: "linear-gradient(135deg, #6366f1, #4338ca)",
+      forms: [
+        "Registration Form", "Assignment of Application for Letters Patent", 
+        "JPIP Score Sheet", "JPIP Request for Waiver of Fees", "Waiver of Confidentiality", 
+        "Request for Deferment", "Petition for Cancellation", "GreenTech Incentive Program Request Form"
+      ]
+    },
+    {
+      title: "Industrial Design",
+      id: "design",
+      icon: "fa-pen-nib",
+      color: "#ec4899",
+      gradient: "linear-gradient(135deg, #ec4899, #be185d)",
+      forms: [
+        "Registration Form", "Assignment of Application for Letters Patent", 
+        "Renewal of Term (RA 8293)", "JPIP Score Sheet", "JPIP Request for Waiver of Fees", 
+        "Petition for Cancellation", "GreenTech Incentive Program Request Form"
+      ]
+    },
+    {
+      title: "Trademark",
+      id: "trademark",
+      icon: "fa-stamp",
+      color: "#f59e0b",
+      gradient: "linear-gradient(135deg, #f59e0b, #d97706)",
+      forms: [
+        "Registration Form", "Declaration of Actual Use", "Request for Renewal", 
+        "Request for Revival in Publication", "Request for Revival in Examination", 
+        "Request for Priority Exam", "Request for Suspension of Action", 
+        "Extension of Time to File Response", "Assignment of Application for Registration of TM", 
+        "Assignment of Registered Trademark"
+      ]
+    },
+    {
+      title: "Copyright",
+      id: "copyright",
+      icon: "fa-copyright",
+      color: "#10b981",
+      gradient: "linear-gradient(135deg, #10b981, #059669)",
+      forms: [
+        "Registration Form", "Supplemental Form", "Other Services", "Basic ISNI Registration Form"
+      ]
+    }
+  ];
+
+  return `
+    <div class="page-header" style="margin-bottom:48px; text-align:center;">
+      <span class="m-eyebrow" style="display:inline-block; margin-bottom:12px;">Official Documentation</span>
+      <h1 style="color:var(--navy); font-weight:900; font-size:2.8rem; margin:0; letter-spacing:-0.5px;">Institutional Forms</h1>
+      <p style="color:var(--gray-500); font-size:1.1rem; margin-top:12px; max-width:600px; margin-left:auto; margin-right:auto;">Access the complete repository of pre-filing documents and official registration forms for all IP categories.</p>
+    </div>
+
+    <div style="display: flex; gap: 16px; scroll-behavior: smooth; justify-content: center; align-items: flex-start; flex-wrap: wrap; max-width: 1200px; margin: 0 auto;">
+      ${categories.map(cat => `
+        <div style="flex: 1; min-width: 200px; max-width: 230px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid var(--gray-200); padding: 24px 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); transition: transform 0.3s ease; display: flex; flex-direction: column;"
+             onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='${cat.color}66'"
+             onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--gray-200)'">
+          
+          <div style="width: 42px; height: 42px; border-radius: 12px; background: ${cat.gradient}; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 16px; align-self: center; box-shadow: 0 4px 12px ${cat.color}33;">
+            <i class="fa-solid ${cat.icon}"></i>
+          </div>
+          
+          <h2 style="color:var(--navy); font-size: 0.95rem; font-weight: 800; text-align: center; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px;">${cat.title}</h2>
+          
+          <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+            ${cat.forms.map(form => `
+              <div style="background: var(--gray-50); color: var(--gray-700); padding: 10px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-align: center; line-height: 1.3; cursor: pointer; border: 1px solid transparent; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-height: 44px;"
+                   onmouseover="this.style.background='white'; this.style.borderColor='${cat.color}44'; this.style.color='var(--navy)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.04)'"
+                   onmouseout="this.style.background='var(--gray-50)'; this.style.borderColor='transparent'; this.style.color='var(--gray-700)'; this.style.boxShadow='none'"
+                   onclick="showToast('Downloading: ${form}')">
+                ${form}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="margin-top:20px; padding: 40px; background: white; border-top: 1px solid var(--gray-100); border-radius: 24px; text-align: center; box-shadow: 0 -10px 40px rgba(0,0,0,0.02);">
+      <div style="display: inline-flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--gray-50); border-radius: 50px; margin-bottom: 20px;">
+        <i class="fa-solid fa-circle-info" style="color: var(--navy);"></i>
+        <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-600);">Need help with the legal requirements? Visit our <a href="#" onclick="navigateTo('guidelines')" style="color: var(--navy); text-decoration: underline;">Tutorial Section</a>.</span>
+      </div>
+      <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office — Authorized Document Repository</p>
+    </div>
+  `;
+}
+
 
 // ===== NOTIFICATIONS =====
 window.toggleNotifications = function () {
@@ -7368,7 +7509,7 @@ function renderLandingAnnouncements() {
       <h3 class="ann-title">${a.title}</h3>
       <p class="ann-content">${a.content}</p>
       <div class="ann-footer">
-        <a href="#" class="ann-link">Read More <i class="fa-solid fa-arrow-right"></i></a>
+        <a href="#" class="ann-link" onclick="event.preventDefault(); ${a.title.toLowerCase().includes('guidelines') ? 'navigateTo(\'guidelines\')' : 'showAnnouncementModal(' + a.id + ')' }">Read More <i class="fa-solid fa-arrow-right"></i></a>
       </div>
     </div>
   `).join('');

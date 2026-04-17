@@ -39,13 +39,31 @@
               <option value="superadmin" style="color:#000">Admin</option>
             </select>
           </li>
-          <li><a href="#" class="nav-link" onclick="navigateTo('landing')">Home</a></li>
-          <li><a href="#" class="nav-link" onclick="navigateTo('services')">IP Services</a></li>
-          <li><a href="#" class="nav-link" onclick="navigateTo('marketplace')">Marketplace</a></li>
+
+          <li class="nav-item-dropdown">
+            <a href="javascript:void(0)" class="nav-link">Services <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; margin-left: 4px; opacity: 0.7;"></i></a>
+            <div class="dropdown-content">
+              <div class="dropdown-header">Services</div>
+              <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-lightbulb"></i> Patent</a>
+              <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-stamp"></i> Trademark</a>
+              <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-copyright"></i> Copyright</a>
+              <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-gears"></i> Utility Model</a>
+              <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-pen-nib"></i> Industrial Design</a>
+            </div>
+          </li>
+
           <li><a href="#" class="nav-link" onclick="navigateTo('news')">News</a></li>
           <li><a href="#" class="nav-link" onclick="navigateTo('about')">About</a></li>
-          <li><a href="#" class="nav-link" onclick="navigateTo('faq')" title="FAQ"><i class="fa-solid fa-circle-question" style="font-size: 1.1rem;"></i></a></li>
-          <li><a href="#" class="nav-link btn-login" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+          <li class="nav-item-dropdown">
+            <a href="#" class="nav-link" onclick="event.preventDefault()">Help <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; margin-left:3px;"></i></a>
+            <div class="dropdown-content">
+              <a href="#" onclick="navigateTo('faq')"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+              <a href="#" onclick="navigateTo('guidelines')"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+              <a href="#" onclick="navigateTo('contact')"><i class="fa-solid fa-envelope"></i> Contact Us</a>
+            </div>
+          </li>
+          <li><a href="#" class="nav-link btn-signup" onclick="navigateTo('signup')">Sign Up</a></li>
+          <li><a href="#" class="nav-link btn-login" onclick="navigateTo('login')">Login</a></li>
         </ul>
       </div>
     </nav>
@@ -134,66 +152,61 @@
           <div class="shape shape-2"></div>
           <div class="shape shape-3"></div>
         </div>
-        <div class="hero-layout">
+        <img src="images/psu_logo_main.png" alt="Palawan State University Logo" class="hero-corner-logo left">
+        <img src="images/partner_logo.png" alt="ITS Franchise Logo" class="hero-corner-logo right">
+
+        <div class="hero-layout centered">
           <div class="hero-content">
-            <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> Palawan State University</div>
+            <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> PALAWAN STATE UNIVERSITY</div>
             <h1 class="hero-title">The Creator's<br/><span class="hero-highlight">Bulwark</span></h1>
-            <p class="hero-tagline">A multi-tiered pre-filing system for PSU patents, trademarks, copyrights, utility models, and industrial designs. It closes the knowledge gap, structures digital intake, and supports technology transfer through one secure institutional platform.</p>
+            <p class="hero-tagline">A multi-tiered pre-filing system for the PSU community and external partners. Securely manage patents, trademarks, and copyrights through one institutional platform designed for researchers everywhere.</p>
             <div class="hero-cta">
               <button class="btn btn-primary btn-lg" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> Start a Submission</button>
-              <button class="btn btn-outline btn-lg" onclick="navigateTo('marketplace')"><i class="fa-solid fa-magnifying-glass"></i> Explore Innovations</button>
             </div>
-          </div>
-          <div class="hero-logos">
-            <img src="images/partner_logo.png" alt="ITS Franchise Logo" class="hero-logo-item">
-            <img src="images/psu_logo_main.png" alt="Palawan State University Logo" class="hero-logo-item">
-            <img src="images/IPTTO-logo.jpg" alt="IPTTO Logo" class="hero-logo-item">
           </div>
         </div>
       </div>
 
-      <!-- Quick Access Cards (IP Services) -->
-      <div class="section" id="ip-services-section">
+
+
+      <!-- News & Announcements Section -->
+      <section id="announcements-landing-section" class="section bg-light">
         <div class="container">
-          <h2 class="section-title">IP Services</h2>
-          <p class="section-subtitle">Enter the right pre-filing lane and build a complete packet before institutional review.</p>
-          <div class="service-cards">
-            <div class="service-card" onclick="navigateTo('login')">
-              <div class="service-icon patent"><i class="fa-solid fa-lightbulb"></i></div>
-              <h3>Patent</h3>
-              <p>Route invention disclosures, technical drawings, and claims into a structured patent pre-filing workflow.</p>
-              <span class="service-link">Open Patent Lane <i class="fa-solid fa-arrow-right"></i></span>
+          <div class="section-header-inline">
+            <div>
+              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">News & Announcements</h2>
+              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Stay updated with the latest institutional IP activities, events, and important alerts.</p>
             </div>
-            <div class="service-card" onclick="navigateTo('login')">
-              <div class="service-icon trademark"><i class="fa-solid fa-stamp"></i></div>
-              <h3>Trademark</h3>
-              <p>Prepare mark specimens, goods and services descriptions, and ownership details before endorsement.</p>
-              <span class="service-link">Open Trademark Lane <i class="fa-solid fa-arrow-right"></i></span>
-            </div>
-            <div class="service-card" onclick="navigateTo('login')">
-              <div class="service-icon copyright"><i class="fa-solid fa-copyright"></i></div>
-              <h3>Copyright</h3>
-              <p>Secure authorship records, declarations of originality, and complete copies of creative or software works.</p>
-              <span class="service-link">Open Copyright Lane <i class="fa-solid fa-arrow-right"></i></span>
-            </div>
-            <div class="service-card" onclick="navigateTo('login')">
-              <div class="service-icon utility"><i class="fa-solid fa-gears"></i></div>
-              <h3>Utility Model</h3>
-              <p>Package industrially applicable technical improvements through a shorter and more accessible protection track.</p>
-              <span class="service-link">Open Utility Lane <i class="fa-solid fa-arrow-right"></i></span>
-            </div>
-            <div class="service-card" onclick="navigateTo('login')">
-              <div class="service-icon industrial"><i class="fa-solid fa-pen-nib"></i></div>
-              <h3>Industrial Design</h3>
-              <p>Organize design representations, visual descriptions, and product category details for aesthetic protection.</p>
-              <span class="service-link">Open Design Lane <i class="fa-solid fa-arrow-right"></i></span>
+            <div class="header-actions">
+              <span class="pulse-indicator"></span>
+              <span style="font-size: 0.85rem; font-weight: 600; color: var(--gold-dark);">Live Updates</span>
             </div>
           </div>
+          <div class="announcement-grid" id="announcementGrid" style="margin-top: 40px;">
+            <!-- Populated by JS -->
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Featured Innovation Spotlight -->
+      <section id="featured-marketplace-section" class="section">
+        <div class="container">
+          <div class="section-header-inline">
+            <div>
+              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">Featured Innovations</h2>
+              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Highlighting top-tier research and inventions from PSU researchers.</p>
+            </div>
+            <button class="btn btn-outline" onclick="handleMarketplaceAccess()">Browse Full Marketplace <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+          
+          <div class="innovation-grid" id="featuredInnovationGrid" style="margin-top: 40px;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
 
       <!-- Project Overview (About) -->
-      <section class="section bg-light" id="project-overview-section">
+      <section class="section" id="project-overview-section">
         <div class="container project-overview-container">
           <div class="overview-content">
             <span class="m-eyebrow">Our Mission</span>
@@ -234,8 +247,8 @@
         </div>
       </section>
 
-      <!-- Stats Banner -->
-      <div class="stats-banner">
+
+      <!-- Stats Banner --><div class="stats-banner">
         <div class="container">
           <div class="stats-grid">
             <div class="stat-item">
@@ -257,46 +270,6 @@
           </div>
         </div>
       </div>
-
-
-
-      <!-- Featured Innovation Spotlight -->
-      <section id="featured-marketplace-section" class="section">
-        <div class="container">
-          <div class="section-header-inline">
-            <div>
-              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">Featured Innovations</h2>
-              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Highlighting top-tier research and inventions from PSU researchers.</p>
-            </div>
-            <button class="btn btn-outline" onclick="navigateTo('marketplace')">Browse Full Marketplace <i class="fa-solid fa-arrow-right"></i></button>
-          </div>
-          
-          <div class="innovation-grid" id="featuredInnovationGrid" style="margin-top: 40px;">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </section>
-
-
-
-      <!-- News & Announcements Section -->
-      <section id="announcements-landing-section" class="section bg-light">
-        <div class="container">
-          <div class="section-header-inline">
-            <div>
-              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">News & Announcements</h2>
-              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Stay updated with the latest institutional IP activities, events, and important alerts.</p>
-            </div>
-            <div class="header-actions">
-              <span class="pulse-indicator"></span>
-              <span style="font-size: 0.85rem; font-weight: 600; color: var(--gold-dark);">Live Updates</span>
-            </div>
-          </div>
-          <div class="announcement-grid" id="announcementGrid" style="margin-top: 40px;">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </section>
 
       <!-- Footer -->
       <footer class="landing-footer">
@@ -321,7 +294,7 @@
               </ul>
             </div>
             <div class="footer-col">
-              <h4>IP Services</h4>
+              <h4>Services</h4>
               <ul>
                 <li><a href="#">Patent Filing</a></li>
                 <li><a href="#">Trademark Registration</a></li>
@@ -351,14 +324,14 @@
           <div class="login-header">
             <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
             <h2>Welcome Back</h2>
-            <p>Sign in to The Creator's Bulwark</p>
+            <p>Login to The Creator's Bulwark</p>
           </div>
           <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
               <label for="loginEmail">Email Address</label>
               <div class="input-icon">
                 <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="loginEmail" placeholder="your.email@psu.edu.ph" required />
+                <input type="email" id="loginEmail" placeholder="your.name@psu.palawan.edu.ph or personal email" required />
               </div>
               <span class="error-msg" id="loginEmailError"></span>
             </div>
@@ -384,8 +357,8 @@
             </button>
           </form>
           <div class="login-footer">
-            <p>Don't have an account? <a href="#">Contact the IP Office</a></p>
-            <a href="#" onclick="navigateTo('landing')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+            <p>Don't have an account? <a href="#" onclick="navigateTo('signup')">Sign up now</a></p>
+            <a href="#" onclick="navigateTo('landing')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Return to Homepage</a>
           </div>
         </div>
         <!-- Bottom Decorative Shapes -->
@@ -394,80 +367,161 @@
           <div class="shape shape-5"></div>
           <div class="shape shape-6"></div>
         </div>
-      </section>
-
-    <!-- FAQ PAGE -->
-    <section id="page-faq" class="page container py-lg">
-      <div id="faqPublicContent"></div>
+      </div>
     </section>
 
-    <!-- MARKETPLACE PAGE -->
-    <section id="page-marketplace" class="page">
-      <div class="marketplace-header-bg">
-        <div class="container">
-          <div class="marketplace-hero">
-            <span class="m-eyebrow">Institutional Repository</span>
-            <h1>Innovation Marketplace</h1>
-            <p>Direct access to Palawan State University's portfolio of patents, research outputs, and commercializable technology.</p>
+
+    <!-- ====== SIGN-UP PAGE ====== -->
+    <section id="page-signup" class="page">
+      <div class="login-wrapper">
+        <div class="login-card signup-card-wizard">
+          <div class="login-header">
+            <div class="brand-icon"><i class="fa-solid fa-user-plus"></i></div>
+            <h2 id="signup-title">Create Account</h2>
+            <p id="signup-subtitle">Join The Creator's Bulwark Community</p>
+          </div>
+
+
+          <!-- Step 1: Role Selection -->
+          <div id="signup-step-1">
+            <p style="text-align:center; margin-bottom:24px; color:var(--gray-600); font-weight:600;">Select your account type</p>
+            <div class="role-selection-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="role-option-card" onclick="selectSignUpRole('psu_member')">
+                <div class="role-icon"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="role-info">
+                  <h4>PSU Community</h4>
+                  <p>Students, faculty, and staff of Palawan State University</p>
+                </div>
+              </div>
+              <div class="role-option-card" onclick="selectSignUpRole('outsider')">
+                <div class="role-icon"><i class="fa-solid fa-user-group"></i></div>
+                <div class="role-info">
+                  <h4>External Users</h4>
+                  <p>Non-PSU researchers, professionals, or visitors</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Details (Hidden by default) -->
+          <div id="signup-step-2" style="display:none;">
+            <button class="btn-step-back" onclick="goBackToStep1()">
+              <i class="fa-solid fa-arrow-left"></i> Change Status
+            </button>
+            <form id="signupForm" onsubmit="handleSignUp(event)">
+              <input type="hidden" id="regType" value="" />
+              
+              <div class="form-group">
+                <label for="regUsername">Username</label>
+                <div class="input-icon">
+                  <i class="fa-solid fa-user-tag"></i>
+                  <input type="text" id="regUsername" placeholder="Enter your username" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="regEmail">Email Address</label>
+                <div class="input-icon">
+                  <i class="fa-solid fa-envelope"></i>
+                  <input type="email" id="regEmail" placeholder="Enter your email" required />
+                </div>
+                <span class="error-msg" id="regEmailError"></span>
+                <small id="regEmailHint"></small>
+              </div>
+
+              <div class="form-group">
+                <label for="regPassword">Password</label>
+                <div class="input-icon">
+                  <i class="fa-solid fa-lock"></i>
+                  <input type="password" id="regPassword" placeholder="Create a strong password" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="regPasswordConfirm">Confirm Password</label>
+                <div class="input-icon">
+                  <i class="fa-solid fa-shield-heart"></i>
+                  <input type="password" id="regPasswordConfirm" placeholder="Re-enter your password" required />
+                </div>
+                <span class="error-msg" id="regPasswordError"></span>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-user-check"></i> Sign Up
+              </button>
+            </form>
+          </div>
+
+          <!-- Step 3: OTP Verification (Hidden by default) -->
+          <div id="signup-step-3" style="display:none;">
+            <div style="text-align:center; margin-bottom:24px;">
+              <div style="width:64px; height:64px; border-radius:50%; background:rgba(255,127,80,0.1); color:var(--gold); display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
+                <i class="fa-solid fa-envelope-open-text" style="font-size:1.5rem;"></i>
+              </div>
+              <h3 style="margin-bottom:8px;">Verify Your Email</h3>
+              <p style="font-size:.9rem; color:var(--gray-500);">We sent a 6-digit code to <br><strong id="displayRegEmail" style="color:var(--navy);"></strong></p>
+            </div>
+            
+            <div class="otp-inputs" style="display:flex; justify-content:center; gap:10px; margin-bottom:24px;">
+              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
+              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
+              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
+              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
+              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
+              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
+            </div>
+
+            <button class="btn btn-primary btn-block" onclick="verifySignupOtp()">
+              <i class="fa-solid fa-user-check"></i> Verify & Complete
+            </button>
+            <p style="text-align:center; margin-top:20px; font-size:.85rem; color:var(--gray-500);">
+              Didn't receive the code? <a href="#" onclick="resendSignupOtp()" style="color:var(--gold); font-weight:600;">Resend OTP</a>
+            </p>
+          </div>
+
+          <div class="login-footer">
+            <p>Already have an account? <a href="#" onclick="navigateTo('login')">Login here</a></p>
+            <a href="#" onclick="navigateTo('landing')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Return to Homepage</a>
           </div>
         </div>
-      </div>
-
-      <div class="container marketplace-container">
-        <aside class="marketplace-sidebar">
-          <div class="filter-group">
-            <label>Search Innovations</label>
-            <div class="search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="marketSearch" placeholder="Keywords, titles..." oninput="filterFullMarketplace()" />
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label>IP Category</label>
-            <div class="filter-chips" id="typeFilters">
-              <button class="filter-chip active" data-type="All" onclick="setMarketType('All', this)">All</button>
-              <button class="filter-chip" data-type="Patent" onclick="setMarketType('Patent', this)">Patent</button>
-              <button class="filter-chip" data-type="Utility Model" onclick="setMarketType('Utility Model', this)">Utility Model</button>
-              <button class="filter-chip" data-type="Copyright" onclick="setMarketType('Copyright', this)">Copyright</button>
-              <button class="filter-chip" data-type="Trademark" onclick="setMarketType('Trademark', this)">Trademark</button>
-              <button class="filter-chip" data-type="Industrial Design" onclick="setMarketType('Industrial Design', this)">Industrial Design</button>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label>Originating College</label>
-            <select id="marketCollege" onchange="filterFullMarketplace()">
-              <option value="All">All Colleges</option>
-              <option>College of Engineering</option>
-              <option>College of Sciences</option>
-              <option>College of Agriculture</option>
-              <option>College of Arts</option>
-            </select>
-          </div>
-
-          <div class="sidebar-info-card">
-            <i class="fa-solid fa-circle-info"></i>
-            <p>Interested in a specific technology? Sign in to express interest and connect with the inventors.</p>
-          </div>
-        </aside>
-
-        <main class="marketplace-main">
-          <div class="marketplace-results-header">
-            <div class="results-info">
-              <span id="marketResultsCount">Showing all innovations</span>
-            </div>
-            <div class="market-view-options">
-              <button class="btn-icon view-btn active" id="view-grid-btn" title="Grid View" onclick="setMarketView('grid')"><i class="fa-solid fa-grip"></i></button>
-              <button class="btn-icon view-btn" id="view-list-btn" title="List View" onclick="setMarketView('list')"><i class="fa-solid fa-list"></i></button>
-            </div>
-          </div>
-          <div class="innovation-grid" id="marketInnovationGrid">
-            <!-- Populated by JS -->
-          </div>
-        </main>
+        <!-- Bottom Decorative Shapes -->
+        <div class="hero-bg-shapes bottom-shapes">
+          <div class="shape shape-4"></div>
+          <div class="shape shape-5"></div>
+          <div class="shape shape-6"></div>
+        </div>
       </div>
     </section>
+
+    <!-- FAQ PAGE -->
+    <section id="page-faq" class="page container" style="padding-top: 160px !important;">
+      <div id="faqPublicContent">
+        <!-- FAQ content injected by JS -->
+      </div>
+    </section>
+
+    <!-- ====== GUIDELINES PAGE (PUBLIC) ====== -->
+    <section id="page-guidelines" class="page container" style="padding-top: 160px !important;">
+      <div id="guidelinesPublicContent">
+        <!-- Guidelines content injected by JS -->
+      </div>
+    </section>
+
+    <!-- ====== CONTACT US PAGE (PUBLIC) ====== -->
+    <section id="page-contact" class="page container" style="padding-top: 160px !important;">
+      <div id="contactPublicContent">
+        <!-- Contact Us content injected by JS -->
+      </div>
+    </section>
+
+    <!-- ====== FORMS PAGE (PUBLIC) ====== -->
+    <section id="page-forms" class="page container" style="padding-top: 160px !important;">
+      <div id="formsPublicContent">
+        <!-- Forms content injected by JS -->
+      </div>
+    </section>
+
+
 
     <!-- ====== MODALS ====== -->
     <!-- Express Interest Modal -->
@@ -491,7 +545,9 @@
 
 
 
-  </div>
+
+
+  </div> <!-- End #app -->
 
   <script src="app.js?v=2"></script>
 </body>
