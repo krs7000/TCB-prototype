@@ -2474,11 +2474,8 @@ function renderSidebar() {
       { page: "filing-hub", icon: "fa-plus-circle", text: "Start Submission" },
       { page: "user-submissions", icon: "fa-file-lines", text: "My Cases" },
       { page: "marketplace-dash", icon: "fa-shop", text: "Marketplace" },
-      { page: "ip-tutorial", icon: "fa-book-open", text: "IP Tutorial" },
-      { page: "faq-dash", icon: "fa-circle-question", text: "FAQ" },
       { page: "notifications", icon: "fa-bell", text: "Notification" },
       { page: "user-profile", icon: "fa-user", text: "Profile" },
-      { page: "logout", icon: "fa-right-from-bracket", text: "Logout" },
     ],
   };
 
@@ -2530,30 +2527,32 @@ function renderSidebar() {
   const bottomNav = document.querySelector(".bottom-nav");
 
   if (isApplicant) {
-    document.body.classList.add("compact-layout"); 
-    if (sidebar) {
-      sidebar.style.display = "flex"; 
-      sidebar.style.width = "84px";
+    if (sidebar) sidebar.style.display = "none";
+    if (mainContent) mainContent.style.marginLeft = "0";
+    if (topbar) {
+      topbar.style.left = "0";
+      topbar.style.display = "flex";
     }
-    if (mainContent) mainContent.style.marginLeft = "84px";
-    if (topbar) topbar.style.left = "84px";
     if (sidebarToggle) sidebarToggle.style.display = "none";
     if (bottomNav) bottomNav.style.display = "none";
+    document.body.classList.add("top-nav-layout");
+    document.body.classList.remove("compact-layout");
   } else {
+    // Normal Sidebar handling for Reviewer/Admin
     if (sidebar) {
       sidebar.style.display = "flex";
-      sidebar.classList.remove("compact");
+      sidebar.style.width = "var(--sidebar-w, 260px)";
       sidebar.classList.remove("canva-mode");
-      sidebar.style.width = "";
     }
+    if (mainContent) mainContent.style.marginLeft = "var(--sidebar-w, 260px)";
     if (topbar) {
-      topbar.style.left = "";
-      topbar.style.display = "block";
+      topbar.style.left = "var(--sidebar-w, 260px)";
+      topbar.style.display = "flex";
     }
+    if (sidebarToggle) sidebarToggle.style.display = "block";
+    if (bottomNav) bottomNav.style.display = "none"; // Admin/Reviewer usually don't have bottom nav in this design
+    document.body.classList.remove("top-nav-layout");
     document.body.classList.remove("compact-layout");
-    if (mainContent) mainContent.style.marginLeft = "";
-    if (sidebarToggle) sidebarToggle.style.display = "";
-    if (bottomNav) bottomNav.style.display = "none";
   }
 }
 
@@ -5279,7 +5278,6 @@ function getStatusCounts() {
 }
 
 function renderUserSubmissions() {
-  // Filters are now maintained globally to prevent reset on navigation
   if (typeof userFilterType === "undefined") {
     userFilterType = "All";
     userFilterStatus = "All";
@@ -5297,12 +5295,6 @@ function renderUserSubmissions() {
   ];
 
   return `
-    <div class="page-header">
-      <h1>My IP Applications</h1>
-      <p>Track the real-time status and operational precision of your submissions.</p>
-    </div>
-
-    <!-- Shopee-style Status Tabs -->
     <div class="status-hub-container">
       <div class="status-hub-bar">
         ${statuses
@@ -5317,17 +5309,22 @@ function renderUserSubmissions() {
           .join("")}
       </div>
     </div>
+
+    <div class="page-header" style="margin-top: 24px;">
+      <h1>My IP Applications</h1>
+      <p>Track the real-time status and operational precision of your submissions.</p>
+    </div>
     
-    <div class="user-controls-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:16px; flex-wrap:wrap;">
+    <div class="user-controls-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:20px; flex-wrap:wrap; background:white; padding:16px 20px; border-radius:12px; border:1px solid var(--gray-100);">
       <div style="display:flex; gap:12px; align-items:center; flex:1;">
-        <div class="search-box" style="max-width:350px; width:100%;">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="userSearchInput" value="${userSearchQuery || ""}" placeholder="Search your cases..." oninput="filterUserSearch(this.value)" />
+        <div class="search-box" style="max-width:400px; width:100%; position:relative;">
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--gray-400);"></i>
+          <input type="text" id="userSearchInput" value="${userSearchQuery || ""}" placeholder="Search your cases..." oninput="filterUserSearch(this.value)" style="width:100%; padding:12px 12px 12px 42px; border:1px solid var(--gray-200); border-radius:10px; font-size:0.95rem; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)';" onblur="this.style.borderColor='var(--gray-200)';" />
         </div>
       </div>
-      <div class="filter-dropdown-group" style="display:flex; gap:8px; align-items:center;">
-        <span style="font-size:0.85rem; font-weight:600; color:var(--gray-500);">Category:</span>
-        <select class="filter-select" id="userTypeSelect" onchange="filterUserTable(this.value)" style="width:160px;">
+      <div class="filter-dropdown-group" style="display:flex; gap:12px; align-items:center;">
+        <span style="font-size:0.9rem; font-weight:700; color:var(--navy);">Category:</span>
+        <select class="filter-select" id="userTypeSelect" onchange="filterUserTable(this.value)" style="width:180px; padding:10px 14px; border-radius:10px; border:1px solid var(--gray-200); font-weight:600; color:var(--navy); outline:none;">
           <option value="All" ${userFilterType === "All" ? "selected" : ""}>All Types</option>
           <option value="Patent" ${userFilterType === "Patent" ? "selected" : ""}>Patent</option>
           <option value="Trademark" ${userFilterType === "Trademark" ? "selected" : ""}>Trademark</option>
@@ -7458,6 +7455,37 @@ window.toggleNotifications = function () {
         }
       });
     }, 0);
+  }
+};
+
+let profileDropdownOpen = false;
+window.toggleProfileDropdown = function () {
+  profileDropdownOpen = !profileDropdownOpen;
+  const dropdown = document.getElementById("profileDropdown");
+  const trigger = document.getElementById("profileDropdownWrap");
+  
+  if (dropdown) dropdown.classList.toggle("open", profileDropdownOpen);
+  if (trigger) trigger.classList.toggle("active", profileDropdownOpen);
+
+  // Populate dynamic name if available
+  const nameEl = document.getElementById("dropdownFullUserName");
+  const topName = document.getElementById("topbarUserName");
+  if (nameEl && topName) {
+    nameEl.textContent = topName.textContent;
+  }
+
+  if (profileDropdownOpen) {
+    setTimeout(() => {
+      document.addEventListener("click", function closeProfile(e) {
+        const wrap = document.getElementById("profileDropdownWrap");
+        if (wrap && !wrap.contains(e.target)) {
+          profileDropdownOpen = false;
+          document.getElementById("profileDropdown")?.classList.remove("open");
+          wrap.classList.remove("active");
+          document.removeEventListener("click", closeProfile);
+        }
+      });
+    }, 10);
   }
 };
 

@@ -111,9 +111,9 @@
         </button>
 
         <!-- Brand (visible only in Top Nav Layout) -->
-        <div class="topbar-brand" style="display: none; align-items: center; gap: 12px; margin-right: auto; cursor: pointer;" onclick="navigateTo('landing')">
-          <div class="brand-icon small" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white; border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;"><i class="fa-solid fa-shield-halved"></i></div>
-          <span class="brand-name" style="font-weight: 700; font-size: 1.1rem; color: var(--navy);">Creator's Bulwark</span>
+        <div class="topbar-brand" onclick="navigateTo('landing')">
+          <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <span class="brand-name">Creator's Bulwark</span>
         </div>
 
         <!-- Applicant Top Navigation -->
@@ -126,10 +126,6 @@
               <option value="reviewer">Reviewer</option>
               <option value="superadmin">Admin</option>
             </select>
-          </div>
-          <div class="topbar-user" onclick="navigateTo('user-profile')">
-            <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
-            <span class="user-name" id="topbarUserName">Juan dela Cruz</span>
           </div>
           <div class="notif-bell-wrap" id="notifBell" onclick="toggleNotifications()">
             <i class="fa-solid fa-bell"></i>
@@ -145,7 +141,41 @@
               </div>
             </div>
           </div>
-          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+          <div class="topbar-user-wrap" id="profileDropdownWrap">
+            <div class="topbar-user" onclick="toggleProfileDropdown()">
+              <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
+              <span class="user-name" id="topbarUserName">Juan dela Cruz</span>
+            </div>
+            
+            <div class="profile-dropdown" id="profileDropdown">
+              <div class="profile-dropdown-header">
+                <div class="user-avatar small"><i class="fa-solid fa-user"></i></div>
+                <div class="user-meta">
+                  <div class="user-full-name" id="dropdownFullUserName">Juan dela Cruz</div>
+                  <div class="user-role-label">Applicant Portal</div>
+                </div>
+              </div>
+              <div class="profile-dropdown-body">
+                <a href="#" class="dropdown-item" onclick="navigateTo('user-profile')">
+                  <i class="fa-solid fa-circle-user"></i>
+                  <span>Account Details</span>
+                </a>
+                <a href="#" class="dropdown-item" onclick="showToast('Display Settings open')">
+                  <i class="fa-solid fa-sliders"></i>
+                  <span>Preferences</span>
+                </a>
+                <a href="#" class="dropdown-item" onclick="showToast('Help Center open')">
+                  <i class="fa-solid fa-circle-question"></i>
+                  <span>Help & Support</span>
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item logout-item" onclick="logout()">
+                  <i class="fa-solid fa-right-from-bracket"></i>
+                  <span>Sign Out</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -592,6 +622,6 @@
 
   </div> <!-- End #app -->
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
