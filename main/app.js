@@ -2486,42 +2486,32 @@ function renderSidebar() {
   const menu = menuMap[normalizeRole(currentRole)] || menuMap.applicant;
   const sidebar = document.getElementById("sidebar");
 
+  const topNav = document.getElementById("dashboard-top-nav");
+
   if (isApplicant) {
-    if (sidebar) sidebar.classList.add("canva-mode");
+    document.body.classList.add("top-nav-layout");
     
-    // Separate primary, main, and footer items for Canva style
+    // Clear the sidebar navigation
+    nav.innerHTML = "";
+
+    // Separate primary, main, and footer items for horizontal nav
     const primaryItem = menu.find(i => i.page === 'filing-hub');
     const footerPages = ['notifications', 'user-profile', 'logout'];
     const footerItems = menu.filter(i => footerPages.includes(i.page));
     const mainItems = menu.filter(i => i.page !== 'filing-hub' && !footerPages.includes(i.page));
 
-    nav.innerHTML = `
-      <div class="canva-primary-section">
-        <a href="#" onclick="navigateTo('${primaryItem.page}')" data-page="${primaryItem.page}" class="canva-nav-item primary" title="${primaryItem.text}">
-          <div class="canva-primary-btn"><i class="fa-solid fa-plus"></i></div>
-          <span class="canva-nav-text">Create</span>
-        </a>
-      </div>
-      <div class="canva-main-section">
+    if (topNav) {
+      topNav.innerHTML = `
         ${mainItems.map(m => `
-          <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="canva-nav-item">
-            <div class="canva-icon-box"><i class="fa-solid ${m.icon}"></i></div>
-            <span class="canva-nav-text">${m.text === "Dashboard" ? "Home" : m.text}</span>
-          </a>
+          <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="top-nav-link">${m.text === "Dashboard" ? "Home" : m.text}</a>
         `).join('')}
-      </div>
-      <div class="canva-footer-section">
-        ${footerItems.map(m => `
-          <a href="#" onclick="${m.page === 'logout' ? 'logout()' : `navigateTo('${m.page}')`}" data-page="${m.page}" class="canva-nav-item ${m.page === 'user-profile' ? 'profile-item' : ''}">
-            ${m.page === 'user-profile' ? `<div class="canva-profile-img"><i class="fa-solid fa-user-tie"></i></div>` : `<div class="canva-icon-box"><i class="fa-solid ${m.icon}"></i></div>`}
-             ${m.page === 'user-profile' ? '' : `<span class="canva-nav-text">${m.text === "Dashboard" ? "Home" : m.text}</span>`}
-          </a>
-        `).join('')}
-      </div>
-    `;
+        <a href="#" onclick="navigateTo('${primaryItem.page}')" data-page="${primaryItem.page}" class="top-nav-link primary-btn">${primaryItem.text}</a>
+      `;
+    }
   } else {
     // Normal Sidebar Nav for Admin/Reviewer
-    if (sidebar) sidebar.classList.remove("canva-mode");
+    document.body.classList.remove("top-nav-layout");
+    if (topNav) topNav.innerHTML = "";
     nav.innerHTML = menu
       .map(
         (m) => `
@@ -5048,8 +5038,6 @@ function renderMarketplace() {
           <select id="mpFilterType" onchange="filterMarketplace()"><option value="All">All Types</option><option>Patent</option><option>Utility Model</option><option>Industrial Design</option><option>Trademark</option><option>Copyright</option></select></div>
         <div class="filter-group"><label>College</label>
           <select id="mpFilterCollege" onchange="filterMarketplace()"><option value="All">All Colleges</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option></select></div>
-        <div class="filter-group"><label>Year</label>
-          <select id="mpFilterYear" onchange="filterMarketplace()"><option value="All">All Years</option><option>2026</option><option>2025</option></select></div>
       </div>
       <div>
         <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="mpSearch" placeholder="Search innovations..." oninput="filterMarketplace()" /></div>
@@ -5078,12 +5066,10 @@ function renderInnovationCards(items) {
 function filterMarketplace() {
   const type = document.getElementById("mpFilterType")?.value || "All";
   const college = document.getElementById("mpFilterCollege")?.value || "All";
-  const year = document.getElementById("mpFilterYear")?.value || "All";
   const search = document.getElementById("mpSearch")?.value.toLowerCase() || "";
   let filtered = marketplaceItems.filter((item) => {
     if (type !== "All" && item.type !== type) return false;
     if (college !== "All" && item.college !== college) return false;
-    if (year !== "All" && item.year !== parseInt(year)) return false;
     if (
       search &&
       !item.title.toLowerCase().includes(search) &&

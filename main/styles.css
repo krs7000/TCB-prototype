@@ -1625,16 +1625,66 @@ textarea {
   display: none;
 }
 
-/* Make topbar seamless for applicants only */
-body.compact-layout #dashboard-topbar {
-  background: transparent;
-  box-shadow: none;
-  border-bottom: none;
+/* ================== TOP NAV LAYOUT (Applicant) ================== */
+body.top-nav-layout #sidebar {
+  display: none !important;
 }
 
-/* Fail-safe: hide hamburger menu for applicants via CSS */
-body.compact-layout .sidebar-toggle {
-  display: none !important;
+body.top-nav-layout #dashboard-topbar {
+  left: 0 !important; /* Full width topbar */
+  background: white; /* Give it a solid background since sidebar is gone */
+  border-bottom: 1px solid rgba(255, 127, 80, 0.14);
+}
+
+body.top-nav-layout #main-content {
+  margin-left: 0 !important; /* Take up entire screen width */
+}
+
+body.top-nav-layout .sidebar-toggle {
+  display: none !important; /* No toggle if no sidebar */
+}
+
+body.top-nav-layout .topbar-brand, 
+body.top-nav-layout #dashboard-top-nav {
+  display: flex !important; /* Reveal brand and top nav in topbar */
+}
+
+/* Styling the Top Nav Links */
+#dashboard-top-nav .top-nav-link {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--gray-600);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+#dashboard-top-nav .top-nav-link:hover {
+  color: var(--gold-dark);
+  background: rgba(255, 127, 80, 0.08); /* slight gold tint */
+}
+
+#dashboard-top-nav .top-nav-link.active {
+  color: var(--gold-dark);
+  font-weight: 700;
+  background: rgba(255, 127, 80, 0.12);
+}
+
+/* Optional primary button styling in top nav */
+#dashboard-top-nav .top-nav-link.primary-btn {
+  background: var(--gold);
+  color: white;
+  font-weight: 600;
+  padding: 8px 16px;
+  box-shadow: 0 4px 10px rgba(255, 127, 80, 0.2);
+}
+
+#dashboard-top-nav .top-nav-link.primary-btn:hover {
+  background: var(--gold-dark);
+  transform: translateY(-1px);
 }
 .demo-role-switch {
   display: flex;
