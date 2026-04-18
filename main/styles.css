@@ -1490,7 +1490,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5A5A72;
+  color: var(--gray-500);
 }
 
 .sidebar.canva-mode .sidebar-nav {
@@ -1514,18 +1514,18 @@ textarea {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #8B3DFF;
+  background: var(--gold);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.4rem;
-  box-shadow: 0 4px 12px rgba(139, 61, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 127, 80, 0.3);
   transition: all 0.2s ease-out;
 }
 
 .canva-nav-item.primary .canva-nav-text {
-  color: #8B3DFF;
+  color: var(--gold-dark);
   font-size: 0.75rem;
   font-weight: 600;
   margin-top: 4px;
@@ -1533,7 +1533,7 @@ textarea {
 
 .canva-nav-item.primary:hover .canva-primary-btn {
   transform: scale(1.05);
-  background: #7A33E6;
+  background: var(--gold-dark);
 }
 
 .canva-nav-item {
@@ -1544,7 +1544,7 @@ textarea {
   gap: 4px;
   padding: 8px 0;
   text-decoration: none;
-  color: #5A5A72;
+  color: var(--gray-500);
   transition: all 0.2s var(--transition);
   position: relative;
   width: 100%;
@@ -1560,7 +1560,7 @@ textarea {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  color: #5A5A72;
+  color: var(--gray-500);
   font-size: 1.25rem;
 }
 
@@ -1584,12 +1584,12 @@ textarea {
   font-weight: 500;
   text-transform: none;
   letter-spacing: normal;
-  color: #5A5A72;
+  color: var(--gray-500);
   transition: inherit;
 }
 
 .sidebar.canva-mode .sidebar-nav .canva-nav-item:hover .canva-icon-box {
-  background: rgba(90, 90, 114, 0.08);
+  background: rgba(255, 127, 80, 0.08); /* gold tint */
 }
 
 .sidebar.canva-mode .sidebar-nav .canva-nav-item.active {
@@ -1598,13 +1598,13 @@ textarea {
 }
 
 .sidebar.canva-mode .sidebar-nav .canva-nav-item.active .canva-icon-box {
-  background: #EBE5F7 !important;
-  color: #8B3DFF !important;
+  background: rgba(255, 127, 80, 0.12) !important;
+  color: var(--gold-dark) !important;
 }
 
 .sidebar.canva-mode .sidebar-nav .canva-nav-item.active .canva-nav-text {
-  color: #8B3DFF !important;
-  font-weight: 600;
+  color: var(--gold-dark) !important;
+  font-weight: 700;
 }
 
 .canva-footer-section {
