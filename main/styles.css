@@ -375,6 +375,54 @@ i[class*="fa-"] {
   color: var(--navy);
   padding-left: 24px;
 }
+.dropdown-item {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  color: var(--gray-700);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.dropdown-item:hover {
+  background: rgba(255, 127, 80, 0.08);
+  color: var(--navy);
+  padding-left: 24px;
+}
+
+/* Navbar Sub-Dropdown (Fly-out) */
+.nav-item-sub-dropdown {
+  position: relative;
+}
+.sub-dropdown-content {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  transform: translateX(10px);
+  background: #ffffff;
+  min-width: 180px;
+  box-shadow: 0 10px 35px rgba(255, 127, 80, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 8px 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 110;
+  border: 1px solid rgba(255, 127, 80, 0.12);
+}
+.nav-item-sub-dropdown:hover .sub-dropdown-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+.sub-dropdown-content a {
+  padding-left: 20px !important;
+}
+.sub-dropdown-content a:hover {
+  padding-left: 24px !important;
+}
 .dropdown-content i {
   color: var(--gold-dark);
   width: 16px;
@@ -743,6 +791,8 @@ i[class*="fa-"] {
   gap: 24px;
 }
 .service-card {
+  position: relative;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(16px);
   border-radius: 20px;
@@ -758,6 +808,75 @@ i[class*="fa-"] {
   box-shadow: 0 28px 60px rgba(255, 127, 80, 0.14);
   border-color: rgba(255, 127, 80, 0.28);
   background: rgba(255, 255, 255, 0.96);
+}
+.nav-item-sub-dropdown:hover .sub-dropdown-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+.sub-dropdown-content a {
+  padding-left: 20px !important;
+}
+.sub-dropdown-content a:hover {
+  padding-left: 24px !important;
+}
+
+/* Service Interactive Hover System (Landing Page Cards) */
+.service-card-main {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.service-hover-actions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.9) translateY(10px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 5;
+}
+
+.service-interactive {
+  cursor: default !important;
+}
+
+.service-interactive:hover .service-hover-actions {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1) translateY(0);
+}
+
+.service-interactive:hover .service-card-main {
+  opacity: 0.2;
+  transform: scale(0.94);
+  filter: blur(2px);
+}
+
+.service-hover-actions .btn {
+  width: 100%;
+  max-width: 180px;
+  justify-content: center;
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.service-hover-actions .btn:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .service-icon {
   width: 72px;
@@ -1332,6 +1451,189 @@ textarea {
   align-items: center;
   gap: 20px;
 }
+
+/* Canva-Inspired Sidebar (Applicant Mode) */
+.sidebar.canva-mode {
+  width: 84px;
+  background: #FAFAFC !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0 20px 0;
+  overflow: visible;
+  align-items: center;
+}
+
+.sidebar.canva-mode .sidebar-header {
+  padding: 0;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+  border-bottom: none !important;
+  width: 100%;
+}
+
+.sidebar.canva-mode .sidebar-header .sidebar-brand {
+  justify-content: center;
+  gap: 0;
+}
+
+.sidebar.canva-mode .sidebar-brand .brand-name {
+  display: none;
+}
+
+.sidebar.canva-mode .brand-icon.small {
+  width: 44px;
+  height: 44px;
+  font-size: 1.4rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5A5A72;
+}
+
+.sidebar.canva-mode .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding: 0 4px;
+  width: 100%;
+  align-items: center;
+}
+
+.canva-primary-section {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.canva-primary-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #8B3DFF;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 4px 12px rgba(139, 61, 255, 0.2);
+  transition: all 0.2s ease-out;
+}
+
+.canva-nav-item.primary .canva-nav-text {
+  color: #8B3DFF;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.canva-nav-item.primary:hover .canva-primary-btn {
+  transform: scale(1.05);
+  background: #7A33E6;
+}
+
+.canva-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 0;
+  text-decoration: none;
+  color: #5A5A72;
+  transition: all 0.2s var(--transition);
+  position: relative;
+  width: 100%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.canva-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #5A5A72;
+  font-size: 1.25rem;
+}
+
+.canva-profile-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1e293b;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  margin-bottom: 2px;
+}
+
+.canva-nav-text {
+  font-size: 0.72rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #5A5A72;
+  transition: inherit;
+}
+
+.sidebar.canva-mode .sidebar-nav .canva-nav-item:hover .canva-icon-box {
+  background: rgba(90, 90, 114, 0.08);
+}
+
+.sidebar.canva-mode .sidebar-nav .canva-nav-item.active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sidebar.canva-mode .sidebar-nav .canva-nav-item.active .canva-icon-box {
+  background: #EBE5F7 !important;
+  color: #8B3DFF !important;
+}
+
+.sidebar.canva-mode .sidebar-nav .canva-nav-item.active .canva-nav-text {
+  color: #8B3DFF !important;
+  font-weight: 600;
+}
+
+.canva-footer-section {
+  border-top: none;
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+
+/* Hide original sidebar elements in Canva mode */
+.sidebar.canva-mode .sidebar-footer {
+  display: none;
+}
+
+/* Make topbar seamless for applicants only */
+body.compact-layout #dashboard-topbar {
+  background: transparent;
+  box-shadow: none;
+  border-bottom: none;
+}
+
+/* Fail-safe: hide hamburger menu for applicants via CSS */
+body.compact-layout .sidebar-toggle {
+  display: none !important;
+}
 .demo-role-switch {
   display: flex;
   align-items: center;
@@ -1442,6 +1744,11 @@ textarea {
 #dashboard-layout.active {
   display: flex;
   min-height: 100vh;
+}
+
+/* Fail-safe: hide hamburger menu for applicants via CSS */
+body.compact-layout .sidebar-toggle {
+  display: none !important;
 }
 .sidebar {
   position: fixed;

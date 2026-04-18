@@ -5,8 +5,8 @@
 
 // ===== STATE =====
 let currentPage = "landing";
-let currentRole = "client";
-// Supported RBAC roles: 'superadmin', 'admin', 'reviewer', 'client'
+let currentRole = "applicant";
+// Supported RBAC roles: 'superadmin', 'admin', 'reviewer', 'applicant'
 let isLoggedIn = false;
 let sidebarCollapsed = false;
 let selectedLoginRole = "client";
@@ -16,6 +16,7 @@ let selectedSubmissionId = null;
 let wizardData = {};
 let notifOpen = false;
 let pendingSignupData = null; // Holds signup data during OTP verification
+let currentParams = {};
 const ROLE_ALIASES = {
   superadmin: "superadmin",
   "Admin": "superadmin",
@@ -1526,7 +1527,10 @@ window.goBack = function () {
   }
 };
 
-function navigateTo(page, isBack = false) {
+function navigateTo(page, isBack = false, params = null) {
+  if (params) currentParams = params;
+  else if (!isBack) currentParams = {};
+
   const landingSections = {
     about: "project-overview-section",
     news: "announcements-landing-section",
@@ -1561,9 +1565,21 @@ function navigateTo(page, isBack = false) {
   document
     .querySelectorAll(".page")
     .forEach((p) => p.classList.remove("active"));
-  document.getElementById("dashboard-layout").classList.remove("active");
-  document.getElementById("public-nav").classList.remove("active");
-  document.getElementById("dashboard-topbar").classList.remove("active");
+  
+  const dashLayout = document.getElementById("dashboard-layout");
+  const dashTopbar = document.getElementById("dashboard-topbar");
+  const publicNav = document.getElementById("public-nav");
+
+  if (dashLayout) {
+    dashLayout.classList.remove("active");
+    dashLayout.style.display = ""; // Reset inline override
+  }
+  if (dashTopbar) {
+    dashTopbar.classList.remove("active");
+    dashTopbar.style.display = ""; // Reset inline override
+  }
+  if (publicNav) publicNav.classList.remove("active");
+
 
   const dashboardPages = [
     "user-dashboard",
@@ -1613,7 +1629,7 @@ function navigateTo(page, isBack = false) {
   } else if (page === "guidelines") {
     document.getElementById("public-nav").classList.add("active");
     document.getElementById("page-guidelines").classList.add("active");
-    document.getElementById("guidelinesPublicContent").innerHTML = renderIpTutorial();
+    document.getElementById("guidelinesPublicContent").innerHTML = renderIpGuidelines(currentParams.serviceId);
   } else if (page === "contact") {
     document.getElementById("public-nav").classList.add("active");
     document.getElementById("page-contact").classList.add("active");
@@ -1645,7 +1661,7 @@ function navigateTo(page, isBack = false) {
     renderSidebar();
     renderDashboardContent(page);
     updateTopbarRole();
-    updateActiveSidebarLink(page);
+    updateActiveNavLinks(page);
     // NEW: Sync the Shopee-style bottom nav active state
     if (typeof updateBottomNavItemActive === 'function') updateBottomNavItemActive(page);
   }
@@ -1657,10 +1673,40 @@ function navigateTo(page, isBack = false) {
   // Update UI Back Buttons
   const pubBack = document.getElementById("ui-back-btn-public");
   const dashBack = document.getElementById("ui-back-btn-dashboard");
+  const topbarRight = document.querySelector(".topbar-right");
   const showBack = navHistory.length > 0 && page !== "landing";
+  const userRole = normalizeRole(currentRole);
+  
   if (pubBack) pubBack.style.display = showBack ? "block" : "none";
-  if (dashBack) dashBack.style.display = showBack ? "block" : "none";
+  
+  // Dashboard elements for Applicants
+  const IS_APPLICANT = userRole === 'applicant';
+
+  if (dashBack) {
+    dashBack.style.display = (IS_APPLICANT) ? "none" : (showBack ? "block" : "none");
+  }
+
+  if (topbarRight) {
+    topbarRight.style.display = "flex";
+  }
+
+  // Ensure dashboard visibility
+  if (isLoggedIn && page !== "landing") {
+    const dashLayout = document.getElementById("dashboard-layout");
+    const dashTopbar = document.getElementById("dashboard-topbar");
+    if (dashLayout) {
+      dashLayout.classList.add("active");
+      dashLayout.style.display = "flex";
+    }
+    if (dashTopbar) {
+      dashTopbar.classList.add("active");
+      dashTopbar.style.display = "flex";
+    }
+  }
   if (page === "landing") navHistory = []; // Reset history
+
+  // Sync active states for both sidebar and topnav
+  updateActiveNavLinks(page);
 }
 
 function updateBottomNavItemActive(page) {
@@ -2286,7 +2332,7 @@ window.verifyOtp = function () {
 
 function logout() {
   isLoggedIn = false;
-  currentRole = "client";
+  currentRole = "applicant";
   selectedLoginRole = "client";
   navigateTo("landing");
   showToast("Logged out successfully");
@@ -2407,26 +2453,50 @@ function renderSidebar() {
       { page: "faq-dash", icon: "fa-circle-question", text: "FAQ" },
       { page: "notifications", icon: "fa-bell", text: "Notification" },
       { page: "user-profile", icon: "fa-user", text: "Profile" },
+      { page: "logout", icon: "fa-right-from-bracket", text: "Logout" },
     ],
   };
 
+  const isApplicant = normalizeRole(currentRole) === "applicant";
   const menu = menuMap[normalizeRole(currentRole)] || menuMap.applicant;
-  const isApplicant = normalizeRole(currentRole) === "client" || normalizeRole(currentRole) === "applicant";
+  const sidebar = document.getElementById("sidebar");
 
   if (isApplicant) {
-    // Compact Vertical Template
-    nav.innerHTML = menu
-      .map(
-        (m) => `
-      <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="nav-item-compact">
-        <div class="nav-icon-wrapper"><i class="fa-solid ${m.icon}"></i></div>
-        <span class="nav-text-compact">${m.text === "Dashboard" ? "Home" : m.text}</span>
-      </a>
-    `,
-      )
-      .join("");
+    if (sidebar) sidebar.classList.add("canva-mode");
+    
+    // Separate primary, main, and footer items for Canva style
+    const primaryItem = menu.find(i => i.page === 'filing-hub');
+    const footerPages = ['notifications', 'user-profile', 'logout'];
+    const footerItems = menu.filter(i => footerPages.includes(i.page));
+    const mainItems = menu.filter(i => i.page !== 'filing-hub' && !footerPages.includes(i.page));
+
+    nav.innerHTML = `
+      <div class="canva-primary-section">
+        <a href="#" onclick="navigateTo('${primaryItem.page}')" data-page="${primaryItem.page}" class="canva-nav-item primary" title="${primaryItem.text}">
+          <div class="canva-primary-btn"><i class="fa-solid fa-plus"></i></div>
+          <span class="canva-nav-text">Create</span>
+        </a>
+      </div>
+      <div class="canva-main-section">
+        ${mainItems.map(m => `
+          <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="canva-nav-item">
+            <div class="canva-icon-box"><i class="fa-solid ${m.icon}"></i></div>
+            <span class="canva-nav-text">${m.text === "Dashboard" ? "Home" : m.text}</span>
+          </a>
+        `).join('')}
+      </div>
+      <div class="canva-footer-section">
+        ${footerItems.map(m => `
+          <a href="#" onclick="${m.page === 'logout' ? 'logout()' : `navigateTo('${m.page}')`}" data-page="${m.page}" class="canva-nav-item ${m.page === 'user-profile' ? 'profile-item' : ''}">
+            ${m.page === 'user-profile' ? `<div class="canva-profile-img"><i class="fa-solid fa-user-tie"></i></div>` : `<div class="canva-icon-box"><i class="fa-solid ${m.icon}"></i></div>`}
+             ${m.page === 'user-profile' ? '' : `<span class="canva-nav-text">${m.text === "Dashboard" ? "Home" : m.text}</span>`}
+          </a>
+        `).join('')}
+      </div>
+    `;
   } else {
-    // Standard Horizontal Template
+    // Normal Sidebar Nav for Admin/Reviewer
+    if (sidebar) sidebar.classList.remove("canva-mode");
     nav.innerHTML = menu
       .map(
         (m) => `
@@ -2439,29 +2509,31 @@ function renderSidebar() {
       .join("");
   }
 
-  const sidebar = document.getElementById("sidebar");
   const mainContent = document.getElementById("main-content");
+  const topbar = document.getElementById("dashboard-topbar");
   const sidebarToggle = document.querySelector(".sidebar-toggle");
-  const bottomNav = document.getElementById("bottom-nav");
+  const bottomNav = document.querySelector(".bottom-nav");
 
   if (isApplicant) {
-    document.body.classList.add("compact-layout");
+    document.body.classList.add("compact-layout"); 
     if (sidebar) {
-      sidebar.style.display = "flex";
-      sidebar.classList.add("compact");
-      
-      // Ensure we have a compact footer if it doesn't exist
-      // No longer need footer button as it's in the main list
+      sidebar.style.display = "flex"; 
+      sidebar.style.width = "84px";
     }
-    if (mainContent) mainContent.style.marginLeft = "90px";
+    if (mainContent) mainContent.style.marginLeft = "84px";
+    if (topbar) topbar.style.left = "84px";
     if (sidebarToggle) sidebarToggle.style.display = "none";
-    if (bottomNav) bottomNav.style.display = "none"; // Hide bottom nav in favor of compact sidebar
+    if (bottomNav) bottomNav.style.display = "none";
   } else {
     if (sidebar) {
-      sidebar.style.display = "";
+      sidebar.style.display = "flex";
       sidebar.classList.remove("compact");
-      const footer = sidebar.querySelector(".sidebar-footer-compact");
-      if (footer) footer.remove();
+      sidebar.classList.remove("canva-mode");
+      sidebar.style.width = "";
+    }
+    if (topbar) {
+      topbar.style.left = "";
+      topbar.style.display = "block";
     }
     document.body.classList.remove("compact-layout");
     if (mainContent) mainContent.style.marginLeft = "";
@@ -2497,8 +2569,14 @@ function renderFilingHub() {
   `;
 }
 
-function updateActiveSidebarLink(page) {
+function updateActiveNavLinks(page) {
+  // Update normal sidebar links
   document.querySelectorAll(".sidebar-nav a").forEach((a) => {
+    a.classList.toggle("active", a.dataset.page === page);
+  });
+  
+  // Update canva-style links
+  document.querySelectorAll(".canva-nav-item").forEach((a) => {
     a.classList.toggle("active", a.dataset.page === page);
   });
 }
@@ -2506,10 +2584,17 @@ function updateActiveSidebarLink(page) {
 // ===== RENDER DASHBOARD CONTENT =====
 function renderDashboardContent(page) {
   const mc = document.getElementById("main-content");
-  switch (page) {
-    case "user-dashboard":
-      mc.innerHTML = renderUserDashboard();
-      break;
+  if (!mc) return;
+
+  // Clear previous content and ensure visibility
+  mc.style.display = "block";
+  mc.innerHTML = ""; 
+
+  try {
+    switch (page) {
+      case "user-dashboard":
+        mc.innerHTML = renderUserDashboard();
+        break;
     case "filing-hub":
       mc.innerHTML = renderFilingHub();
       break;
@@ -2582,8 +2667,8 @@ function renderDashboardContent(page) {
     case "faq-dash":
       mc.innerHTML = renderFaq();
       break;
-    case "ip-tutorial":
-      mc.innerHTML = renderIpTutorial();
+    case "ip-guidelines":
+      mc.innerHTML = renderIpGuidelines();
       break;
     case "project-blueprint":
       mc.innerHTML = renderProjectBlueprint();
@@ -2591,37 +2676,33 @@ function renderDashboardContent(page) {
     case "admin-announcements":
       mc.innerHTML = renderAdminAnnouncementsPage();
       break;
-    default:
-      mc.innerHTML = "<p>Page not found</p>";
+      default:
+        mc.innerHTML = `
+          <div class="page-header">
+            <h1>Page Not Found</h1>
+            <p>The requested page "<strong>${page}</strong>" does not exist or you don't have permission to view it.</p>
+          </div>
+        `;
+    }
+  } catch (err) {
+    console.error("Dashboard Render Error:", err);
+    mc.innerHTML = `
+      <div style="padding:40px; text-align:center; background:white; border-radius:24px; border: 2px dashed var(--red-bg);">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size:3rem; color:var(--red); margin-bottom:20px;"></i>
+        <h2 style="color:var(--navy);">Oops! Component Rendering Failed</h2>
+        <p style="color:var(--gray-500); margin:12px 0 24px;">Something went wrong while loading the <strong>${page}</strong> view.</p>
+        <button class="btn btn-navy" onclick="location.reload()">Refresh Application</button>
+      </div>
+    `;
   }
 }
 
-// ===== BADGE HELPER =====
-function statusBadge(status) {
-  const cls = {
-    Approved: "badge-approved",
-    Pending: "badge-pending",
-    Rejected: "badge-rejected",
-    "Under Review": "badge-review",
-    "Awaiting Documents": "badge-awaiting",
-    Archived: "badge-awaiting",
-  };
-  return `<span class="badge ${cls[status] || "badge-pending"}">${status}</span>`;
-}
-function typeBadge(type) {
-  const cls = {
-    Patent: "badge-patent",
-    Trademark: "badge-trademark",
-    Copyright: "badge-copyright",
-    "Utility Model": "badge-patent",
-    "Industrial Design": "badge-trademark",
-  };
-  return `<span class="badge ${cls[type] || ""}">${type}</span>`;
-}
+// Badges deduplicated above.
 
 // ===== USER DASHBOARD =====
 function renderUserDashboard() {
-  const userSubmissions = getVisibleSubmissions("client");
+  const role = "applicant"; // Standardize
+  const userSubmissions = getVisibleSubmissions(role);
   const total = userSubmissions.length;
   const pending = userSubmissions.filter(
     (s) =>
@@ -2636,7 +2717,7 @@ function renderUserDashboard() {
     (s) => s.status === "Rejected",
   ).length;
   const recent = userSubmissions.slice(0, 5);
-  const user = getCurrentUser("client");
+  const user = getCurrentUser(role);
 
   return `
     <div class="page-header">
@@ -3216,6 +3297,7 @@ function legacyGetRoleSpecificPanels(role) {
 }
 
 function getRoleSpecificStats(role) {
+  const norm = normalizeRole(role);
   const visibleSubmissions = getVisibleSubmissions(role);
   const total = visibleSubmissions.length;
   const pending = visibleSubmissions.filter(
@@ -3229,74 +3311,70 @@ function getRoleSpecificStats(role) {
   ).length;
   const baseStats = {
     superadmin: {
-      title: "Admin Dashboard",
-      subtitle: "Complete institutional oversight of all IP activities.",
+      title: "Super Admin Dashboard",
+      subtitle: "Global oversight of all university IP activities.",
       cards: [
         {
-          label: "System Users",
-          value: systemUsers.length,
-          icon: "fa-users",
+          label: "Total Submissions",
+          value: total,
+          icon: "fa-folder-open",
           color: "blue",
         },
         {
-          label: "Audit Events",
-          value: getVisibleAuditLogs(role).length,
-          icon: "fa-clipboard-list",
-          color: "yellow",
-        },
-        {
-          label: "Active Cases",
-          value: total,
-          icon: "fa-database",
-          color: "green",
-        },
-        {
-          label: "Registered IPs",
+          label: "Approved",
           value: approvedCount,
           icon: "fa-certificate",
           color: "green",
         },
         {
-          label: "Operational Logs",
-          value: getVisibleAuditLogs(role).length,
-          icon: "fa-clipboard-list",
-          color: "indigo",
+          label: "Under Review",
+          value: pending,
+          icon: "fa-microscope",
+          color: "yellow",
         },
       ],
     },
     reviewer: {
       title: "Reviewer Workspace",
-      subtitle: "Process assigned cases within reviewer-only permissions.",
+      subtitle: "Manage and evaluate your assigned IP cases.",
       cards: [
         {
-          label: "Assigned Cases",
+          label: "My Assigned Cases",
           value: total,
-          icon: "fa-file-signature",
+          icon: "fa-briefcase",
           color: "blue",
         },
         {
-          label: "In Review",
-          value: pending,
-          icon: "fa-microscope",
-          color: "yellow",
-        },
-        {
-          label: "Advanced Stages",
+          label: "Completed Reviews",
           value: approvedCount,
-          icon: "fa-check-double",
+          icon: "fa-check-circle",
           color: "green",
         },
         {
-          label: "Search Access",
-          value: "Internal",
-          icon: "fa-magnifying-glass",
-          color: "indigo",
+          label: "Pending Action",
+          value: pending,
+          icon: "fa-clock",
+          color: "yellow",
         },
       ],
     },
+    applicant: [
+      {
+        label: "My Applications",
+        value: visibleSubmissions.length,
+        icon: "fa-file-lines",
+        color: "blue",
+      },
+      {
+        label: "Approved",
+        value: visibleSubmissions.filter((s) => s.status === "Approved").length,
+        icon: "fa-check",
+        color: "green",
+      },
+    ],
   };
 
-  return baseStats[normalizeRole(role)] || baseStats.superadmin;
+  return baseStats[norm] || baseStats.applicant;
 }
 
 function getRoleSpecificPanels(role) {
@@ -3344,7 +3422,7 @@ function getRoleSpecificPanels(role) {
     <div class="dashboard-panel" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-radius:16px; padding:24px; border: 1px solid rgba(255,255,255,0.8); box-shadow:0 8px 30px rgba(0,0,0,0.03);">
       <h3 style="font-size:1.15rem; color:var(--navy); margin-bottom: 16px; font-weight:800;"><i class="fa-solid fa-bolt" style="color:var(--yellow); margin-right:6px;"></i> Quick Launch</h3>
       ${normalizedRole !== "reviewer" ? `<button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; margin-bottom: 12px; font-weight:600;" onclick="showToast('Starting report generation...')"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> Download Status</button>` : ""}
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('${normalizedRole === "reviewer" ? "admin-search" : "ip-tutorial"}')"><i class="fa-solid fa-${normalizedRole === "reviewer" ? "magnifying-glass" : "book"}" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Open Search" : "Operations Manual"}</button>
+      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('${normalizedRole === "reviewer" ? "admin-search" : "ip-guidelines"}')"><i class="fa-solid fa-${normalizedRole === "reviewer" ? "magnifying-glass" : "book"}" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Open Search" : "Operations Manual"}</button>
     </div>`;
 
   return { main, side };
@@ -3437,9 +3515,6 @@ function switchRole(role) {
   selectedLoginRole = currentRole;
   isLoggedIn = true;
 
-  const menu = document.getElementById("switcherMenu");
-  if (menu) menu.classList.remove("active");
-
   const user = getCurrentUser(currentRole);
   if (user) {
     showToast(
@@ -3447,10 +3522,12 @@ function switchRole(role) {
     );
   }
 
-  navigateTo(getDefaultDashboardPage(currentRole));
-
+  // Render Sidebar and Topbar immediately to reflect new role
   renderSidebar();
   updateTopbarRole();
+
+  // Navigate to appropriate landing page
+  navigateTo(getDefaultDashboardPage(currentRole));
 }
 
 function renderAdminSubmissionsPage() {
@@ -6978,8 +7055,8 @@ function renderSubmissionDetail() {
     </div>`;
 }
 
-function renderIpTutorial() {
-  const types = [
+function renderIpGuidelines(filterId = null) {
+  let types = [
     {
       id: "patent",
       icon: "fa-lightbulb",
@@ -7120,9 +7197,17 @@ function renderIpTutorial() {
   return `
     <div class="page-header" style="margin-bottom:36px">
       <span class="m-eyebrow" style="display:block; margin-bottom:12px;">Pre-Filing Intelligence</span>
-      <h1 style="color:var(--navy); font-weight:800; font-size:2.2rem;"><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:12px"></i>IP Application Tutorial</h1>
+      <h1 style="color:var(--navy); font-weight:800; font-size:2.2rem;"><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:12px"></i>${filterId ? types.find(t => t.id === filterId).title + ' Guidelines' : 'IP Application Guidelines'}</h1>
       <p style="color:var(--gray-500); font-size:1.05rem;">A comprehensive guide to Intellectual Property protection and filing procedures at Palawan State University.</p>
     </div>
+
+    ${filterId ? `
+      <div style="margin-bottom: 24px;">
+        <button class="btn btn-outline btn-sm" onclick="navigateTo('guidelines')">
+          <i class="fa-solid fa-arrow-left"></i> View All Guidelines
+        </button>
+      </div>
+    ` : ''}
 
     <div style="background:linear-gradient(135deg, var(--navy-dark), var(--navy)); border-radius:24px; padding:32px 40px; margin-bottom:48px; color:white; position:relative; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.1);">
       <div style="position:absolute; top:-40px; right:-40px; width:200px; height:200px; background:rgba(255,127,80,0.1); border-radius:50%;"></div>
@@ -7137,7 +7222,7 @@ function renderIpTutorial() {
     </div>
 
     <div style="display:flex; flex-direction:column; gap:32px; padding-bottom:80px;">
-      ${types.map(t => `
+      ${(filterId ? types.filter(t => t.id === filterId) : types).map(t => `
         <div style="background:white; border-radius:24px; border:1px solid var(--gray-200); overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.03); transition:transform 0.3s ease;">
           <div style="background:${t.gradient}; padding:28px 36px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
             <div style="width:60px; height:60px; border-radius:18px; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; color:white; font-size:1.6rem;">
@@ -7307,7 +7392,7 @@ function renderForms() {
     <div style="margin-top:20px; padding: 40px; background: white; border-top: 1px solid var(--gray-100); border-radius: 24px; text-align: center; box-shadow: 0 -10px 40px rgba(0,0,0,0.02);">
       <div style="display: inline-flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--gray-50); border-radius: 50px; margin-bottom: 20px;">
         <i class="fa-solid fa-circle-info" style="color: var(--navy);"></i>
-        <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-600);">Need help with the legal requirements? Visit our <a href="#" onclick="navigateTo('guidelines')" style="color: var(--navy); text-decoration: underline;">Tutorial Section</a>.</span>
+        <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-600);">Need help with the legal requirements? Visit our <a href="#" onclick="navigateTo('ip-guidelines')" style="color: var(--navy); text-decoration: underline;">Guidelines Section</a>.</span>
       </div>
       <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office — Authorized Document Repository</p>
     </div>
