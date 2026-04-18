@@ -84,6 +84,7 @@
 
           <li><a href="#" class="nav-link" onclick="navigateTo('news')">News</a></li>
           <li><a href="#" class="nav-link" onclick="navigateTo('forms')">Forms</a></li>
+          <li><a href="#" class="nav-link" onclick="navigateTo('marketplace')">Marketplace</a></li>
           <li><a href="#" class="nav-link" onclick="navigateTo('about')">About</a></li>
           <li class="nav-item-dropdown">
             <a href="#" class="nav-link" onclick="event.preventDefault()">Help <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; margin-left:3px;"></i></a>
@@ -194,85 +195,6 @@
         </div>
       </div>
 
-      <!-- Services Overview Section -->
-      <section id="services-landing-section" class="section">
-        <div class="container text-center">
-          <h2 class="section-title">Our IP Services</h2>
-          <p class="section-subtitle">Comprehensive intellectual property management for every creator at Palawan State University.</p>
-          
-          <div class="service-cards">
-            <!-- Patent Card with Hover Actions -->
-            <div class="service-card service-interactive">
-              <div class="service-card-main">
-                <div class="service-icon patent"><i class="fa-solid fa-lightbulb"></i></div>
-                <h3>Patent</h3>
-                <p>Protecting technical inventions, chemical processes, and mechanical innovations with global potential.</p>
-                <span class="service-link">Explore Patent <i class="fa-solid fa-arrow-right" style="font-size: 0.8rem; margin-left: 6px;"></i></span>
-              </div>
-              <div class="service-hover-actions">
-                <button class="btn btn-primary btn-sm" onclick="navigateTo('login')"><i class="fa-solid fa-file-invoice"></i> File Patent</button>
-                <button class="btn btn-outline btn-sm" onclick="navigateTo('guidelines', false, { serviceId: 'patent' })"><i class="fa-solid fa-book-open"></i> Guidelines</button>
-              </div>
-            </div>
-
-            <!-- Trademark Card -->
-            <div class="service-card service-interactive">
-              <div class="service-card-main">
-                <div class="service-icon trademark"><i class="fa-solid fa-stamp"></i></div>
-                <h3>Trademark</h3>
-                <p>Securing your brand identity, logos, and slogans to ensure unique market presence.</p>
-                <span class="service-link">Explore Trademark <i class="fa-solid fa-arrow-right" style="font-size: 0.8rem; margin-left: 6px;"></i></span>
-              </div>
-              <div class="service-hover-actions">
-                <button class="btn btn-primary btn-sm" onclick="navigateTo('login')"><i class="fa-solid fa-file-invoice"></i> File Trademark</button>
-                <button class="btn btn-outline btn-sm" onclick="navigateTo('guidelines', false, { serviceId: 'trademark' })"><i class="fa-solid fa-book-open"></i> Guidelines</button>
-              </div>
-            </div>
-
-            <!-- Copyright Card -->
-            <div class="service-card service-interactive">
-              <div class="service-card-main">
-                <div class="service-icon copyright"><i class="fa-solid fa-copyright"></i></div>
-                <h3>Copyright</h3>
-                <p>Legally safeguarding literary, artistic, and scientific works for PSU researchers and authors.</p>
-                <span class="service-link">Explore Copyright <i class="fa-solid fa-arrow-right" style="font-size: 0.8rem; margin-left: 6px;"></i></span>
-              </div>
-              <div class="service-hover-actions">
-                <button class="btn btn-primary btn-sm" onclick="navigateTo('login')"><i class="fa-solid fa-file-invoice"></i> File Copyright</button>
-                <button class="btn btn-outline btn-sm" onclick="navigateTo('guidelines', false, { serviceId: 'copyright' })"><i class="fa-solid fa-book-open"></i> Guidelines</button>
-              </div>
-            </div>
-
-            <!-- Utility Model -->
-            <div class="service-card service-interactive">
-              <div class="service-card-main">
-                <div class="service-icon utility"><i class="fa-solid fa-gears"></i></div>
-                <h3>Utility Model</h3>
-                <p>A faster path to protection for practical innovations and incremental improvements.</p>
-                <span class="service-link">Explore Utility <i class="fa-solid fa-arrow-right" style="font-size: 0.8rem; margin-left: 6px;"></i></span>
-              </div>
-              <div class="service-hover-actions">
-                <button class="btn btn-primary btn-sm" onclick="navigateTo('login')"><i class="fa-solid fa-file-invoice"></i> File Utility</button>
-                <button class="btn btn-outline btn-sm" onclick="navigateTo('guidelines', false, { serviceId: 'utility' })"><i class="fa-solid fa-book-open"></i> Guidelines</button>
-              </div>
-            </div>
-
-            <!-- Industrial Design -->
-            <div class="service-card service-interactive">
-              <div class="service-card-main">
-                <div class="service-icon industrial"><i class="fa-solid fa-pen-nib"></i></div>
-                <h3>Industrial Design</h3>
-                <p>Protecting the unique aesthetic and visual design of your hardware or product prototypes.</p>
-                <span class="service-link">Explore Design <i class="fa-solid fa-arrow-right" style="font-size: 0.8rem; margin-left: 6px;"></i></span>
-              </div>
-              <div class="service-hover-actions">
-                <button class="btn btn-primary btn-sm" onclick="navigateTo('login')"><i class="fa-solid fa-file-invoice"></i> File Design</button>
-                <button class="btn btn-outline btn-sm" onclick="navigateTo('guidelines', false, { serviceId: 'industrial' })"><i class="fa-solid fa-book-open"></i> Guidelines</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- News & Announcements Section -->
       <section id="announcements-landing-section" class="section bg-light">
@@ -623,6 +545,13 @@
     <section id="page-forms" class="page container" style="padding-top: 160px !important;">
       <div id="formsPublicContent">
         <!-- Forms content injected by JS -->
+      </div>
+    </section>
+
+    <!-- ====== MARKETPLACE PAGE (PUBLIC) ====== -->
+    <section id="page-marketplace" class="page container" style="padding-top: 160px !important;">
+      <div id="marketplacePublicContent">
+        <!-- Marketplace content injected by JS -->
       </div>
     </section>
 

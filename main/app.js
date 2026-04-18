@@ -831,6 +831,27 @@ const marketplaceItems = [
     icon: "fa-solid fa-calendar-check",
     image: "images/ecolearn_app.png",
   },
+  {
+    id: 21,
+    title: "Zero-Emission Seaweed Processor",
+    fullTitle: "ZERO-EMISSION SEAWEED PROCESSOR WITH INTEGRATED SOLAR THERMAL DRYING",
+    type: "Patent",
+    inventor: "Engr. Elena Vance",
+    college: "College of Engineering",
+    description: "A sustainable seaweed processing system powered by solar thermal energy, eliminating carbon emissions in coastal farming.",
+    longDescription: "This innovation provides a complete, off-grid solution for seaweed farmers to process their harvests. It integrates high-efficiency solar thermal collectors with a closed-loop processing chamber that maintains optimal temperature and humidity, ensuring high-quality output while removing the need for burning biomass or using fossil fuels.",
+    features: [
+      "Zero-carbon footprint during the entire processing cycle.",
+      "Smart moisture sensors for automated quality control.",
+      "Modular design easily deployable in remote coastal settings."
+    ],
+    businessPotential: "Highly valuable for the global sustainable aquaculture market. Licensing opportunities with NGOs and government agricultural agencies focused on green energy transitions.",
+    contactPerson: "Dr. Gordon Freeman",
+    contactEmail: "g.freeman@tcb.psu.edu.ph",
+    year: 2026,
+    icon: "fa-solid fa-wind",
+    image: "images/solar_rice_dryer.png",
+  },
 ];
 
 let systemUsers = [
@@ -1630,6 +1651,10 @@ function navigateTo(page, isBack = false, params = null) {
     document.getElementById("public-nav").classList.add("active");
     document.getElementById("page-guidelines").classList.add("active");
     document.getElementById("guidelinesPublicContent").innerHTML = renderIpGuidelines(currentParams.serviceId);
+  } else if (page === "marketplace") {
+    document.getElementById("public-nav").classList.add("active");
+    document.getElementById("page-marketplace").classList.add("active");
+    document.getElementById("marketplacePublicContent").innerHTML = renderMarketplace();
   } else if (page === "contact") {
     document.getElementById("public-nav").classList.add("active");
     document.getElementById("page-contact").classList.add("active");
