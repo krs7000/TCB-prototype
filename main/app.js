@@ -1047,6 +1047,7 @@ const DASHBOARD_ACCESS = {
     "industrial-form",
     "faq-dash",
     "ip-tutorial",
+    "ip-guidelines",
     "project-blueprint",
     "marketplace-dash",
     "filing-hub",
@@ -1625,6 +1626,7 @@ function navigateTo(page, isBack = false, params = null) {
     "create-account",
     "faq-dash",
     "ip-tutorial",
+    "ip-guidelines",
     "project-blueprint",
     "admin-announcements",
     "filing-hub",
@@ -2678,6 +2680,9 @@ function renderDashboardContent(page) {
     case "create-account":
       mc.innerHTML = renderCreateAccount();
       break;
+    case "ip-guidelines":
+      mc.innerHTML = renderIpGuidelines();
+      break;
     case "faq-dash":
       mc.innerHTML = renderFaq();
       break;
@@ -2715,7 +2720,12 @@ function renderDashboardContent(page) {
 
 // ===== USER DASHBOARD =====
 function renderUserDashboard() {
-  const role = "applicant"; // Standardize
+  const currentHour = new Date().getHours();
+  let greeting = "Good Morning";
+  if (currentHour >= 12 && currentHour < 17) greeting = "Good Afternoon";
+  else if (currentHour >= 17) greeting = "Good Evening";
+
+  const role = "applicant";
   const userSubmissions = getVisibleSubmissions(role);
   const total = userSubmissions.length;
   const pending = userSubmissions.filter(
@@ -2724,57 +2734,127 @@ function renderUserDashboard() {
       s.status === "Under Review" ||
       s.status === "Awaiting Documents",
   ).length;
-  const approved = userSubmissions.filter(
-    (s) => s.status === "Approved",
-  ).length;
-  const rejected = userSubmissions.filter(
-    (s) => s.status === "Rejected",
-  ).length;
-  const recent = userSubmissions.slice(0, 5);
-  const user = getCurrentUser(role);
+  const approved = userSubmissions.filter((s) => s.status === "Approved").length;
+  const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
+  const recent = userSubmissions.slice(0, 3);
 
   return `
-    <div class="page-header">
-      <h1>Applicant Portal</h1>
-      <p>Welcome back, <strong>${user.name}</strong>. Manage your intellectual property assets and track active applications.</p>
+    <div class="dashboard-hero">
+      <div class="hero-bg-accent"></div>
+      <h1>${greeting}, Dr. Elena Vance!</h1>
+      <p>Your intellectual property command center is ready. Track your active filings or start a new protective lane for your latest innovation below.</p>
     </div>
 
-    <div class="stats-cards">
-      <div class="stat-card" onclick="navigateTo('user-submissions')" style="cursor:pointer">
-        <div class="stat-card-icon blue"><i class="fa-solid fa-file-lines"></i></div>
-        <div class="stat-card-info"><h3>${total}</h3><p>Packets in Workspace</p></div>
+    <div class="quick-actions-grid">
+      <div class="action-card" onclick="navigateTo('filing-hub')">
+        <div class="action-card-icon"><i class="fa-solid fa-rocket"></i></div>
+        <div class="action-card-content">
+          <h3>Register New IP</h3>
+          <p>Begin a new submission for Patent, Trademark, or Copyright.</p>
+        </div>
+        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
-      <div class="stat-card" onclick="navigateTo('user-submissions')" style="cursor:pointer">
-        <div class="stat-card-icon yellow"><i class="fa-solid fa-hourglass-half"></i></div>
-        <div class="stat-card-info"><h3>${pending}</h3><p>In Manual Review</p></div>
+
+      <div class="action-card" onclick="navigateTo('ip-guidelines')">
+        <div class="action-card-icon"><i class="fa-solid fa-book-open"></i></div>
+        <div class="action-card-content">
+          <h3>IP Knowledge Base</h3>
+          <p>Explore filing requirements and legal guidelines.</p>
+        </div>
+        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
-      <div class="stat-card" onclick="navigateTo('user-submissions')" style="cursor:pointer">
-        <div class="stat-card-icon green"><i class="fa-solid fa-circle-check"></i></div>
-        <div class="stat-card-info"><h3>${approved}</h3><p>Certified Records</p></div>
-      </div>
-      <div class="stat-card" onclick="navigateTo('user-submissions')" style="cursor:pointer">
-        <div class="stat-card-icon red"><i class="fa-solid fa-circle-xmark"></i></div>
-        <div class="stat-card-info"><h3>${rejected}</h3><p>Returned Packets</p></div>
+
+      <div class="action-card" onclick="showToast('Connecting to PSU IP Support...')">
+        <div class="action-card-icon"><i class="fa-solid fa-comments"></i></div>
+        <div class="action-card-content">
+          <h3>Expert Support</h3>
+          <p>Request a consultation with our IP experts.</p>
+        </div>
+        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
     </div>
 
-    <div class="table-container" style="margin-top:24px">
-      <div class="table-header">
-        <h3>Recent Submissions</h3>
-        <button class="btn btn-sm btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-eye"></i> View All</button>
+    <div class="page-header" style="margin-bottom: 24px;">
+      <h2 style="font-size:1.4rem; font-weight:800; color:var(--navy);">Quick Stats</h2>
+      <p>Overview of your current workspace status.</p>
+    </div>
+
+    <div class="dashboard-stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:24px; margin-bottom:40px;">
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="width:48px; height:48px; border-radius:12px; background:#3b82f615; color:#3b82f6; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
+        <div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${total}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Packets in Workspace</div>
+        </div>
       </div>
-      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Date Submitted</th><th>Status</th></tr></thead><tbody>
-        ${
-          recent.length
-            ? recent
-                .map(
-                  (s) =>
-                    `<tr onclick="viewSubmission('${s.id}')" style="cursor:pointer"><td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${s.title}</td><td>${s.date}</td><td>${statusBadge(s.status)}</td></tr>`,
-                )
-                .join("")
-            : '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--gray-400)">No submissions yet for this client account.</td></tr>'
-        }
-      </tbody></table></div>
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="width:48px; height:48px; border-radius:12px; background:#f59e0b15; color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+        <div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${pending}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">In Manual Review</div>
+        </div>
+      </div>
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="width:48px; height:48px; border-radius:12px; background:#10b98115; color:#10b981; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-certificate"></i>
+        </div>
+        <div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${approved}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Certified Records</div>
+        </div>
+      </div>
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="width:48px; height:48px; border-radius:12px; background:#ef444415; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${rejected}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Returned Packets</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-section" style="background:white; border-radius:16px; border:1px solid var(--gray-100); padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.02);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h3 style="font-size:1.2rem; font-weight:800; color:var(--navy);">Recent Submissions</h3>
+        <button class="btn-text" onclick="navigateTo('user-submissions')" style="color:var(--gold-dark); font-weight:700; background:none; border:none; cursor:pointer;">View All <i class="fa-solid fa-circle-arrow-right" style="margin-left:4px;"></i></button>
+      </div>
+      
+      <div class="table-container">
+        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+          <thead>
+            <tr style="text-align:left; border-bottom:1px solid var(--gray-100);">
+              <th style="padding:16px; color:var(--gray-500); font-weight:600;">Reference No.</th>
+              <th style="padding:16px; color:var(--gray-500); font-weight:600;">Type</th>
+              <th style="padding:16px; color:var(--gray-500); font-weight:600;">Title</th>
+              <th style="padding:16px; color:var(--gray-500); font-weight:600;">Date Submitted</th>
+              <th style="padding:16px; color:var(--gray-500); font-weight:600;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              recent.length
+                ? recent
+                    .map(
+                      (s) => `
+              <tr style="border-bottom:1px solid var(--gray-50); cursor:pointer;" onclick="viewSubmission('${s.id}')">
+                <td style="padding:16px; font-weight:700; color:var(--navy);">${s.id}</td>
+                <td style="padding:16px;">${typeBadge(s.type)}</td>
+                <td style="padding:16px; font-weight:500; color:var(--gray-700);">${s.title}</td>
+                <td style="padding:16px; color:var(--gray-500);">${s.date}</td>
+                <td style="padding:16px;">${statusBadge(s.status)}</td>
+              </tr>`,
+                    )
+                    .join("")
+                : '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--gray-400)">No submissions yet.</td></tr>'
+            }
+          </tbody>
+        </table>
+      </div>
     </div>`;
 }
 
