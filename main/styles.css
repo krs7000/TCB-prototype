@@ -1465,30 +1465,30 @@ textarea {
   gap: 24px;
 }
 
-/* Status Hub Bar (Shopee Style) */
+/* Status Hub Bar (Tab Style above Table) */
 .status-hub-container {
   background: white;
   border-bottom: 1px solid var(--gray-100);
-  margin: -32px -32px 32px -32px;
-  padding: 0 32px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  margin: 0 0 24px 0;
+  padding: 0 4px;
+  z-index: 5;
 }
 .status-hub-bar {
   display: flex !important;
   flex-direction: row !important;
-  gap: 32px;
+  gap: 24px;
 }
 .status-tab {
-  padding: 16px 4px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--gray-500);
+  padding: 12px 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gray-400);
   cursor: pointer;
   position: relative;
   transition: all 0.3s ease;
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .status-tab:hover {
   color: var(--gold-dark);
@@ -1994,10 +1994,289 @@ body.compact-layout .sidebar-toggle {
 .sidebar.collapsed .nav-text {
   display: none;
 }
-.sidebar.collapsed .sidebar-nav a {
-  justify-content: center;
-  padding: 12px;
+/* =============== RESPONSIVE & MOBILE POLISH =============== */
+@media (max-width: 992px) {
+  .dashboard-topbar {
+    left: 0 !important;
+    width: 100% !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 80px 16px 40px 16px !important;
+  }
+  .top-nav-layout .dashboard-topbar {
+    height: auto;
+    padding: 10px 0;
+  }
+  #dashboard-top-nav {
+    overflow-x: auto;
+    padding: 10px 16px;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+  .top-nav-link {
+    white-space: nowrap;
+  }
+  
+  .profile-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .profile-side-col {
+    order: 2;
+  }
+  .profile-main-col {
+    order: 1;
+  }
 }
+
+@media (max-width: 768px) {
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 16px !important;
+  }
+  .quick-actions-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .stat-card {
+    padding: 16px !important;
+    gap: 12px !important;
+  }
+  .stat-card i {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1.1rem !important;
+  }
+  .dashboard-hero h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  .marketplace-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .filter-panel {
+    display: none; /* Hide sidebar filters on mobile, could use a modal instead */
+  }
+  
+  .user-controls-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  .user-controls-bar > div {
+    width: 100%;
+  }
+}
+
+/* Marketplace Interest Styles */
+.interest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold-light);
+  color: var(--gold-dark);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.interest-btn {
+  background: var(--navy);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.interest-btn:hover {
+  background: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 127, 80, 0.3);
+}
+.interest-btn.active {
+  background: var(--green);
+}
+
+.submission-progress-container {
+  background: var(--white);
+  padding: 32px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 24px;
+}
+.progress-steps-row {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 20px;
+}
+.progress-steps-row::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gray-100);
+  z-index: 1;
+}
+.progress-step-item {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 80px;
+}
+.step-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  border: 4px solid var(--white);
+}
+.progress-step-item.completed .step-circle {
+  background: var(--green);
+}
+.progress-step-item.active .step-circle {
+  background: var(--gold);
+  box-shadow: 0 0 0 4px var(--gold-light);
+}
+.step-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-align: center;
+  white-space: nowrap;
+}
+.progress-step-item.active .step-label,
+.progress-step-item.completed .step-label {
+  color: var(--navy);
+}
+
+.next-step-card {
+  background: linear-gradient(135deg, #fff, #fff9f6);
+  border: 1px solid var(--gold-light);
+  border-left: 5px solid var(--gold);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 32px;
+  box-shadow: 0 10px 20px rgba(255, 127, 80, 0.05);
+}
+.next-step-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  color: var(--gold-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.floating-help-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.floating-help-btn:hover {
+  transform: scale(1.1) rotate(5deg);
+  background: var(--navy-dark);
+}
+.floating-help-btn::after {
+  content: "Need Help?";
+  position: absolute;
+  right: 70px;
+  background: var(--navy);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.floating-help-btn:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.activity-item {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+.activity-item::before {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 36px;
+  bottom: -20px;
+  width: 2px;
+  background: var(--gray-100);
+}
+.activity-item:last-child::before {
+  display: none;
+}
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  z-index: 2;
+  flex-shrink: 0;
+}
+.activity-item.success .activity-icon { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+.activity-item.warning .activity-icon { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow); }
+.activity-item.info .activity-icon { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+
+.activity-content h4 { font-size: 0.95rem; margin-bottom: 2px; color: var(--navy); }
+.activity-content p { font-size: 0.85rem; color: var(--gray-500); line-height: 1.4; }
+.activity-time { font-size: 0.75rem; color: var(--gray-400); margin-top: 4px; font-weight: 600; }
+
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid rgba(255, 127, 80, 0.14);
@@ -2369,6 +2648,78 @@ body.compact-layout .sidebar-toggle {
   font-size: 1.1rem;
   color: var(--gold-dark);
 }
+
+/* =============== FILING HUB =============== */
+.filing-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+.filing-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid var(--gray-200);
+  padding: 32px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.filing-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--gold);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+}
+.filing-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--gold);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+.filing-card:hover::before {
+  opacity: 1;
+}
+.filing-card-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--gray-50);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+}
+.filing-card:hover .filing-card-icon {
+  background: var(--gold-light);
+  color: var(--gold-dark);
+}
+.filing-badge-group {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 20px;
+}
+.filing-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-docs { background: #e0e7ff; color: #4338ca; }
+.badge-time { background: #fef3c7; color: #92400e; }
 
 /* =============== FORM WIZARD =============== */
 .wizard-container {
@@ -4955,6 +5306,7 @@ body.compact-layout .sidebar-toggle {
   margin-bottom: 24px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
