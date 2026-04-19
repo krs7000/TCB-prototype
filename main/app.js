@@ -3938,6 +3938,25 @@ function viewSubmission(id) {
   navigateTo("submission-detail");
 }
 
+function resumeDraft(id) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return;
+
+  // Set global state for wizard
+  wizardData = { ...submission };
+  selectedSubmissionId = id;
+  currentWizardStep = 1;
+
+  // Determine form type
+  let formPage = "patent-form";
+  if (submission.type === "Trademark") formPage = "trademark-form";
+  if (submission.type === "Copyright") formPage = "copyright-form";
+
+  currentFormType = submission.type.toLowerCase();
+  
+  navigateTo(formPage);
+}
+
 const COPYRIGHT_OPERATION_FLOW = [
   {
     key: "author-submission",
@@ -5250,12 +5269,12 @@ function renderStep1() {
     <div class="form-row">
       <div class="form-group">
         <label>Full Name *</label>
-        <input type="text" id="wiz-name" value="${user.name}" placeholder="Enter full name" required style="background:var(--gray-50);" />
+        <input type="text" id="wiz-name" value="${wizardData.applicant || user.name}" placeholder="Enter full name" required style="background:var(--gray-50);" />
         <small style="color:var(--gray-400); font-size:0.75rem; margin-top:4px; display:block;">Primary applicant or lead researcher.</small>
       </div>
       <div class="form-group">
         <label>Institutional Email *</label>
-        <input type="email" id="wiz-email" value="${user.email}" placeholder="your.email@psu.edu.ph" required disabled style="background:var(--gray-100); cursor:not-allowed;" />
+        <input type="email" id="wiz-email" value="${wizardData.email || user.email}" placeholder="your.email@psu.edu.ph" required disabled style="background:var(--gray-100); cursor:not-allowed;" />
         <small style="color:var(--gray-400); font-size:0.75rem; margin-top:4px; display:block;">Used for all official PITBI correspondence.</small>
       </div>
     </div>
@@ -5263,7 +5282,7 @@ function renderStep1() {
     <div class="form-row">
       <div class="form-group">
         <label>Campus / Department *</label>
-        <input type="text" id="wiz-dept" value="${user.dept || ''}" placeholder="e.g., College of Engineering" required />
+        <input type="text" id="wiz-dept" value="${wizardData.department || user.dept || ''}" placeholder="e.g., College of Engineering" required />
       </div>
       <div class="form-group">
         <label>Unit / College *</label>
@@ -5301,29 +5320,29 @@ function renderStep2() {
 
       <div class="form-group">
         <label>Full Title of Invention *</label>
-        <input type="text" id="wiz-title" placeholder="e.g., Solar-Powered Water Purification System using Bamboo Filtration" required />
+        <input type="text" id="wiz-title" value="${wizardData.title || ''}" placeholder="e.g., Solar-Powered Water Purification System using Bamboo Filtration" required />
         <small style="color:var(--gray-400); font-size:0.75rem; margin-top:4px; display:block;">A concise, technical name that identifies the invention's nature.</small>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>Technical Field *</label>
-          <input type="text" id="wiz-field" placeholder="e.g., Environmental Engineering / Renewable Energy" required />
+          <input type="text" id="wiz-field" value="${wizardData.field || ''}" placeholder="e.g., Environmental Engineering / Renewable Energy" required />
         </div>
         <div class="form-group">
           <label>Date of Conception *</label>
-          <input type="date" id="wiz-date" required />
+          <input type="date" id="wiz-date" value="${wizardData.date || ''}" required />
         </div>
       </div>
 
       <div class="form-group">
         <label>Technical Abstract (max 150 words) *</label>
-        <textarea id="wiz-abstract" placeholder="Summarize the technical problem and your proposed solution..." maxlength="900" style="min-height:120px;" required></textarea>
+        <textarea id="wiz-abstract" placeholder="Summarize the technical problem and your proposed solution..." maxlength="900" style="min-height:120px;" required>${wizardData.abstract || ''}</textarea>
       </div>
 
       <div class="form-group">
         <label>Detailed Description *</label>
-        <textarea id="wiz-desc" placeholder="Describe how the invention works, its components, and the steps to reproduce it..." style="min-height:180px;" required></textarea>
+        <textarea id="wiz-desc" placeholder="Describe how the invention works, its components, and the steps to reproduce it..." style="min-height:180px;" required>${wizardData.description || ''}</textarea>
       </div>
 
       <div class="form-group">
@@ -5340,7 +5359,7 @@ function renderStep2() {
 
       <div class="form-group">
         <label>Mark / Brand Name *</label>
-        <input type="text" id="wiz-title" placeholder="Enter the exact brand name or mark" required />
+        <input type="text" id="wiz-title" value="${wizardData.title || ''}" placeholder="Enter the exact brand name or mark" required />
       </div>
 
       <div class="form-row">
@@ -5363,7 +5382,7 @@ function renderStep2() {
 
       <div class="form-group">
         <label>Description of Goods/Services *</label>
-        <textarea id="wiz-desc" placeholder="List the specific products or services that will carry this brand..." style="min-height:120px;" required></textarea>
+        <textarea id="wiz-desc" placeholder="List the specific products or services that will carry this brand..." style="min-height:120px;" required>${wizardData.description || ''}</textarea>
       </div>
 
       <div class="form-group">
@@ -6290,6 +6309,15 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                   <button class="btn btn-sm btn-outline-navy" style="width:100%; justify-content:center;" onclick="viewSubmission('${s.id}')">
                     <i class="fa-solid fa-circle-info"></i> Full Details & History
                   </button>
+                  ${
+                    s.status === "Draft"
+                      ? `
+                    <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="resumeDraft('${s.id}')">
+                      <i class="fa-solid fa-play"></i> Resume Application
+                    </button>
+                  `
+                      : ""
+                  }
                   ${
                     needsAction
                       ? `
