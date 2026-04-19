@@ -6062,6 +6062,7 @@ function getStatusCounts() {
     Approved: 0,
     Rejected: 0,
     "Awaiting Documents": 0,
+    Draft: 0,
   };
   visible.forEach((s) => {
     if (counts[s.status] !== undefined) counts[s.status]++;
@@ -6080,10 +6081,10 @@ function renderUserSubmissions() {
   const statuses = [
     { id: "All", label: "All" },
     { id: "Pending", label: "Pending" },
-    { id: "Draft", label: "Saved Draft" },
     { id: "Under Review", label: "Reviewing" },
     { id: "Approved", label: "Approved" },
     { id: "Rejected", label: "Rejected" },
+    { id: "Draft", label: "Saved Draft" },
     { id: "Awaiting Documents", label: "Action Needed" },
   ];
 
