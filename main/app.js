@@ -199,6 +199,28 @@ let submissions = [
     goods: "Food products and agricultural goods",
   },
   {
+    id: "PSU-DFT-2026-007",
+    type: "Patent",
+    title: "Low-Cost Hydroponic Monitoring System",
+    applicant: "Dr. Elena Vance",
+    department: "External Partner",
+    email: "elena.vance@globalresearch.org",
+    status: "Draft",
+    date: "2026-04-15",
+    description: "Initial draft for a sensors-based monitoring system for urban gardening.",
+  },
+  {
+    id: "PSU-DFT-2026-008",
+    type: "Trademark",
+    title: "Palawan Pearl Brand Identity",
+    applicant: "Dr. Elena Vance",
+    department: "External Partner",
+    email: "elena.vance@globalresearch.org",
+    status: "Draft",
+    date: "2026-04-18",
+    description: "Branding materials draft for the local pearl export initiative.",
+  },
+  {
     id: "PSU-COP-2026-007",
     type: "Copyright",
     title: "MarineTrack Research Software",
@@ -1051,6 +1073,7 @@ const DASHBOARD_ACCESS = {
     "project-blueprint",
     "marketplace-dash",
     "filing-hub",
+    "forms-dash",
   ],
 };
 
@@ -1549,6 +1572,23 @@ window.goBack = function () {
   }
 };
 
+function renderBackNav(customTarget = null, customLabel = null) {
+  const role = normalizeRole(currentRole);
+  const defaultTarget = (role === "superadmin" || role === "admin") ? "admin-dashboard" : "user-dashboard";
+  const defaultLabel = (role === "superadmin" || role === "admin") ? "Dashboard" : "Home";
+  
+  const target = customTarget || defaultTarget;
+  const label = customLabel || defaultLabel;
+  
+  return `
+    <div class="back-nav-wrap">
+      <div class="back-nav-link" onclick="navigateTo('${target}')">
+        <i class="fa-solid fa-arrow-left"></i> Back to ${label}
+      </div>
+    </div>
+  `;
+}
+
 function navigateTo(page, isBack = false, params = null) {
   if (params) currentParams = params;
   else if (!isBack) currentParams = {};
@@ -1631,6 +1671,7 @@ function navigateTo(page, isBack = false, params = null) {
     "admin-announcements",
     "filing-hub",
     "notifications",
+    "forms-dash",
   ];
 
   if (page === "notifications") {
@@ -2489,7 +2530,8 @@ function renderSidebar() {
     applicant: [
       { page: "user-dashboard", icon: "fa-house", text: "Home" },
       { page: "user-submissions", icon: "fa-file-lines", text: "My Cases" },
-      { page: "ip-guidelines", icon: "fa-book-open", text: "Knowledge Base" },
+      { page: "forms-dash", icon: "fa-folder-open", text: "Forms" },
+      { page: "ip-guidelines", icon: "fa-book-open", text: "IP Guidelines" },
       { page: "marketplace-dash", icon: "fa-shop", text: "Marketplace" },
       { page: "notifications", icon: "fa-bell", text: "Notification" },
       { page: "user-profile", icon: "fa-user", text: "Profile" },
@@ -2580,6 +2622,7 @@ function renderFilingHub() {
   ];
 
   return `
+    ${renderBackNav()}
     <div class="page-header">
       <h1>New IP Submission</h1>
       <p>Select the protective lane that best suits your creation to begin the pre-filing process.</p>
@@ -2606,7 +2649,7 @@ function renderFilingHub() {
       </div>
       <div>
         <h4 style="color:var(--navy); margin-bottom:4px;">Not sure which IP type to choose?</h4>
-        <p style="color:var(--gray-500); font-size:0.95rem;">Check our <a href="#" onclick="navigateTo('ip-guidelines')" style="color:var(--gold-dark); font-weight:700; text-decoration:underline;">IP Knowledge Base</a> or schedule a quick consultation with a PITBI counselor.</p>
+        <p style="color:var(--gray-500); font-size:0.95rem;">Check our <a href="#" onclick="navigateTo('ip-guidelines')" style="color:var(--gold-dark); font-weight:700; text-decoration:underline;">IP Guidelines</a> or schedule a quick consultation with a PITBI counselor.</p>
       </div>
     </div>
   `;
@@ -2714,6 +2757,9 @@ function renderDashboardContent(page) {
     case "ip-guidelines":
       mc.innerHTML = renderIpGuidelines();
       break;
+    case "forms-dash":
+      mc.innerHTML = renderForms();
+      break;
     case "faq-dash":
       mc.innerHTML = renderFaq();
       break;
@@ -2768,7 +2814,9 @@ function renderUserDashboard() {
   ).length;
   const approved = userSubmissions.filter((s) => s.status === "Approved").length;
   const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
-  const recent = userSubmissions.slice(0, 3);
+  const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
+  const officialTotal = total - drafts;
+  const recent = userSubmissions.filter(s => s.status !== 'Draft').slice(0, 3);
 
   // Stats clicking helper
   window.goToFilteredSubmissions = function(status) {
@@ -2795,15 +2843,6 @@ function renderUserDashboard() {
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
 
-      <div class="action-card" onclick="navigateTo('ip-guidelines')">
-        <div class="action-card-icon"><i class="fa-solid fa-book-open"></i></div>
-        <div class="action-card-content">
-          <h3>IP Knowledge Base</h3>
-          <p>Explore filing requirements and legal guidelines.</p>
-        </div>
-        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-
       <div class="action-card" onclick="showToast('Connecting to PSU IP Support...')">
         <div class="action-card-icon"><i class="fa-solid fa-comments"></i></div>
         <div class="action-card-content">
@@ -2825,8 +2864,8 @@ function renderUserDashboard() {
           <i class="fa-solid fa-box-open"></i>
         </div>
         <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${total}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Packets in Workspace</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${officialTotal}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Official Records</div>
         </div>
       </div>
       <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Under Review')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
@@ -2836,6 +2875,16 @@ function renderUserDashboard() {
         <div>
           <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${pending}</div>
           <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Action / Review</div>
+        </div>
+      </div>
+
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Draft')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="width:48px; height:48px; border-radius:12px; background:#64748b15; color:#64748b; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-file-pen"></i>
+        </div>
+        <div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${drafts}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Saved Drafts</div>
         </div>
       </div>
       <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Approved')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
@@ -3064,8 +3113,9 @@ function renderFaq() {
   }
 
   return `
+    ${renderBackNav()}
     <div class="page-header" style="margin-bottom: 40px;">
-      <h1>Internal Knowledge Base (FAQ)</h1>
+      <h1>IP Guidelines & FAQ</h1>
       <p>Comprehensive answers and official guidelines regarding Intellectual Property protection.</p>
     </div>
     
@@ -3081,6 +3131,7 @@ function renderFaq() {
 
 function renderProjectBlueprint() {
   return `
+    ${renderBackNav()}
     <div class="page-header">
       <h1><i class="fa-solid fa-diagram-project"></i> System Blueprint</h1>
       <p>Proposal-driven context, scope, and evidence integrated directly into the prototype.</p>
@@ -4558,6 +4609,7 @@ function renderSubmissionDetail() {
     : null;
 
   return `
+    ${renderBackNav()}
     <div class="page-header">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <h1 style="margin:0">${s.title}</h1>
@@ -4839,6 +4891,7 @@ function renderIpGuidelines(filterId = null) {
   ];
 
   return `
+    ${renderBackNav()}
     <div class="page-header" style="margin-bottom:36px">
       <span class="m-eyebrow" style="display:block; margin-bottom:12px;">Pre-Filing Intelligence</span>
       <h1 style="color:var(--navy); font-weight:800; font-size:2.2rem;"><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:12px"></i>${filterId ? types.find(t => t.id === filterId).title + ' Guidelines' : 'IP Application Guidelines'}</h1>
@@ -4933,6 +4986,8 @@ function renderIpGuidelines(filterId = null) {
     </div>
   `;
 }
+
+
 
 function getFormGuideContent() {
   const guides = {
@@ -5058,6 +5113,7 @@ function renderFormWizard(title) {
   else if (currentHour >= 17) greeting = "Good evening";
 
   return `
+    ${renderBackNav('filing-hub', 'Filing Hub')}
     <div class="page-header" style="margin-bottom: 24px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px;">
         <div>
@@ -5090,13 +5146,13 @@ function renderFormWizard(title) {
         ${renderWizardStep()}
       </div>
 
-      <div class="wizard-footer" style="padding:24px 40px; background:var(--gray-50); border-top:1px solid var(--gray-100);">
+      <div class="wizard-footer" style="padding:24px 40px; background:var(--gray-50); border-top:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center;">
         <div style="display:flex; gap:16px;">
           <button class="btn btn-secondary" onclick="prevWizardStep()" ${currentWizardStep === 1 ? "disabled" : ""} style="padding:12px 24px;">
             <i class="fa-solid fa-arrow-left"></i> Previous
           </button>
-          <button class="btn btn-outline" onclick="saveFormDraft()" style="padding:12px 24px; border-color:var(--gray-300);">
-            <i class="fa-solid fa-floppy-disk"></i> Save Draft
+          <button class="btn btn-outline-navy" onclick="showToast('Progress saved as draft.')" style="padding:12px 24px;">
+            <i class="fa-solid fa-file-pen"></i> Save as Draft
           </button>
         </div>
         
@@ -5741,6 +5797,7 @@ function submitForm() {
 // ===== MARKETPLACE =====
 function renderMarketplace() {
   return `
+    ${renderBackNav()}
     <div class="page-header"><h1>Innovation Marketplace</h1><p>Discover and connect with PSU innovations and research outputs.</p></div>
     <div class="marketplace-layout">
       <div class="filter-panel">
@@ -6023,6 +6080,7 @@ function renderUserSubmissions() {
   const statuses = [
     { id: "All", label: "All" },
     { id: "Pending", label: "Pending" },
+    { id: "Draft", label: "Saved Draft" },
     { id: "Under Review", label: "Reviewing" },
     { id: "Approved", label: "Approved" },
     { id: "Rejected", label: "Rejected" },
@@ -6030,6 +6088,7 @@ function renderUserSubmissions() {
   ];
 
   return `
+    ${renderBackNav()}
     <div class="page-header">
       <h1>My IP Applications</h1>
       <p>Manage and track your innovations through the university's filing pipeline.</p>
@@ -6258,6 +6317,7 @@ function renderProfile() {
   const role = getRoleMeta().label;
   
   return `
+    ${renderBackNav()}
     <div class="page-header">
       <h1>Researcher Profile</h1>
       <p>Manage your academic identity and account security.</p>
@@ -7269,6 +7329,7 @@ function renderForms() {
   ];
 
   return `
+    ${renderBackNav()}
     <div class="page-header" style="margin-bottom:48px; text-align:center;">
       <span class="m-eyebrow" style="display:inline-block; margin-bottom:12px;">Official Documentation</span>
       <h1 style="color:var(--navy); font-weight:900; font-size:2.8rem; margin:0; letter-spacing:-0.5px;">Institutional Forms</h1>

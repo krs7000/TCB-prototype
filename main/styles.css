@@ -1395,6 +1395,9 @@ textarea {
   background: rgba(245, 158, 11, 0.08);
   color: #d97706;
   border: 1px solid rgba(245, 158, 11, 0.2);
+.badge-pending { background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); }
+.badge-draft { background: rgba(100, 116, 139, 0.1); color: #475569; border: 1px solid rgba(100, 116, 139, 0.2); }
+.badge-rejected { background: rgba(239, 68, 68, 0.1); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2); }
   font-size: 0.7rem;
   display: inline-flex;
   align-items: center;
@@ -1788,6 +1791,45 @@ body.top-nav-layout .topbar-user .user-name {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 48px;
+}
+
+/* Contextual Back Navigation */
+.back-nav-wrap {
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+.back-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gray-500);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.back-nav-link:hover {
+  color: var(--navy);
+  background: white;
+  border-color: var(--gold-dark);
+  transform: translateX(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.back-nav-link i {
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.back-nav-link:hover i {
+  transform: translateX(-2px);
 }
 
 .action-card {
