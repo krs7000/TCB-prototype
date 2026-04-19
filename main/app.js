@@ -40,44 +40,95 @@ const ROLE_ALIASES = {
 function normalizeRole(role) {
   return ROLE_ALIASES[role] || "applicant";
 }
-const mockNotifications = [
-  {
-    id: 1,
-    icon: "fa-circle-check",
-    color: "#22c55e",
-    title: "PSU-PAT-2026-001 Approved",
-    body: "Your patent application has been certified.",
-    time: "2 hours ago",
-    read: false,
-  },
-  {
-    id: 2,
-    icon: "fa-file-circle-plus",
-    color: "#f59e0b",
-    title: "Documents Requested",
-    body: "Admin Garcia requests additional docs for PSU-COP-2026-002.",
-    time: "Yesterday",
-    read: false,
-  },
-  {
-    id: 3,
-    icon: "fa-circle-info",
-    color: "#3b82f6",
-    title: "System Maintenance",
-    body: "Scheduled maintenance on April 10, 2026 from 2–4 AM.",
-    time: "3 days ago",
-    read: true,
-  },
-  {
-    id: 4,
-    icon: "fa-triangle-exclamation",
-    color: "#ef4444",
-    title: "Action Required: PSU-COP-2026-014",
-    body: "Missing documents detected for Palawan Biodiversity Database.",
-    time: "Just now",
-    read: false,
-  },
-];
+const mockNotifications = {
+  applicant: [
+    {
+      id: 1,
+      icon: "fa-circle-check",
+      color: "#22c55e",
+      title: "Application Approved",
+      body: "PSU-PAT-2026-001 has been certified.",
+      time: "2 hours ago",
+      read: false,
+    },
+    {
+      id: 2,
+      icon: "fa-file-circle-plus",
+      color: "#f59e0b",
+      title: "Documents Requested",
+      body: "Admin Garcia requests additional docs for PSU-COP-2026-002.",
+      time: "Yesterday",
+      read: false,
+    },
+    {
+      id: 3,
+      icon: "fa-circle-info",
+      color: "#3b82f6",
+      title: "System Maintenance",
+      body: "Scheduled maintenance on April 10, 2026 from 2–4 AM.",
+      time: "3 days ago",
+      read: true,
+    },
+  ],
+  evaluator: [
+    {
+      id: 101,
+      icon: "fa-clipboard-list",
+      color: "#3b82f6",
+      title: "New Case Assigned",
+      body: "You have been assigned as evaluator for PSU-PAT-2026-015.",
+      time: "1 hour ago",
+      read: false,
+    },
+    {
+      id: 102,
+      icon: "fa-clock",
+      color: "#f59e0b",
+      title: "Deadline Approaching",
+      body: "Evaluation for PSU-COP-2026-008 is due in 2 days.",
+      time: "5 hours ago",
+      read: false,
+    },
+    {
+      id: 103,
+      icon: "fa-comment-dots",
+      color: "#8b5cf6",
+      title: "New Message",
+      body: "Applicant uploaded new files for PSU-PAT-2026-004.",
+      time: "Yesterday",
+      read: true,
+    },
+  ],
+  admin: [
+    {
+      id: 201,
+      icon: "fa-user-plus",
+      color: "#10b981",
+      title: "New User Registered",
+      body: "A new applicant 'Maria Clara' has registered for an account.",
+      time: "30 mins ago",
+      read: false,
+    },
+    {
+      id: 202,
+      icon: "fa-triangle-exclamation",
+      color: "#ef4444",
+      title: "Pending Approval",
+      body: "5 submissions are waiting for initial administrative review.",
+      time: "3 hours ago",
+      read: false,
+    },
+    {
+      id: 203,
+      icon: "fa-chart-line",
+      color: "#3b82f6",
+      title: "Weekly Report Ready",
+      body: "The IP filing statistics for this week have been generated.",
+      time: "Today, 8:00 AM",
+      read: true,
+    },
+  ],
+};
 
 let announcements = [
   {
@@ -2542,6 +2593,9 @@ function renderSidebar() {
     if (sidebarToggle) sidebarToggle.style.display = "";
     if (bottomNav) bottomNav.style.display = "none";
   }
+
+  const sidebarFooter = document.querySelector(".sidebar-footer");
+  if (sidebarFooter) sidebarFooter.style.display = "none";
 }
 
 function renderFilingHub() {
@@ -7724,6 +7778,32 @@ function renderForms() {
 
 
 // ===== NOTIFICATIONS =====
+function renderNotifications() {
+  const list = document.getElementById("notifList");
+  if (!list) return;
+
+  const role = normalizeRole(currentRole);
+  const roleKey = (role === "superadmin" || role === "admin") ? "admin" : role;
+  const notifs = mockNotifications[roleKey] || mockNotifications.applicant;
+
+  list.innerHTML = notifs
+    .map(
+      (n) => `
+    <div style="display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--gray-100);${n.read ? "opacity:.65" : ""};cursor:pointer;" onmouseenter="this.style.background='var(--gray-50)'" onmouseleave="this.style.background=''">
+      <div style="width:36px;height:36px;border-radius:50%;background:${n.color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="fa-solid ${n.icon}" style="color:${n.color};font-size:.85rem;"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:.85rem;font-weight:${n.read ? "500" : "700"};color:var(--navy);margin-bottom:2px;">${n.title}</div>
+        <div style="font-size:.78rem;color:var(--gray-500);line-height:1.4;">${n.body}</div>
+        <div style="font-size:.72rem;color:var(--gray-400);margin-top:4px;">${n.time}</div>
+      </div>
+      ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;flex-shrink:0;margin-top:6px;"></div>' : ""}
+    </div>`,
+    )
+    .join("");
+}
+
 window.toggleNotifications = function () {
   notifOpen = !notifOpen;
   const dropdown = document.getElementById("notifDropdown");
@@ -7733,30 +7813,16 @@ window.toggleNotifications = function () {
   if (notifOpen) {
     // Mark all as read after open
     setTimeout(() => {
-      mockNotifications.forEach((n) => (n.read = true));
+      const role = normalizeRole(currentRole);
+      const roleKey = (role === "superadmin" || role === "admin") ? "admin" : role;
+      if (mockNotifications[roleKey]) {
+        mockNotifications[roleKey].forEach((n) => (n.read = true));
+      }
       const badge = document.getElementById("notifBadge");
       if (badge) badge.style.display = "none";
     }, 2000);
     // Render notifications
-    const list = document.getElementById("notifList");
-    if (list) {
-      list.innerHTML = mockNotifications
-        .map(
-          (n) => `
-        <div style="display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--gray-100);${n.read ? "opacity:.65" : ""};cursor:pointer;" onmouseenter="this.style.background='var(--gray-50)'" onmouseleave="this.style.background=''">
-          <div style="width:36px;height:36px;border-radius:50%;background:${n.color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i class="fa-solid ${n.icon}" style="color:${n.color};font-size:.85rem;"></i>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:.85rem;font-weight:${n.read ? "500" : "700"};color:var(--navy);margin-bottom:2px;">${n.title}</div>
-            <div style="font-size:.78rem;color:var(--gray-500);line-height:1.4;">${n.body}</div>
-            <div style="font-size:.72rem;color:var(--gray-400);margin-top:4px;">${n.time}</div>
-          </div>
-          ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;flex-shrink:0;margin-top:6px;"></div>' : ""}
-        </div>`,
-        )
-        .join("");
-    }
+    renderNotifications();
   }
   // Close on outside click
   if (notifOpen) {
