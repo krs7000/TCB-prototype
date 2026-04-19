@@ -5641,6 +5641,7 @@ function saveFormDraft() {
 }
 
 function validateWizardStep() {
+  return true; // Bypassed for prototyping
   const stepContainer = document.getElementById('wizardBody');
   if (!stepContainer) return true;
   
@@ -5710,10 +5711,8 @@ function captureWizardData() {
 function nextWizardStep() {
   captureWizardData();
   if (currentWizardStep < 4) {
-    if (validateWizardStep()) {
-      currentWizardStep++;
-      refreshWizard();
-    }
+    currentWizardStep++;
+    refreshWizard();
   }
 }
 function prevWizardStep() {
