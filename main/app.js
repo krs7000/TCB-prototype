@@ -6,7 +6,7 @@
 // ===== STATE =====
 let currentPage = "landing";
 let currentRole = "applicant";
-// Supported RBAC roles: 'superadmin', 'admin', 'reviewer', 'applicant'
+// Supported RBAC roles: 'superadmin', 'admin', 'evaluator', 'applicant'
 let isLoggedIn = false;
 let sidebarCollapsed = false;
 let selectedLoginRole = "client";
@@ -24,9 +24,9 @@ const ROLE_ALIASES = {
   Admin: "superadmin",
   pitbi_admin: "superadmin",
   "PITBI Admin": "superadmin",
-  reviewer: "reviewer",
-  specialist: "reviewer",
-  Reviewer: "reviewer",
+  evaluator: "evaluator",
+  specialist: "evaluator",
+  Evaluator: "evaluator",
   applicant: "applicant",
   inventor: "applicant",
   author: "applicant",
@@ -392,16 +392,18 @@ const marketplaceItems = [
     inventor: "Prof. L. Manalo",
     college: "College of Arts",
     description:
-      "A utility model concerning the formulation and optimal mass production of nutritious lumpia wrappers infused with Moringa oleifera.",
+      "Revolutionizing the traditional preparation and presentation of Filipino food, this innovative technology introduces a healthier alternative for wrapping and savoring iconic Filipino delicacies.",
     longDescription:
-      "A revolutionary food product that incorporates the nutritional benefits of Malunggay into a standard Filipino staple (Lumpia wrapper), enhancing vitamins and minerals without compromising texture.",
+      "Revolutionizing the traditional preparation and presentation of Filipino food, this innovative technology introduces a healthier alternative for wrapping and savoring iconic Filipino delicacies.",
     features: [
-      "High in Vitamin A and C due to concentrated moringa infusion.",
-      "Optimized shelf-life through natural preservation techniques.",
-      "Superior elasticity and strength compared to traditional flour wrappers.",
+      "Classic lumpia wrapper fused with the nutritional powerhouse of malunggay leaves.",
+      "Packed with 15 times more potassium than bananas and seven times more vitamin C than oranges.",
+      "Supports muscle growth and human healing.",
+      "Seamlessly integrates nutritional goodness without compromising original taste.",
+      "Nutritious and flavorful experience for consumers.",
     ],
     businessPotential:
-      "Targeting the healthy food market, which is seeing exponential growth in the Philippines. Can be packaged for both retail consumers and wholesale food establishments.",
+      "The primary target audience for this technology encompasses health-conscious consumers and a diverse array of businesses, including grocery stores, restaurants, and food processing stalls. The versatility of this product positions it as a lucrative venture, as the raw materials are both cost-effective and readily available in the market or local communities. Market research has indicated a favorable reception of this product among consumers. With a modest initial investment of PhP200,000, a compelling return on investment is anticipated, projecting an impressive 260% within the first year. This underscores the economic viability and potential success of introducing malunggay-infused lumpia wrappers into the market. In summary, this technological innovation not only elevates the nutritional content of a beloved Filipino culinary staple but also opens up new avenues for businesses to cater to health-conscious markets, promising a harmonious blend of taste, tradition, and wellness.",
     contactPerson: "Prof. Luisa Manalo",
     contactEmail: "luisa.manalo@psu.edu.ph",
     year: 2026,
@@ -884,9 +886,9 @@ let systemUsers = [
   },
   {
     id: 3,
-    name: "Engr. Tech Reviewer",
-    email: "reviewer@psu.edu.ph",
-    role: "reviewer",
+    name: "Engr. Tech Evaluator",
+    email: "evaluator@psu.edu.ph",
+    role: "evaluator",
     dept: "Technical Review",
     status: "Active",
     dateCreated: "2025-08-01",
@@ -918,95 +920,93 @@ let systemUsers = [
     status: "Active",
     dateCreated: "2025-12-05",
   },
+  {
+    id: 11,
+    name: "evaluator_richo_patent specialist",
+    email: "richo.patent@psu.edu.ph",
+    role: "evaluator",
+    dept: "IP Office",
+    status: "Active",
+    dateCreated: "2026-04-10",
+    ipTypes: ["Patent"],
+  },
+  {
+    id: 12,
+    name: "evaluator_maria_trademark specialist",
+    email: "maria.trademark@psu.edu.ph",
+    role: "evaluator",
+    dept: "IP Office",
+    status: "Active",
+    dateCreated: "2026-04-10",
+    ipTypes: ["Trademark"],
+  },
+  {
+    id: 13,
+    name: "evaluator_anna_copyright specialist",
+    email: "anna.copyright@psu.edu.ph",
+    role: "evaluator",
+    dept: "IP Office",
+    status: "Active",
+    dateCreated: "2026-04-10",
+    ipTypes: ["Copyright"],
+  },
+  {
+    id: 14,
+    name: "evaluator_juan_utility specialist",
+    email: "juan.utility@psu.edu.ph",
+    role: "evaluator",
+    dept: "IP Office",
+    status: "Active",
+    dateCreated: "2026-04-10",
+    ipTypes: ["Utility Model"],
+  },
+  {
+    id: 15,
+    name: "evaluator_eliza_industrialdesign specialist",
+    email: "eliza.id@psu.edu.ph",
+    role: "evaluator",
+    dept: "IP Office",
+    status: "Active",
+    dateCreated: "2026-04-10",
+    ipTypes: ["Industrial Design"],
+  },
 ];
 
 const auditLogs = [
   {
-    timestamp: "2026-03-27 14:32",
-    user: "Admin Garcia",
-    action: "Approved",
-    module: "Patent",
-    ip: "192.168.1.101",
-    detail: "Approved PSU-PAT-2026-001",
+    timestamp: "2026-04-19 13:25",
+    user: "evaluator_richo_patent specialist",
+    action: "Applicant files checked and status updated",
+    record: "PSU-PAT-2026-001",
+    detail: "Verified applicant files and changed status to Under Review",
   },
   {
-    timestamp: "2026-03-27 13:15",
-    user: "Maria Santos",
-    action: "Submitted",
-    module: "Patent",
-    ip: "192.168.1.45",
-    detail: "Submitted patent application",
+    timestamp: "2026-03-14 10:32",
+    user: "evaluator_anna_copyright specialist",
+    action: "Applicant files checked and status updated",
+    record: "PSU-COP-2026-015",
+    detail: "Changed Pending to Approved",
   },
   {
-    timestamp: "2026-03-26 16:45",
-    user: "Admin Garcia",
-    action: "Status Changed",
-    module: "Trademark",
-    ip: "192.168.1.101",
-    detail: "Changed PSU-TM-2026-003 to Under Review",
+    timestamp: "2026-03-13 14:15",
+    user: "evaluator_maria_trademark specialist",
+    action: "Prior art documents requested",
+    record: "PSU-TM-2026-042",
+    detail: "Added evaluator note: Awaiting prior art documents",
   },
   {
-    timestamp: "2026-03-26 10:20",
-    user: "Juan dela Cruz",
-    action: "Submitted",
-    module: "Copyright",
-    ip: "192.168.1.78",
-    detail: "Submitted copyright registration",
-  },
-  {
-    timestamp: "2026-03-25 09:00",
-    user: "Admin Garcia",
-    action: "Rejected",
-    module: "Patent",
-    ip: "192.168.1.101",
-    detail: "Rejected PSU-PAT-2026-004 - Insufficient documentation",
-  },
-  {
-    timestamp: "2026-03-24 15:30",
-    user: "Anna Reyes",
-    action: "Submitted",
-    module: "Trademark",
-    ip: "192.168.1.92",
-    detail: "Submitted trademark application",
-  },
-  {
-    timestamp: "2026-03-24 11:00",
-    user: "Admin Garcia",
-    action: "Exported",
-    module: "Reports",
-    ip: "192.168.1.101",
-    detail: "Exported monthly submission report",
-  },
-  {
-    timestamp: "2026-03-23 08:45",
-    user: "Liza Manalo",
-    action: "Submitted",
-    module: "Copyright",
-    ip: "192.168.1.55",
-    detail: "Submitted copyright registration",
-  },
-  {
-    timestamp: "2026-03-22 14:10",
-    user: "Admin Garcia",
-    action: "User Created",
-    module: "Users",
-    ip: "192.168.1.101",
-    detail: "Created new user account",
-  },
-  {
-    timestamp: "2026-03-21 09:30",
-    user: "Dr. Ricardo Aquino",
-    action: "Submitted",
-    module: "Copyright",
-    ip: "192.168.1.33",
-    detail: "Submitted copyright registration",
+    timestamp: "2026-03-12 09:50",
+    user: "evaluator_juan_utility specialist",
+    action: "Utility model examination started",
+    record: "PSU-UM-2026-008",
+    detail: "Commenced substantive examination of utility model",
   },
 ];
 
 const ROLE_META = {
   superadmin: { label: "Super Admin", dashboard: "admin-dashboard" },
   admin: { label: "Admin", dashboard: "admin-dashboard" },
-  reviewer: { label: "Reviewer", dashboard: "admin-dashboard" },
+  evaluator: { label: "Evaluator", dashboard: "admin-dashboard" },
   applicant: { label: "Applicant", dashboard: "user-dashboard" },
 };
 
@@ -1014,7 +1014,7 @@ const DASHBOARD_ACCESS = {
   superadmin: [
     "admin-dashboard",
     "admin-submissions",
-    "admin-search",
+    "admin-marketplace",
     "submission-detail",
     "audit-log",
     "user-profile",
@@ -1027,10 +1027,9 @@ const DASHBOARD_ACCESS = {
     "admin-announcements",
   ],
 
-  reviewer: [
+  evaluator: [
     "admin-dashboard",
     "admin-submissions",
-    "admin-search",
     "submission-detail",
     "user-profile",
     "project-blueprint",
@@ -1061,7 +1060,7 @@ const OPERATIONAL_AUDIT_MODULES = new Set([
   "Industrial Design",
   "Reports",
 ]);
-const REVIEWER_ASSIGNMENTS = {
+const EVALUATOR_ASSIGNMENTS = {
   "PSU-TM-2026-003": 3,
   "PSU-COP-2026-007": 3,
   "PSU-PAT-2026-008": 3,
@@ -1170,7 +1169,7 @@ submissions = submissions.map((submission) => ({
   ...(IPOPHL_TYPES.has(submission.type)
     ? IPOPHL_CASE_OVERRIDES[submission.id] || {}
     : {}),
-  assignedReviewerId: REVIEWER_ASSIGNMENTS[submission.id] || null,
+  assignedEvaluatorId: EVALUATOR_ASSIGNMENTS[submission.id] || null,
   hasTopSecretAnnex: ["Patent", "Utility Model"].includes(submission.type),
 }));
 
@@ -1204,18 +1203,18 @@ function isOwnSubmission(submission, role = currentRole) {
   return submission.applicant === user.name || submission.email === user.email;
 }
 
-function isAssignedReviewerSubmission(submission, role = currentRole) {
+function isAssignedEvaluatorSubmission(submission, role = currentRole) {
   const user = getCurrentUser(role);
-  return submission.assignedReviewerId === user.id;
+  return submission.assignedEvaluatorId === user.id;
 }
 
 function getVisibleSubmissions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === "superadmin" || normalizedRole === "admin")
     return submissions;
-  if (normalizedRole === "reviewer")
+  if (normalizedRole === "evaluator")
     return submissions.filter((submission) =>
-      isAssignedReviewerSubmission(submission, role),
+      isAssignedEvaluatorSubmission(submission, role),
     );
   return submissions.filter((submission) => isOwnSubmission(submission, role));
 }
@@ -1225,8 +1224,8 @@ function canEditSubmission(submission, role = currentRole) {
   return (
     normalizedRole === "superadmin" ||
     normalizedRole === "admin" ||
-    (normalizedRole === "reviewer" &&
-      isAssignedReviewerSubmission(submission, role))
+    (normalizedRole === "evaluator" &&
+      isAssignedEvaluatorSubmission(submission, role))
   );
 }
 
@@ -1251,8 +1250,8 @@ function getDownloadAccess(submission, level, role = currentRole) {
     if (normalizedRole === "superadmin" || normalizedRole === "admin")
       return "allow";
     if (
-      normalizedRole === "reviewer" &&
-      isAssignedReviewerSubmission(submission, role)
+      normalizedRole === "evaluator" &&
+      isAssignedEvaluatorSubmission(submission, role)
     )
       return "allow";
     return "deny";
@@ -1280,22 +1279,19 @@ function canManageTargetUser(user, role = currentRole) {
 function getManageableRoleOptions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === "superadmin")
-    return ["superadmin", "admin", "reviewer", "applicant"];
-  if (normalizedRole === "admin") return ["reviewer", "applicant"];
+    return ["superadmin", "admin", "evaluator", "applicant"];
+  if (normalizedRole === "admin") return ["evaluator", "applicant"];
   return [];
 }
 
 function getVisibleAuditLogs(role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === "superadmin") return auditLogs;
-  if (normalizedRole === "admin") {
-    return auditLogs.filter((log) => OPERATIONAL_AUDIT_MODULES.has(log.module));
-  }
+  if (normalizedRole === "superadmin" || normalizedRole === "admin") return auditLogs;
   return [];
 }
 
 function canExportAudit(role = currentRole) {
-  return normalizeRole(role) === "superadmin";
+  return normalizeRole(role) === "superadmin" || normalizeRole(role) === "admin";
 }
 
 const proposalBlueprint = {
@@ -1404,13 +1400,13 @@ const proposalBlueprint = {
       icon: "fa-shield-halved",
       title: "Role-based access control",
       description:
-        "Clients, reviewers, PITBI administrators, and super administrators operate inside distinct permission boundaries.",
+        "Clients, evaluators, PITBI administrators, and super administrators operate inside distinct permission boundaries.",
     },
     {
       icon: "fa-file-circle-check",
       title: "Manual evaluation policy",
       description:
-        "No automated legal judgment is performed; internal reviewers remain the decision point for every submission.",
+        "No automated legal judgment is performed; internal evaluators remain the decision point for every submission.",
     },
     {
       icon: "fa-lock",
@@ -2393,7 +2389,7 @@ function hideError(id) {
 
 function toggleRole() {
   // Cycle through main roles for the old toggle if it still exists
-  const roles = ["client", "reviewer", "admin", "superadmin"];
+  const roles = ["client", "evaluator", "admin", "superadmin"];
   let idx = roles.indexOf(currentRole);
   currentRole = roles[(idx + 1) % roles.length];
   switchRole(currentRole);
@@ -2440,15 +2436,11 @@ function renderSidebar() {
     superadmin: [
       { page: "admin-dashboard", icon: "fa-chart-line", text: "Dashboard" },
       { page: "admin-submissions", icon: "fa-inbox", text: "All Submissions" },
-      {
-        page: "admin-search",
-        icon: "fa-magnifying-glass",
-        text: "Search",
-      },
+      { page: "admin-marketplace", icon: "fa-shop", text: "Market Listing" },
       { page: "admin-records", icon: "fa-folder-open", text: "IP Records" },
       { page: "admin-users", icon: "fa-users", text: "User Manager" },
       { page: "create-account", icon: "fa-user-plus", text: "Create Account" },
-      { page: "audit-log", icon: "fa-clipboard-list", text: "System Logs" },
+      { page: "audit-log", icon: "fa-clipboard-list", text: "Audit Log" },
       {
         page: "role-permissions",
         icon: "fa-shield-halved",
@@ -2459,14 +2451,9 @@ function renderSidebar() {
       { page: "user-profile", icon: "fa-user", text: "Profile" },
     ],
 
-    reviewer: [
+    evaluator: [
       { page: "admin-dashboard", icon: "fa-microscope", text: "Review Hub" },
       { page: "admin-submissions", icon: "fa-inbox", text: "Assigned Cases" },
-      {
-        page: "admin-search",
-        icon: "fa-magnifying-glass",
-        text: "Search",
-      },
       { page: "user-profile", icon: "fa-user", text: "Profile" },
     ],
     applicant: [
@@ -2509,7 +2496,7 @@ function renderSidebar() {
       `;
     }
   } else {
-    // Normal Sidebar Nav for Admin/Reviewer
+    // Normal Sidebar Nav for Admin/Evaluator
     document.body.classList.remove("top-nav-layout");
     if (topNav) topNav.innerHTML = "";
     nav.innerHTML = menu
@@ -2651,9 +2638,8 @@ function renderDashboardContent(page) {
     case "submission-detail":
       mc.innerHTML = renderSubmissionDetail();
       break;
-    case "marketplace-dash":
     case "admin-marketplace":
-      mc.innerHTML = renderMarketplace();
+      mc.innerHTML = renderAdminMarketplace();
       break;
     case "audit-log":
       mc.innerHTML = renderAuditLog();
@@ -2860,7 +2846,7 @@ function renderFaq() {
       },
       {
         q: "How does the PSU copyright route move?",
-        a: "The packet first goes to the reviewer for completeness checking, then to Admin for recording and payment-slip or fee-waiver routing, then to the cashier and back to Admin for OR recording before the super admin lane endorses filing with the National Library.",
+        a: "The packet first goes to the evaluator for completeness checking, then to Admin for recording and payment-slip or fee-waiver routing, then to the cashier and back to Admin for OR recording before the super admin lane endorses filing with the National Library.",
       },
       {
         q: "How long does copyright last?",
@@ -2980,7 +2966,7 @@ function renderProjectBlueprint() {
   `;
 }
 
-//// ===== ADMIN DASHBOARD HUB (Supports All Admin/Reviewer/Staff Roles) =====
+//// ===== ADMIN DASHBOARD HUB (Supports All Admin/Evaluator/Staff Roles) =====
 function renderAdminDashboard() {
   const role = normalizeRole(currentRole);
   const stats = getRoleSpecificStats(role);
@@ -2991,7 +2977,7 @@ function renderAdminDashboard() {
       "Full governance across permissions, records, logs, and institutional configuration.",
     admin:
       "Operate the administrative mitigation dashboard for intake control, verification, and progress monitoring.",
-    reviewer:
+    evaluator:
       "Handle assigned cases, advance review stages, and work within the confidentiality boundaries defined by the RBAC matrix.",
   };
 
@@ -3349,8 +3335,8 @@ function getRoleSpecificStats(role) {
         },
       ],
     },
-    reviewer: {
-      title: "Reviewer Workspace",
+    evaluator: {
+      title: "Evaluator Workspace",
       subtitle: "Manage and evaluate your assigned IP cases.",
       cards: [
         {
@@ -3396,7 +3382,7 @@ function getRoleSpecificPanels(role) {
   const normalizedRole = normalizeRole(role);
   const submissionsList = getVisibleSubmissions(normalizedRole).slice(0, 3);
   const mainPanelTitle =
-    normalizedRole === "reviewer" ? "Assigned Review Queue" : "Action Required";
+    normalizedRole === "evaluator" ? "Assigned Review Queue" : "Action Required";
 
   const main = `
     <div style="display:flex; flex-direction:column; gap:24px;">
@@ -3436,8 +3422,8 @@ function getRoleSpecificPanels(role) {
   const side = `
     <div class="dashboard-panel" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-radius:16px; padding:24px; border: 1px solid rgba(255,255,255,0.8); box-shadow:0 8px 30px rgba(0,0,0,0.03);">
       <h3 style="font-size:1.15rem; color:var(--navy); margin-bottom: 16px; font-weight:800;"><i class="fa-solid fa-bolt" style="color:var(--yellow); margin-right:6px;"></i> Quick Launch</h3>
-      ${normalizedRole !== "reviewer" ? `<button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; margin-bottom: 12px; font-weight:600;" onclick="showToast('Starting report generation...')"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> Download Status</button>` : ""}
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('${normalizedRole === "reviewer" ? "admin-search" : "ip-guidelines"}')"><i class="fa-solid fa-${normalizedRole === "reviewer" ? "magnifying-glass" : "book"}" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Open Search" : "Operations Manual"}</button>
+      ${normalizedRole !== "evaluator" ? `<button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; margin-bottom: 12px; font-weight:600;" onclick="showToast('Starting report generation...')"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> Download Status</button>` : ""}
+      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('ip-guidelines')"><i class="fa-solid fa-book" style="margin-right:8px; width:16px;"></i> Operations Manual</button>
     </div>`;
 
   return { main, side };
@@ -3551,10 +3537,10 @@ function renderAdminSubmissionsPage() {
   adminSearchQuery = "";
   const normalizedRole = normalizeRole(currentRole);
   const title =
-    normalizedRole === "reviewer" ? "Assigned Cases" : "All Submissions";
+    normalizedRole === "evaluator" ? "Assigned Cases" : "All Submissions";
   const subtitle =
-    normalizedRole === "reviewer"
-      ? "Review only the cases assigned to this reviewer account."
+    normalizedRole === "evaluator"
+      ? "Review only the cases assigned to this evaluator account."
       : "Filter, review, and manage IP applications.";
   return `
     <div class="page-header">
@@ -3585,7 +3571,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
   return `
     <div class="table-container" id="adminSubmissionsTable">
       <div class="table-header">
-        <h3>${normalizeRole(currentRole) === "reviewer" ? "Assigned Cases" : "Visible Cases"} <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>
+        <h3>${normalizeRole(currentRole) === "evaluator" ? "Assigned Cases" : "Visible Cases"} <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>
         <div style="display:flex;gap:10px;align-items:center;">
           <div class="search-box" style="width:230px;">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -3610,21 +3596,25 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
         <button class="filter-btn ${(filterType || "") === "Utility Model" ? "active" : ""}" onclick="filterAdminTable('Utility Model')">Utility Model</button>
         <button class="filter-btn ${(filterType || "") === "Industrial Design" ? "active" : ""}" onclick="filterAdminTable('Industrial Design')">Industrial Design</button>
       </div>
-      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th><th>Assigned Evaluator</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>
         ${
           filtered.length === 0
-            ? `<tr><td colspan="7" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
+            ? `<tr><td colspan="8" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
             : filtered
                 .map(
-                  (s) => `<tr>
-          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${s.title}</td><td>${s.applicant}</td><td>${s.date}</td><td>${statusBadge(s.status)}</td>
+                  (s) => {
+                    const ev = s.assignedEvaluatorId ? systemUsers.find(u => u.id === s.assignedEvaluatorId) : null;
+                    const evName = ev ? ev.name : '<span style="color:var(--gray-400)">Unassigned</span>';
+                    return `<tr>
+          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${s.title}</td><td>${s.applicant}</td><td>${evName}</td><td>${s.date}</td><td>${statusBadge(s.status)}</td>
           <td><div class="action-btns">
             <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
             ${canAdvanceSubmission(s) ? `<button class="btn btn-sm btn-success" title="Approve" onclick="changeStatus('${s.id}','Approved')"><i class="fa-solid fa-check"></i></button>` : ""}
             ${canAdvanceSubmission(s) ? `<button class="btn btn-sm btn-danger" title="Reject" onclick="changeStatus('${s.id}','Rejected')"><i class="fa-solid fa-xmark"></i></button>` : ""}
             ${canEditSubmission(s) ? `<button class="btn btn-sm btn-secondary" title="Request Docs" onclick="requestDocs('${s.id}')"><i class="fa-solid fa-file-circle-plus"></i></button>` : ""}
             ${canArchiveSubmission() ? `<button class="btn btn-sm btn-secondary" title="Archive" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i></button>` : ""}
-          </div></td></tr>`,
+          </div></td></tr>`;
+                  }
                 )
                 .join("")
         }
@@ -3774,7 +3764,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     step: 2,
     title:
       "Technical Expert receives and acknowledges submitted application from author",
-    owner: "Reviewer",
+    owner: "Evaluator",
     lane: "Technical Expert",
     description:
       "Review and prepare a checklist, return incomplete application to author, and forward complete application to admin staff/MIS for record purposes.",
@@ -3857,7 +3847,7 @@ const COPYRIGHT_OPERATION_FLOW = [
 ];
 
 const COPYRIGHT_TRACKING_GROUPS = [
-  { label: "Submitted to Reviewer", keys: ["author-submission"] },
+  { label: "Submitted to Evaluator", keys: ["author-submission"] },
   {
     label: "Completeness Checked",
     keys: ["technical-review", "mis-recording"],
@@ -3888,7 +3878,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: "technical-review",
     step: 2,
     title: "Technical Expert reviews and acknowledges application",
-    owner: "Reviewer",
+    owner: "Evaluator",
     lane: "Technical Expert",
     description:
       "The Technical Expert reviews and prepares a checklist, assists the inventor if the application is incomplete, and forwards the complete application to Admin Staff/MIS for record purposes.",
@@ -4153,7 +4143,7 @@ function getSubmissionPaymentMeta(submission) {
         icon: "fa-receipt",
         title: "Awaiting payment slip and OR copy",
         detail:
-          "After reviewer clearance, Admin issues the payment slip. The applicant then pays the university cashier and submits the official receipt copy.",
+          "After evaluator clearance, Admin issues the payment slip. The applicant then pays the university cashier and submits the official receipt copy.",
         actionLabel: "Record OR Copy",
       };
     }
@@ -4223,7 +4213,7 @@ function renderCopyrightOperationTimeline(submission) {
 
   return `
     <div class="workflow-note">
-      Reviewer = technical expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
+      Evaluator = technical expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
     </div>
     <div class="copyright-flow-grid">
       ${COPYRIGHT_OPERATION_FLOW.map((step, idx) => {
@@ -4263,7 +4253,7 @@ function renderIPOPHLOperationTimeline(submission) {
 
   return `
     <div class="workflow-note">
-      Reviewer = Technical Expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
+      Evaluator = Technical Expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
       ${feeWaived ? "<br><strong>Fee-waived route:</strong> Steps 4\u20136 are bypassed because an approved letter-request is on file." : ""}
     </div>
     <div class="copyright-flow-grid">
@@ -4351,18 +4341,18 @@ function togglePaymentStatus(id) {
 function renderIPSearchPage() {
   const normalizedRole = normalizeRole(currentRole);
   const results = (
-    normalizedRole === "reviewer"
+    normalizedRole === "evaluator"
       ? getVisibleSubmissions(currentRole)
       : submissions
   )
     .filter(
-      (item) => item.status === "Approved" || normalizedRole === "reviewer",
+      (item) => item.status === "Approved" || normalizedRole === "evaluator",
     )
     .slice(0, 5);
   return `
     <div class="page-header">
       <h1><i class="fa-solid fa-magnifying-glass"></i> Search</h1>
-      <p>${normalizedRole === "reviewer" ? "Search assigned and approved records for manual review support." : "Search through approved PSU innovations and internal reference records."}</p>
+      <p>${normalizedRole === "evaluator" ? "Search assigned and approved records for manual review support." : "Search through approved PSU innovations and internal reference records."}</p>
     </div>
     <div class="detail-panel" style="margin-bottom:24px">
       <div style="display:flex; gap:12px; margin-bottom:16px;">
@@ -4372,14 +4362,14 @@ function renderIPSearchPage() {
       <div style="display:flex; gap:20px; font-size:0.85rem; color:var(--gray-500);">
         <span><i class="fa-solid fa-sliders"></i> Filter:</span>
         <label><input type="checkbox" checked /> PSU Internal</label>
-        <label><input type="checkbox" ${normalizedRole === "reviewer" ? "" : "checked"} /> IPOPHL Records</label>
+        <label><input type="checkbox" ${normalizedRole === "evaluator" ? "" : "checked"} /> IPOPHL Records</label>
         <label><input type="checkbox" /> Public Marketplace</label>
       </div>
     </div>
     <div class="table-container">
       <div class="table-header"><h3>Recent Results</h3></div>
       <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Status</th><th>Scope</th></tr></thead><tbody>
-        ${results.map((item) => `<tr><td>${item.id}</td><td>${typeBadge(item.type)}</td><td>${item.title}</td><td>${statusBadge(item.status)}</td><td>${normalizedRole === "reviewer" ? "Assigned / Internal" : "Internal / Approved"}</td></tr>`).join("")}
+        ${results.map((item) => `<tr><td>${item.id}</td><td>${typeBadge(item.type)}</td><td>${item.title}</td><td>${statusBadge(item.status)}</td><td>${normalizedRole === "evaluator" ? "Assigned / Internal" : "Internal / Approved"}</td></tr>`).join("")}
       </tbody></table></div>
     </div>
   `;
@@ -4429,24 +4419,12 @@ function renderSubmissionDetail() {
     <div class="page-header">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <h1 style="margin:0">${s.title}</h1>
-        ${frozen ? '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen for Certification</span>' : ""}
+
       </div>
       <p style="margin-top:8px">Submission Detail — ${s.id} &bull; Filed ${s.date}</p>
     </div>
     
-    ${
-      frozen
-        ? `<div style="padding:14px 20px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
-      <i class="fa-solid fa-lock" style="color:#6366f1; font-size:1.2rem;"></i>
-      <div><strong style="color:#4f46e5;">Metadata Frozen</strong><p style="font-size:.85rem; color:var(--gray-500); margin:2px 0 0;">Per system policy, the core technical metadata of this approved submission has been locked and cannot be altered by administrators.</p></div>
-    </div>`
-        : ""
-    }
 
-    <div style="padding:12px 18px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
-      <i class="fa-solid fa-person-chalkboard" style="color:#d97706; font-size:1.1rem;"></i>
-      <div><strong style="color:#d97706;">Manual Review Policy</strong><p style="font-size:.82rem; color:var(--gray-500); margin:2px 0 0;">This system does not use automated or AI-driven document assessment. All submissions undergo human evaluation by authorized IP Office personnel before status is updated.</p></div>
-    </div>
 
     <div class="detail-layout">
       <div>
@@ -4467,6 +4445,21 @@ function renderSubmissionDetail() {
           ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Approved Letter-Request</span><span class="value">${s.letterRequestApproved ? "Yes" : "No"}</span></div>` : ""}
           <div class="detail-row"><span class="label">Description</span><span class="value">${s.description}</span></div>
           <div class="detail-row"><span class="label">Date Filed</span><span class="value">${s.date}</span></div>
+          ${(() => {
+            const evals = systemUsers.filter(u => normalizeRole(u.role) === "evaluator");
+            const eligible = evals.filter(u => !u.ipTypes || u.ipTypes.length === 0 || u.ipTypes.includes(s.type));
+            const opts = eligible.map(u => `<option value="${u.id}" ${s.assignedEvaluatorId === u.id ? "selected" : ""}>${u.name}</option>`).join("");
+            const currentName = s.assignedEvaluatorId ? systemUsers.find(u => u.id === s.assignedEvaluatorId)?.name || "Unknown" : "Unassigned";
+            if (normalizedRole === "superadmin" || normalizedRole === "admin") {
+              return `<div class="detail-row"><span class="label">Assigned Evaluator</span><span class="value">
+                <select onchange="assignEvaluator('${s.id}', this.value)" style="padding:4px;border-radius:4px;border:1px solid var(--gray-300)">
+                  <option value="">-- Unassigned --</option>
+                  ${opts}
+                </select>
+              </span></div>`;
+            }
+            return `<div class="detail-row"><span class="label">Assigned Evaluator</span><span class="value">${currentName}</span></div>`;
+          })()}
         </div>
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-paperclip"></i> Documents & Payment</h3>
@@ -4523,7 +4516,7 @@ function renderSubmissionDetail() {
           }
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-comment"></i> Admin Notes</h3>
+          <h3><i class="fa-solid fa-comment"></i> Add Notes</h3>
           <div class="admin-notes">
             <textarea placeholder="Add internal notes about this submission..." ${frozen || !canEditSubmission(s) ? "disabled" : ""}></textarea>
             ${!frozen && canEditSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="showToast('Notes saved')">Save Notes</button>` : ""}
@@ -4532,7 +4525,6 @@ function renderSubmissionDetail() {
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-timeline"></i> Activity Timeline</h3>
           <div class="timeline">
-            ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 — 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
             <div class="timeline-item"><div class="time">Mar 27, 2026 — 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">Mar 26, 2026 — 9:45 AM</div><div class="event"><i class="fa-solid fa-receipt" style="color:var(--gold)"></i> Proof of Deposit verified</div></div>
             <div class="timeline-item"><div class="time">Mar 25, 2026 — 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
@@ -4872,10 +4864,7 @@ function renderStep4Review() {
     <div class="review-section"><h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents & Payment</h4>
       <p style="color:var(--gray-500);font-size:.9rem">Supporting documents and Proof-of-Deposit were uploaded in Step 3.</p>
     </div>
-    <div style="padding:16px 20px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;margin-top:4px;font-size:.85rem;color:#92400e;display:flex;gap:10px;align-items:flex-start">
-      <i class="fa-solid fa-person-chalkboard" style="color:#d97706;margin-top:2px"></i>
-      <div><strong>Manual Review Policy:</strong> Your submission will be reviewed by PSU IP Office staff. No AI-driven assessment occurs. You will be notified at your registered email once review is complete.</div>
-    </div>`;
+`;
 }
 
 function captureWizardData() {
@@ -5158,6 +5147,300 @@ function closeModal() {
   document.getElementById("modalTitle").style.display = "block";
 }
 
+// ===== MARKET LISTING MANAGEMENT =====
+function renderAdminMarketplace() {
+  return `
+    <div class="page-header">
+      <h1>Market Listing</h1>
+      <p>Manage the university innovation marketplace. Add, edit, or remove featured IP products.</p>
+    </div>
+
+    <div class="table-container">
+      <div class="table-header">
+        <h3>Innovation Inventory</h3>
+        <button class="btn btn-primary" onclick="showAddListingModal()"><i class="fa-solid fa-plus"></i> Add New Listing</button>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Product Title</th>
+              <th>IP Type</th>
+              <th>Inventor / Lead</th>
+              <th>College</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${marketplaceItems
+              .map(
+                (item) => `
+              <tr>
+                <td><strong>#${item.id}</strong></td>
+                <td>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:32px; height:32px; border-radius:6px; background:var(--gray-50); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                      <i class="fa-solid ${item.icon || "fa-box"}" style="color:var(--gold); font-size:0.85rem;"></i>
+                    </div>
+                    <span style="font-weight:700; color:var(--navy);">${item.title}</span>
+                  </div>
+                </td>
+                <td>${typeBadge(item.type)}</td>
+                <td>${item.inventor}</td>
+                <td>${item.college}</td>
+                <td>
+                    <div class="action-btns">
+                      <button class="btn btn-sm btn-outline-navy" onclick="showInnovationDetail(${item.id})"><i class="fa-solid fa-eye"></i> View</button>
+                      <button class="btn btn-sm btn-outline-navy" onclick="showEditListingModal(${item.id})"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                      <button class="btn btn-sm btn-outline-red" onclick="deleteListing(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
+              </tr>
+            `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+window.showAddListingModal = function (id = null) {
+  const isEdit = id !== null;
+  const item = isEdit ? marketplaceItems.find(i => i.id === id) : {
+    title: "",
+    fullTitle: "",
+    type: "Patent",
+    inventor: "",
+    college: "College of Engineering",
+    description: "",
+    longDescription: "",
+    businessPotential: "",
+    features: [],
+    contactPerson: "",
+    contactEmail: "",
+    image: ""
+  };
+
+  if (!item && isEdit) {
+    showToast("Error: Innovation not found", "error");
+    return;
+  }
+
+  const modalBody = document.getElementById("modalBody");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalBox = document.querySelector(".modal-card");
+
+  if (modalBox) modalBox.classList.add("xl");
+  modalTitle.innerText = isEdit ? "Edit Innovation Listing" : "Add New Innovation Listing";
+
+  modalBody.innerHTML = `
+    <form id="addListingForm" onsubmit="saveListing(event, ${isEdit ? id : 'null'})">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div class="form-group">
+          <label>Innovation / Product Title *</label>
+          <input type="text" id="listTitle" value="${item.title}" placeholder="e.g. Malunggay Lumpia Wrapper" required />
+        </div>
+        <div class="form-group">
+          <label>Official Patent/IP Title *</label>
+          <input type="text" id="listFullTitle" value="${item.full_title || item.fullTitle || ''}" placeholder="e.g. Moringa Oleifera (MALUNGGAY) INFUSED LUMPIA WRAPPER" required />
+        </div>
+      </div>
+      
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
+        <div class="form-group">
+          <label>IP Type *</label>
+          <select id="listType" required>
+            <option ${item.type === 'Patent' ? 'selected' : ''}>Patent</option>
+            <option ${item.type === 'Utility Model' ? 'selected' : ''}>Utility Model</option>
+            <option ${item.type === 'Industrial Design' ? 'selected' : ''}>Industrial Design</option>
+            <option ${item.type === 'Trademark' ? 'selected' : ''}>Trademark</option>
+            <option ${item.type === 'Copyright' ? 'selected' : ''}>Copyright</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Inventor / Lead *</label>
+          <input type="text" id="listInventor" value="${item.inventor}" placeholder="Prof. Jane Doe" required />
+        </div>
+        <div class="form-group">
+          <label>College *</label>
+          <select id="listCollege" required>
+            <option ${item.college === 'College of Engineering' ? 'selected' : ''}>College of Engineering</option>
+            <option ${item.college === 'College of Sciences' ? 'selected' : ''}>College of Sciences</option>
+            <option ${item.college === 'College of Agriculture' ? 'selected' : ''}>College of Agriculture</option>
+            <option ${item.college === 'College of Arts' ? 'selected' : ''}>College of Arts</option>
+            <option ${item.college === 'Research Office' ? 'selected' : ''}>Research Office</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Innovation / Product Image</label>
+        <div class="file-upload-zone" onclick="document.getElementById('listImageInput').click()" style="padding: 20px; border: 2px dashed var(--gray-200); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--gold); margin-bottom: 12px;"></i>
+          <p id="listImageStatus" style="margin: 0; font-size: 0.9rem; color: var(--gray-500);">${item.image ? 'Image selected' : 'Click to upload or drag and drop image'}</p>
+          <input type="file" id="listImageInput" hidden accept="image/*" onchange="handleMpImageUpload(this)" />
+          <input type="hidden" id="listImageUrl" value="${item.image || ''}" />
+        </div>
+        ${item.image ? `<img id="listImagePreview" src="${item.image}" style="margin-top: 10px; max-width: 100%; border-radius: 8px; height: 120px; object-fit: cover;" />` : `<img id="listImagePreview" style="margin-top: 10px; max-width: 100%; border-radius: 8px; height: 120px; object-fit: cover; display: none;" />`}
+      </div>
+
+      <div class="form-group">
+        <label>Short Description (for cards) *</label>
+        <textarea id="listDesc" rows="2" placeholder="Brief 1-2 sentence hook..." required>${item.description}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Detailed Description *</label>
+        <textarea id="listLongDesc" rows="4" placeholder="Full technological description..." required>${item.long_description || item.longDescription || ''}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Business Potential *</label>
+        <textarea id="listBusiness" rows="3" placeholder="Market research, ROI, target audience..." required>${item.business_potential || item.businessPotential || ''}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Innovative Features and Benefits (One per line) *</label>
+        <textarea id="listFeatures" rows="4" placeholder="Feature 1\\nFeature 2..." required>${Array.isArray(item.features) ? item.features.join('\n') : ''}</textarea>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div class="form-group">
+          <label>Contact Person *</label>
+          <input type="text" id="listContactName" value="${item.contact_person || item.contactPerson || ''}" placeholder="Prof. Name" required />
+        </div>
+        <div class="form-group">
+          <label>Contact Email *</label>
+          <input type="email" id="listContactEmail" value="${item.contact_email || item.contactEmail || ''}" placeholder="name@psu.edu.ph" required />
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top:24px;">
+        <button type="submit" class="btn btn-primary btn-block" style="padding:14px;">${isEdit ? 'Save Changes' : 'Create Marketplace Listing'}</button>
+        <button type="button" class="btn btn-outline btn-block" onclick="closeModal()">Cancel</button>
+      </div>
+    </form>
+  `;
+  modalOverlay.classList.add("active");
+};
+
+window.handleMpImageUpload = function (input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      document.getElementById("listImageUrl").value = e.target.result;
+      document.getElementById("listImageStatus").innerText = "Image uploaded: " + input.files[0].name;
+      const preview = document.getElementById("listImagePreview");
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+};
+
+window.saveListing = function (e, id) {
+  e.preventDefault();
+  const title = document.getElementById("listTitle").value;
+  const fullTitle = document.getElementById("listFullTitle").value;
+  const type = document.getElementById("listType").value;
+  const inventor = document.getElementById("listInventor").value;
+  const college = document.getElementById("listCollege").value;
+  const description = document.getElementById("listDesc").value;
+  const longDescription = document.getElementById("listLongDesc").value;
+  const businessPotential = document.getElementById("listBusiness").value;
+  const features = document
+    .getElementById("listFeatures")
+    .value.split("\n")
+    .filter((f) => f.trim() !== "");
+  const contactPerson = document.getElementById("listContactName").value;
+  const contactEmail = document.getElementById("listContactEmail").value;
+  const image = document.getElementById("listImageUrl").value || "images/partner_logo.png";
+
+  const icon =
+    type === "Patent"
+      ? "fa-solid fa-lightbulb"
+      : type === "Trademark"
+        ? "fa-solid fa-stamp"
+        : "fa-solid fa-box";
+
+  if (id !== null) {
+    // Edit mode
+    const idx = marketplaceItems.findIndex(i => i.id === id);
+    if (idx !== -1) {
+      marketplaceItems[idx] = {
+        ...marketplaceItems[idx],
+        title,
+        fullTitle,
+        type,
+        inventor,
+        college,
+        description,
+        longDescription,
+        businessPotential,
+        features,
+        contactPerson,
+        contactEmail,
+        image,
+        icon
+      };
+      showToast(`Listing updated: ${title}`);
+    }
+  } else {
+    // Add mode
+    const newId = marketplaceItems.length
+      ? Math.max(...marketplaceItems.map((i) => i.id)) + 1
+      : 1;
+
+    const newItem = {
+      id: newId,
+      title,
+      fullTitle,
+      type,
+      inventor,
+      college,
+      description,
+      longDescription,
+      businessPotential,
+      features,
+      contactPerson,
+      contactEmail,
+      year: new Date().getFullYear(),
+      icon,
+      image,
+    };
+    marketplaceItems.push(newItem);
+    showToast(`Listing created: ${title}`);
+  }
+
+  closeModal();
+  renderDashboardContent("admin-marketplace");
+};
+
+window.showEditListingModal = function (id) {
+  window.showAddListingModal(id);
+};
+
+window.deleteListing = function (id) {
+  if (confirm("Are you sure you want to delete this listing?")) {
+    const idx = marketplaceItems.findIndex(i => i.id === id);
+    if (idx !== -1) {
+      marketplaceItems.splice(idx, 1);
+      showToast("Listing deleted successfully");
+      renderDashboardContent("admin-marketplace");
+    }
+  }
+};
+
+window.saveNewListing = function (e) {
+  window.saveListing(e, null);
+};
+
+
+
 // ===== AUDIT LOG =====
 function renderAuditLog() {
   const visibleLogs = getVisibleAuditLogs(currentRole);
@@ -5167,11 +5450,11 @@ function renderAuditLog() {
       <div class="form-group"><label>From Date</label><input type="date" id="auditFrom" /></div>
       <div class="form-group"><label>To Date</label><input type="date" id="auditTo" /></div>
       <div class="form-group"><label>Action</label>
-        <select id="auditAction" onchange="filterAudit()"><option value="All">All Actions</option><option>Submitted</option><option>Approved</option><option>Rejected</option><option>Status Changed</option><option>Exported</option><option>User Created</option></select></div>
+        <select id="auditAction" onchange="filterAudit()"><option value="All">All Actions</option><option>Applicant files checked and status updated</option><option>Prior art documents requested</option><option>Utility model examination started</option></select></div>
       ${canExportAudit() ? '<button class="btn btn-primary btn-sm" style="margin-top:auto" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>' : ""}
     </div>
-    <div class="table-container"><div class="table-responsive"><table class="data-table" id="auditTable"><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Module</th><th>Details</th><th>IP Address</th></tr></thead><tbody>
-      ${visibleLogs.map((l) => `<tr><td>${l.timestamp}</td><td>${l.user}</td><td><span class="badge badge-review">${l.action}</span></td><td>${l.module}</td><td>${l.detail}</td><td>${l.ip}</td></tr>`).join("")}
+    <div class="table-container"><div class="table-responsive"><table class="data-table" id="auditTable"><thead><tr><th>Timestamp</th><th>Account Name</th><th>Action</th><th>Record</th><th>Details</th></tr></thead><tbody>
+      ${visibleLogs.map((l) => `<tr><td>${l.timestamp}</td><td>${l.user}</td><td><span class="badge badge-review">${l.action}</span></td><td>${l.record}</td><td>${l.detail}</td></tr>`).join("")}
     </tbody></table></div></div>`;
 }
 
@@ -5186,12 +5469,12 @@ function filterAudit() {
 
 function exportCSV() {
   if (!canExportAudit()) {
-    showToast("Only the super admin can export the audit trail.");
+    showToast("Only the admin can export the audit trail.");
     return;
   }
-  let csv = "Timestamp,User,Action,Module,Details,IP Address\n";
+  let csv = "Timestamp,Account Name,Action,Record,Details\n";
   getVisibleAuditLogs(currentRole).forEach((l) => {
-    csv += `"${l.timestamp}","${l.user}","${l.action}","${l.module}","${l.detail}","${l.ip}"\n`;
+    csv += `"${l.timestamp}","${l.user}","${l.action}","${l.record}","${l.detail}"\n`;
   });
   const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
@@ -5461,8 +5744,8 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
               <h4 style="font-size:0.9rem; color:var(--navy); font-weight:700; margin-bottom:16px;">Quick Info</h4>
               <div style="display:flex; flex-direction:column; gap:12px;">
                 <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                  <span style="color:var(--gray-500);">Assigned Reviewer</span>
-                  <span style="font-weight:600; color:var(--navy);">${s.assignedReviewerId ? "Expert Reviewer" : "Unassigned"}</span>
+                  <span style="color:var(--gray-500);">Assigned Evaluator</span>
+                  <span style="font-weight:600; color:var(--navy);">${s.assignedEvaluatorId ? "Expert Evaluator" : "Unassigned"}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
                   <span style="color:var(--gray-500);">Intellectual Property</span>
@@ -5547,7 +5830,7 @@ function legacyRenderAdminUsers() {
       applicant: "badge-approved",
       "Super Admin": "badge-rejected",
       Admin: "badge-review",
-      Reviewer: "badge-pending",
+      Evaluator: "badge-pending",
       Applicant: "badge-approved",
     };
     let label = r;
@@ -5557,7 +5840,7 @@ function legacyRenderAdminUsers() {
     if (r === "applicant") label = "Applicant";
 
     let ipLabel = "";
-    if (r === "specialist" || r === "Reviewer") {
+    if (r === "specialist" || r === "Evaluator") {
       const types =
         u && u.ipTypes && u.ipTypes.length > 0
           ? u.ipTypes.join(", ")
@@ -5606,12 +5889,12 @@ function legacyEditUserRole(userId) {
       <select id="newRoleSelect" onchange="toggleSpecialistSettings(this.value)">
         <option value="superadmin" ${u.role === "superadmin" ? "selected" : ""}>Super Admin</option>
         <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option>
-        <option value="specialist" ${u.role === "specialist" || u.role === "Reviewer" ? "selected" : ""}>Reviewer</option>
+        <option value="specialist" ${u.role === "specialist" || u.role === "Evaluator" ? "selected" : ""}>Evaluator</option>
         <option value="applicant" ${u.role === "applicant" ? "selected" : ""}>Applicant</option>
       </select>
     </div>
     
-    <div id="specialistSettings" style="display: ${u.role === "specialist" || u.role === "Reviewer" ? "block" : "none"}; padding: 15px; background: var(--blue-bg); border-radius: var(--radius-sm); margin-bottom: 20px; border: 1px solid rgba(59, 130, 246, 0.2);">
+    <div id="specialistSettings" style="display: ${u.role === "specialist" || u.role === "Evaluator" ? "block" : "none"}; padding: 15px; background: var(--blue-bg); border-radius: var(--radius-sm); margin-bottom: 20px; border: 1px solid rgba(59, 130, 246, 0.2);">
       <label style="font-weight:600; display:block; margin-bottom:12px; color:var(--blue);"><i class="fa-solid fa-list-check"></i> Assign IP Application Types</label>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
         ${checkboxesHTML}
@@ -5787,7 +6070,7 @@ function legacyRenderRolePermissions() {
       <th>MODULE / ACTION</th>
       <th style="text-align:center;color:var(--green)">SUPER ADMIN</th>
       <th style="text-align:center;color:var(--blue)">PITBI ADMIN</th>
-      <th style="text-align:center;color:var(--gold)">REVIEWER</th>
+      <th style="text-align:center;color:var(--gold)">EVALUATOR</th>
       <th style="text-align:center;color:var(--gold-dark)">APPLICANT</th>
     </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
@@ -5819,7 +6102,7 @@ function legacyRenderCreateAccount() {
         <div class="form-group" id="dept-group"><label>Department *</label>
           <select id="newUserDept"><option value="">Select Department</option><option>IT Office</option><option>IP Office</option><option>Research Office</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option></select></div>
         <div class="form-group" id="role-group"><label>Assign Role *</label>
-          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option>Super Admin</option><option>PITBI Admin</option><option>Reviewer</option><option>Applicant</option></select></div>
+          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option>Super Admin</option><option>PITBI Admin</option><option>Evaluator</option><option>Applicant</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Temporary Password *</label><input type="password" id="newUserPass" placeholder="Min 8 characters" /></div>
@@ -5885,7 +6168,7 @@ function renderAdminUsers() {
   const roleBadgeClass = {
     superadmin: "badge-rejected",
     admin: "badge-review",
-    reviewer: "badge-pending",
+    evaluator: "badge-pending",
     applicant: "badge-approved",
   };
   return `<div class="page-header"><h1>User Management</h1><p>Manage registered system users according to the RBAC matrix.</p></div>
@@ -5921,11 +6204,33 @@ function editUserRole(userId) {
         `<option value="${role}" ${normalizeRole(user.role) === role ? "selected" : ""}>${formatRoleLabel(role)}</option>`,
     )
     .join("");
+    
+  const currentTypes = user.ipTypes || [];
+  const typesOptions = [
+    "Patent",
+    "Trademark",
+    "Copyright",
+    "Utility Model",
+    "Industrial Design",
+  ];
+  let checkboxesHTML = typesOptions
+    .map(
+      (t) =>
+        `<label style="display:flex;align-items:center;margin-bottom:8px;font-size:0.9rem;cursor:pointer"><input type="checkbox" value="${t}" class="ip-type-cb" style="margin-right:8px" ${currentTypes.includes(t) ? "checked" : ""}> ${t}</label>`,
+    )
+    .join("");
+
   document.getElementById("modalTitle").textContent = "Edit User Role";
   document.getElementById("modalBody").innerHTML = `
     <div class="form-group"><label>Account</label><input type="text" value="${user.name}" disabled style="background:var(--gray-50)" /></div>
     <div class="form-group"><label>Assign Role</label>
-      <select id="newRoleSelect">${options}</select>
+      <select id="newRoleSelect" onchange="document.getElementById('specialistSettings').style.display = this.value === 'evaluator' ? 'block' : 'none'">${options}</select>
+    </div>
+    <div id="specialistSettings" style="display: ${normalizeRole(user.role) === "evaluator" ? "block" : "none"}; padding: 15px; background: var(--blue-bg); border-radius: var(--radius-sm); margin-bottom: 20px; border: 1px solid rgba(59, 130, 246, 0.2);">
+      <label style="font-weight:600; display:block; margin-bottom:12px; color:var(--blue);"><i class="fa-solid fa-list-check"></i> Assign Evaluator Specialties</label>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+        ${checkboxesHTML}
+      </div>
     </div>
     <button class="btn btn-primary btn-block" onclick="applyRoleChange(${user.id})"><i class="fa-solid fa-save"></i> Save Changes</button>`;
   document.getElementById("modalOverlay").classList.add("active");
@@ -5945,6 +6250,14 @@ function applyRoleChange(userId) {
   }
 
   user.role = newRole;
+
+  if (newRole === "evaluator") {
+    const checkedBoxes = Array.from(
+      document.querySelectorAll(".ip-type-cb:checked"),
+    ).map((cb) => cb.value);
+    user.ipTypes = checkedBoxes;
+  }
+
   closeModal();
   showToast(`${user.name} updated to ${formatRoleLabel(newRole)}.`);
   navigateTo("admin-users");
@@ -6247,7 +6560,7 @@ function renderRolePermissions() {
       <th>MODULE / ACTION</th>
       <th style="text-align:center;color:var(--green)">SUPER ADMIN</th>
       <th style="text-align:center;color:var(--blue)">PITBI ADMIN</th>
-      <th style="text-align:center;color:var(--gold)">REVIEWER</th>
+      <th style="text-align:center;color:var(--gold)">EVALUATOR</th>
       <th style="text-align:center;color:var(--gold-dark)">APPLICANT</th>
     </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
@@ -6266,9 +6579,9 @@ function renderAdminSettings() {
       </div>
       <div class="detail-panel">
         <h3><i class="fa-solid fa-key"></i> Encryption Key Management</h3>
-        <div class="detail-row"><span class="label">Primary Key</span><span class="value">KMS-PSU-2026-ACTIVE</span></div>
-        <div class="detail-row"><span class="label">Backup Key</span><span class="value">KMS-PSU-2026-STANDBY</span></div>
-        <div class="detail-row"><span class="label">Rotation Policy</span><span class="value">Quarterly</span></div>
+        <div class="detail-row"><span class="label">Primary Key</span><span class="value">KM*****************</span></div>
+        <div class="detail-row"><span class="label">Backup Key</span><span class="value">KM******************</span></div>
+        <div class="detail-row"><span class="label">Rotation Policy</span><span class="value">Qu*******</span></div>
         <div class="detail-actions">
           <button class="btn btn-primary btn-sm" onclick="showToast('Key rotation scheduled')"><i class="fa-solid fa-arrows-rotate"></i> Rotate Keys</button>
           <button class="btn btn-secondary btn-sm" onclick="showToast('Key escrow report generated')"><i class="fa-solid fa-file-shield"></i> Escrow Report</button>
@@ -6359,7 +6672,7 @@ function getFormGuideContent() {
       color: "#10b981",
       steps: [
         "Prepare the National Library application packet and complete copy of the work.",
-        "Route the packet first to the reviewer for completeness checking.",
+        "Route the packet first to the evaluator for completeness checking.",
         "PITBI Admin records the case and issues the payment slip unless an approved letter-request waives the fee.",
         "If cashier payment is needed, return the official receipt copy to PITBI Admin.",
         "The super admin lane endorses filing with the National Library and PITBI Admin releases the certificate once received.",
@@ -6491,13 +6804,13 @@ function renderStep2() {
     <div class="form-row">
       <div class="form-group"><label>Approved letter-request status</label>
         <select id="wiz-letterrequest"><option value="">Select status</option><option>Approved</option><option>Not yet</option><option>Not applicable</option></select></div>
-      <div class="form-group"><label>Review Routing</label><input type="text" value="Reviewer intake before PITBI Admin processing" disabled /></div>
+      <div class="form-group"><label>Review Routing</label><input type="text" value="Evaluator intake before PITBI Admin processing" disabled /></div>
     </div>
     <div class="form-group"><label>Description *</label><textarea id="wiz-desc" placeholder="Describe your creative work..."></textarea></div>
     <div class="form-group"><label>Declaration of Originality *</label><textarea id="wiz-originality" placeholder="State that the work is original and identify the author or authors responsible for it..."></textarea></div>
     <div style="padding:14px 18px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; margin-top:18px;">
       <div style="font-size:.84rem; font-weight:700; color:#047857; margin-bottom:4px;">Copyright routing note</div>
-      <div style="font-size:.82rem; color:var(--gray-500); line-height:1.6;">After you submit this packet, the reviewer acts as the technical expert for completeness checking. PITBI Admin records the case and manages payment slip or fee-waiver routing before the super admin lane endorses National Library filing.</div>
+      <div style="font-size:.82rem; color:var(--gray-500); line-height:1.6;">After you submit this packet, the evaluator acts as the technical expert for completeness checking. PITBI Admin records the case and manages payment slip or fee-waiver routing before the super admin lane endorses National Library filing.</div>
     </div>`;
 }
 
@@ -6589,8 +6902,8 @@ function renderStep3() {
     ${
       isCopyright
         ? `<div style="padding:16px 18px; background:rgba(255,127,80,0.06); border:1px solid rgba(255,127,80,0.18); border-radius:12px; margin-bottom:24px;">
-      <div style="font-size:.86rem; font-weight:700; color:var(--navy); margin-bottom:6px;"><i class="fa-solid fa-route" style="color:var(--gold); margin-right:8px;"></i> Reviewer and cashier routing</div>
-      <div style="font-size:.82rem; color:var(--gray-500); line-height:1.7;">This step collects the initial National Library packet only. After reviewer clearance, PITBI Admin either issues the payment slip for cashier payment or uses the fee-waived route when an approved letter-request is on file.</div>
+      <div style="font-size:.86rem; font-weight:700; color:var(--navy); margin-bottom:6px;"><i class="fa-solid fa-route" style="color:var(--gold); margin-right:8px;"></i> Evaluator and cashier routing</div>
+      <div style="font-size:.82rem; color:var(--gray-500); line-height:1.7;">This step collects the initial National Library packet only. After evaluator clearance, PITBI Admin either issues the payment slip for cashier payment or uses the fee-waived route when an approved letter-request is on file.</div>
     </div>`
         : ""
     }
@@ -6608,7 +6921,7 @@ function renderStep3() {
         ${
           isCopyright
             ? feeWaived
-              ? "An approved letter-request is declared for this official-duty work. PITBI Admin can use the fee-waived route after reviewer clearance, so cashier payment is not expected unless the office requests it."
+              ? "An approved letter-request is declared for this official-duty work. PITBI Admin can use the fee-waived route after evaluator clearance, so cashier payment is not expected unless the office requests it."
               : "Use this slot only after PITBI Admin issues the payment slip and the university cashier releases the official receipt. The OR copy is part of Steps 4 to 6 of the PSU copyright flow."
             : "Per university policy, all IP applications require a valid Proof-of-Deposit or Official Receipt before the submission can be forwarded for review. Upload a scanned copy or photo of your receipt below."
         }
@@ -6660,8 +6973,8 @@ function renderStep4Review() {
       <p style="color:var(--gray-500);font-size:.9rem">${
         currentFormType === "copyright"
           ? feeWaived
-            ? "The initial copyright packet is ready for reviewer intake. Because an approved letter-request is declared, PITBI Admin may route this case without cashier payment once verified."
-            : "The initial copyright packet is ready for reviewer intake. The official receipt copy follows later after PITBI Admin issues the payment slip and the cashier releases the OR."
+            ? "The initial copyright packet is ready for evaluator intake. Because an approved letter-request is declared, PITBI Admin may route this case without cashier payment once verified."
+            : "The initial copyright packet is ready for evaluator intake. The official receipt copy follows later after PITBI Admin issues the payment slip and the cashier releases the OR."
           : "Supporting documents and Proof-of-Deposit were uploaded in Step 3."
       }</p>
     </div>
@@ -6671,9 +6984,9 @@ function renderStep4Review() {
       <div class="copyright-flow-grid">
         <div class="copyright-flow-card active">
           <div class="copyright-flow-meta"><span class="copyright-flow-step">Step 1-2</span><span class="copyright-stage-pill active">Queued</span></div>
-          <div class="copyright-flow-title">Reviewer intake and completeness check</div>
-          <div class="copyright-flow-owner">Reviewer - Technical expert lane</div>
-          <div class="copyright-flow-desc">The reviewer acts as the Technical Expert checking documents before forwarding to Admin Staff/MIS.</div>
+          <div class="copyright-flow-title">Evaluator intake and completeness check</div>
+          <div class="copyright-flow-owner">Evaluator - Technical expert lane</div>
+          <div class="copyright-flow-desc">The evaluator acts as the Technical Expert checking documents before forwarding to Admin Staff/MIS.</div>
         </div>
         <div class="copyright-flow-card pending">
           <div class="copyright-flow-meta"><span class="copyright-flow-step">Step 3-7</span><span class="copyright-stage-pill pending">Cashier route</span></div>
@@ -6697,9 +7010,9 @@ function renderStep4Review() {
       <div class="copyright-flow-grid">
         <div class="copyright-flow-card active">
           <div class="copyright-flow-meta"><span class="copyright-flow-step">Step 1-2</span><span class="copyright-stage-pill active">Queued</span></div>
-          <div class="copyright-flow-title">Reviewer intake and completeness check</div>
-          <div class="copyright-flow-owner">Reviewer - Technical expert lane</div>
-          <div class="copyright-flow-desc">The reviewer acknowledges the application and returns incomplete packets before endorsing complete ones to PITBI Admin.</div>
+          <div class="copyright-flow-title">Evaluator intake and completeness check</div>
+          <div class="copyright-flow-owner">Evaluator - Technical expert lane</div>
+          <div class="copyright-flow-desc">The evaluator acknowledges the application and returns incomplete packets before endorsing complete ones to PITBI Admin.</div>
         </div>
         <div class="copyright-flow-card pending">
           <div class="copyright-flow-meta"><span class="copyright-flow-step">Step 3-7</span><span class="copyright-stage-pill pending">${feeWaived ? "Fee-waived" : "Cashier route"}</span></div>
@@ -6717,10 +7030,7 @@ function renderStep4Review() {
     </div>`
         : ""
     }
-    <div style="padding:16px 20px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;margin-top:4px;font-size:.85rem;color:#92400e;display:flex;gap:10px;align-items:flex-start">
-      <i class="fa-solid fa-person-chalkboard" style="color:#d97706;margin-top:2px"></i>
-      <div><strong>Manual Review Policy:</strong> Your submission will be reviewed by PSU IP Office staff. No AI-driven assessment occurs. You will be notified at your registered email once review is complete.</div>
-    </div>`;
+`;
 }
 
 function captureWizardData() {
@@ -6835,7 +7145,7 @@ function submitForm() {
     paymentVerified: currentFormType === "copyright" ? feeWaived : true,
     paymentExempt: feeWaived,
     frozen: false,
-    assignedReviewerId: null,
+    assignedEvaluatorId: null,
     hasTopSecretAnnex: ["Patent", "Utility Model"].includes(
       typeMap[currentFormType],
     ),
@@ -6868,8 +7178,8 @@ function submitForm() {
       <p style="color:var(--gray-500)">${
         currentFormType === "copyright"
           ? feeWaived
-            ? "Your copyright packet has been routed to the reviewer for completeness checking using the declared fee-waived route."
-            : "Your copyright packet has been routed to the reviewer for completeness checking before PITBI Admin issues the payment slip."
+            ? "Your copyright packet has been routed to the evaluator for completeness checking using the declared fee-waived route."
+            : "Your copyright packet has been routed to the evaluator for completeness checking before PITBI Admin issues the payment slip."
           : `Your ${typeMap[currentFormType]} application has been received and is now under review.`
       }</p>
       <div class="ref-number">${refNum}</div>
@@ -6928,24 +7238,12 @@ function renderSubmissionDetail() {
     <div class="page-header">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <h1 style="margin:0">${s.title}</h1>
-        ${frozen ? '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen for Certification</span>' : ""}
+
       </div>
       <p style="margin-top:8px">Submission Detail - ${s.id} &bull; Filed ${s.date}</p>
     </div>
 
-    ${
-      frozen
-        ? `<div style="padding:14px 20px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
-      <i class="fa-solid fa-lock" style="color:#6366f1; font-size:1.2rem;"></i>
-      <div><strong style="color:#4f46e5;">Metadata Frozen</strong><p style="font-size:.85rem; color:var(--gray-500); margin:2px 0 0;">Per system policy, the core technical metadata of this approved submission has been locked and cannot be altered by administrators.</p></div>
-    </div>`
-        : ""
-    }
 
-    <div style="padding:12px 18px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
-      <i class="fa-solid fa-person-chalkboard" style="color:#d97706; font-size:1.1rem;"></i>
-      <div><strong style="color:#d97706;">Manual Review Policy</strong><p style="font-size:.82rem; color:var(--gray-500); margin:2px 0 0;">This system does not use automated or AI-driven document assessment. All submissions undergo human evaluation by authorized IP Office personnel before status is updated.</p></div>
-    </div>
 
     <div class="detail-layout">
       <div>
@@ -6966,6 +7264,21 @@ function renderSubmissionDetail() {
           ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Approved Letter-Request</span><span class="value">${s.letterRequestApproved ? "Yes" : "No"}</span></div>` : ""}
           <div class="detail-row"><span class="label">Description</span><span class="value">${s.description}</span></div>
           <div class="detail-row"><span class="label">Date Filed</span><span class="value">${s.date}</span></div>
+          ${(() => {
+            const evals = systemUsers.filter(u => normalizeRole(u.role) === "evaluator");
+            const eligible = evals.filter(u => !u.ipTypes || u.ipTypes.length === 0 || u.ipTypes.includes(s.type));
+            const opts = eligible.map(u => `<option value="${u.id}" ${s.assignedEvaluatorId === u.id ? "selected" : ""}>${u.name}</option>`).join("");
+            const currentName = s.assignedEvaluatorId ? systemUsers.find(u => u.id === s.assignedEvaluatorId)?.name || "Unknown" : "Unassigned";
+            if (normalizedRole === "superadmin" || normalizedRole === "admin") {
+              return `<div class="detail-row"><span class="label">Assigned Evaluator</span><span class="value">
+                <select onchange="assignEvaluator('${s.id}', this.value)" style="padding:4px;border-radius:4px;border:1px solid var(--gray-300)">
+                  <option value="">-- Unassigned --</option>
+                  ${opts}
+                </select>
+              </span></div>`;
+            }
+            return `<div class="detail-row"><span class="label">Assigned Evaluator</span><span class="value">${currentName}</span></div>`;
+          })()}
         </div>
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-paperclip"></i> Documents & Payment</h3>
@@ -7040,21 +7353,20 @@ function renderSubmissionDetail() {
           }
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-comment"></i> Admin Notes</h3>
+          <h3><i class="fa-solid fa-comment"></i> Add Notes</h3>
           <div class="admin-notes">
             <textarea placeholder="Add internal notes about this submission..." ${frozen || !canEditSubmission(s) ? "disabled" : ""}></textarea>
             ${!frozen && canEditSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="showToast('Notes saved')">Save Notes</button>` : ""}
           </div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-timeline"></i> ${normalizedRole !== "reviewer" && s.type === "Copyright" ? "Copyright Operational Flow" : normalizedRole !== "reviewer" && IPOPHL_TYPES.has(s.type) ? "IPOPHL Operational Flow" : "Activity Timeline"}</h3>
+          <h3><i class="fa-solid fa-timeline"></i> ${normalizedRole !== "evaluator" && s.type === "Copyright" ? "Copyright Operational Flow" : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type) ? "IPOPHL Operational Flow" : "Activity Timeline"}</h3>
           ${
-            normalizedRole !== "reviewer" && s.type === "Copyright"
+            normalizedRole !== "evaluator" && s.type === "Copyright"
               ? renderCopyrightOperationTimeline(s)
-              : normalizedRole !== "reviewer" && IPOPHL_TYPES.has(s.type)
+              : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type)
                 ? renderIPOPHLOperationTimeline(s)
                 : `<div class="timeline">
-            ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-receipt" style="color:var(--gold)"></i> Proof of Deposit verified</div></div>
             <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
@@ -7506,14 +7818,14 @@ function renderAdminAnnouncementsPage() {
 
 window.showAnnouncementModal = function(id = null) {
   const isEdit = id !== null;
-  const a = isEdit ? announcements.find(item => item.id === id) : { title: '', content: '', category: 'News', date: new Date().toISOString().split('T')[0] };
-  
+  const a = isEdit ? announcements.find(item => item.id === id) : { title: '', content: '', category: 'News', date: new Date().toISOString().split('T')[0], image: '' };
+
   const modalBody = document.getElementById('modalBody');
   const modalTitle = document.getElementById('modalTitle');
   const modalOverlay = document.getElementById('modalOverlay');
 
   modalTitle.innerText = isEdit ? 'Edit Announcement' : 'Add New Announcement';
-  
+
   // Use a data attribute or hidden input to store the ID for safer retrieval
   modalBody.innerHTML = `
     <form id="announcementForm" onsubmit="saveAnnouncement(event, ${id === null ? 'null' : id})">
@@ -7534,6 +7846,16 @@ window.showAnnouncementModal = function(id = null) {
         <input type="date" id="annDate" value="${a.date}" required />
       </div>
       <div class="form-group">
+        <label>Announcement Image</label>
+        <div class="file-upload-zone" onclick="document.getElementById('annImageInput').click()" style="padding: 20px; border: 2px dashed var(--gray-200); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--gold); margin-bottom: 12px;"></i>
+          <p id="annImageStatus" style="margin: 0; font-size: 0.9rem; color: var(--gray-500);">${a.image ? 'Image selected: ' + a.image.split('/').pop() : 'Click to upload or drag and drop image'}</p>
+          <input type="file" id="annImageInput" hidden accept="image/*" onchange="handleAnnImageUpload(this)" />
+          <input type="hidden" id="annImageUrl" value="${a.image || ''}" />
+        </div>
+        ${a.image ? `<img id="annImagePreview" src="${a.image}" style="margin-top: 10px; max-width: 100%; border-radius: 8px; height: 120px; object-fit: cover;" />` : `<img id="annImagePreview" style="margin-top: 10px; max-width: 100%; border-radius: 8px; height: 120px; object-fit: cover; display: none;" />`}
+      </div>
+      <div class="form-group">
         <label>Content</label>
         <textarea id="annContent" rows="4" required>${a.content}</textarea>
       </div>
@@ -7546,12 +7868,27 @@ window.showAnnouncementModal = function(id = null) {
   modalOverlay.classList.add('active');
 };
 
+window.handleAnnImageUpload = function(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('annImageUrl').value = e.target.result;
+      document.getElementById('annImageStatus').innerText = 'Image uploaded: ' + input.files[0].name;
+      const preview = document.getElementById('annImagePreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    }
+    reader.readAsDataURL(input.files[0]);
+  }
+};
+
 window.saveAnnouncement = function(e, id) {
   e.preventDefault();
   const title = document.getElementById('annTitle').value;
   const category = document.getElementById('annCategory').value;
   const date = document.getElementById('annDate').value;
   const content = document.getElementById('annContent').value;
+  const image = document.getElementById('annImageUrl').value || 'images/psu_logo_main.png';
 
   console.log('Saving announcement:', { id, title, category, date });
 
@@ -7559,7 +7896,7 @@ window.saveAnnouncement = function(e, id) {
     // Editing existing
     const idx = announcements.findIndex(a => a.id == id);
     if (idx !== -1) {
-      announcements[idx] = { ...announcements[idx], title, category, date, content };
+      announcements[idx] = { ...announcements[idx], title, category, date, content, image };
       showToast('Announcement updated successfully');
     } else {
       console.error('Announcement not found for ID:', id);
@@ -7568,17 +7905,17 @@ window.saveAnnouncement = function(e, id) {
   } else {
     // Creating new
     const newId = announcements.length ? Math.max(...announcements.map(a => a.id)) + 1 : 1;
-    announcements.push({ 
-      id: newId, 
-      title, 
-      category, 
-      date, 
-      content, 
-      image: 'images/psu_logo_main.png' 
+    announcements.push({
+      id: newId,
+      title,
+      category,
+      date,
+      content,
+      image
     });
     showToast('Announcement created successfully');
   }
-  
+
   if (typeof closeModal === 'function') closeModal();
   renderDashboardContent('admin-announcements');
 };
@@ -7598,6 +7935,9 @@ function renderLandingAnnouncements() {
 
   grid.innerHTML = announcements.map(a => `
     <div class="announcement-card" style="animation: fadeInUp 0.5s ease forwards;">
+      ${a.image ? `<div class="ann-image-wrapper" style="margin: -30px -30px 20px -30px; height: 180px; overflow: hidden; border-radius: 20px 20px 0 0;">
+        <img src="${a.image}" alt="${a.title}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+      </div>` : ''}
       <div class="ann-badge-line">
         <span class="ann-badge ${a.category.toLowerCase()}">${a.category}</span>
         <span class="ann-date">${a.date}</span>
@@ -7610,6 +7950,14 @@ function renderLandingAnnouncements() {
     </div>
   `).join('');
 }
+window.assignEvaluator = function(submissionId, evaluatorId) {
+  const submission = submissions.find(s => String(s.id) === String(submissionId));
+  if (!submission) return;
+  submission.assignedEvaluatorId = evaluatorId ? parseInt(evaluatorId) : null;
+  const ev = systemUsers.find(u => u.id === submission.assignedEvaluatorId);
+  showToast(ev ? `Assigned to ${ev.name}` : `Assignment removed`);
+  renderDashboardContent('submission-detail');
+};
 
 // ===== INIT =====
 document.addEventListener("DOMContentLoaded", () => {
