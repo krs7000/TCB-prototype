@@ -4003,7 +4003,7 @@ body.compact-layout .sidebar-toggle {
   position: relative;
 }
 .guide-docs li::before {
-  content: "✓";
+  content: "Γ£ô";
   position: absolute;
   left: 0;
   color: var(--green);
@@ -4695,7 +4695,7 @@ body.compact-layout .sidebar-toggle {
     width: 280px;
     right: -120px;
   }
-  /* IP Tutorial grid → single column on mobile */
+  /* IP Tutorial grid ΓåÆ single column on mobile */
   [style*="grid-template-columns:1fr 1fr 1fr"] {
     display: flex !important;
     flex-direction: column !important;
