@@ -1,5 +1,5 @@
 // ============================================================
-// THE CREATOR'S BULWARK ΓÇö APP.JS
+// THE CREATOR'S BULWARK — APP.JS
 // Complete application logic with mock data & interactivity
 // ============================================================
 
@@ -42,44 +42,104 @@ const ROLE_ALIASES = {
 function normalizeRole(role) {
   return ROLE_ALIASES[role] || "applicant";
 }
-const mockNotifications = [
-  {
-    id: 1,
-    icon: "fa-circle-check",
-    color: "#22c55e",
-    title: "PSU-PAT-2026-001 Approved",
-    body: "Your patent application has been certified.",
-    time: "2 hours ago",
-    read: false,
-  },
-  {
-    id: 2,
-    icon: "fa-file-circle-plus",
-    color: "#f59e0b",
-    title: "Documents Requested",
-    body: "Admin Garcia requests additional docs for PSU-COP-2026-002.",
-    time: "Yesterday",
-    read: false,
-  },
-  {
-    id: 3,
-    icon: "fa-circle-info",
-    color: "#3b82f6",
-    title: "System Maintenance",
-    body: "Scheduled maintenance on April 10, 2026 from 2ΓÇô4 AM.",
-    time: "3 days ago",
-    read: true,
-  },
-  {
-    id: 4,
-    icon: "fa-triangle-exclamation",
-    color: "#ef4444",
-    title: "Action Required: PSU-COP-2026-014",
-    body: "Missing documents detected for Palawan Biodiversity Database.",
-    time: "Just now",
-    read: false,
-  },
-];
+const mockNotifications = {
+  superadmin: [
+    {
+      id: 201,
+      icon: "fa-circle-plus",
+      color: "#22c55e",
+      title: "New Application Submitted",
+      body: "A new Patent application (PSU-PAT-2026-022) is awaiting initial review.",
+      time: "10 minutes ago",
+      read: false,
+    },
+    {
+      id: 202,
+      icon: "fa-triangle-exclamation",
+      color: "#ef4444",
+      title: "Urgent: Fee Verification",
+      body: "Payment verification is pending for 3 priority applications.",
+      time: "1 hour ago",
+      read: false,
+    },
+    {
+      id: 203,
+      icon: "fa-file-shield",
+      color: "#3b82f6",
+      title: "Audit Log Export Complete",
+      body: "The monthly audit log for March 2026 is ready for download.",
+      time: "5 hours ago",
+      read: true,
+    }
+  ],
+  reviewer: [
+    {
+      id: 101,
+      icon: "fa-clipboard-list",
+      color: "#3b82f6",
+      title: "New Case Assigned",
+      body: "You have been assigned as evaluator for PSU-PAT-2026-015.",
+      time: "1 hour ago",
+      read: false,
+    },
+    {
+      id: 102,
+      icon: "fa-clock",
+      color: "#f59e0b",
+      title: "Deadline Approaching",
+      body: "Evaluation for PSU-COP-2026-008 is due in 2 days.",
+      time: "5 hours ago",
+      read: false,
+    },
+    {
+      id: 103,
+      icon: "fa-circle-check",
+      color: "#22c55e",
+      title: "Review Confirmed",
+      body: "Your feedback for PSU-COP-2026-004 has been received by Admin.",
+      time: "Yesterday",
+      read: true,
+    }
+  ],
+  applicant: [
+    {
+      id: 1,
+      icon: "fa-circle-check",
+      color: "#22c55e",
+      title: "PSU-PAT-2026-001 Approved",
+      body: "Your patent application has been certified by the IP Office.",
+      time: "2 hours ago",
+      read: false,
+    },
+    {
+      id: 2,
+      icon: "fa-file-circle-plus",
+      color: "#f59e0b",
+      title: "Documents Requested",
+      body: "Admin Garcia requests additional docs for PSU-COP-2026-002.",
+      time: "Yesterday",
+      read: false,
+    },
+    {
+      id: 3,
+      icon: "fa-triangle-exclamation",
+      color: "#ef4444",
+      title: "Action Required: PSU-COP-2026-014",
+      body: "Missing documents detected for Palawan Biodiversity Database.",
+      time: " Just now",
+      read: false,
+    },
+    {
+      id: 4,
+      icon: "fa-circle-info",
+      color: "#3b82f6",
+      title: "System Maintenance",
+      body: "Scheduled maintenance on April 10, 2026 from 2-4 AM.",
+      time: "3 days ago",
+      read: true,
+    }
+  ]
+};
 
 let announcements = [
   {
@@ -494,7 +554,7 @@ const marketplaceItems = [
     longDescription:
       "A portable handheld device that uses advanced imaging to detect changes in the crystalline lens of the fish eye associated with formalin preservation.",
     features: [
-      "Non-destructive testing ΓÇö no need to slice or damage the sample.",
+      "Non-destructive testing — no need to slice or damage the sample.",
       "Instant result displaying Safe/Warning levels on a digital screen.",
       "Calibration for multiple fish species common in local wet markets.",
     ],
@@ -690,7 +750,7 @@ const marketplaceItems = [
     features: [
       "Dual-mode verification: fingerprint + face recognition for high accuracy.",
       "Automatic generation of attendance reports and parent notifications.",
-      "Offline mode capability ΓÇö syncs to cloud when connection is restored.",
+      "Offline mode capability — syncs to cloud when connection is restored.",
       "Integration-ready with existing Student Information Systems (SIS).",
     ],
     businessPotential:
@@ -712,7 +772,7 @@ const marketplaceItems = [
     description:
       "A sustainable fertilizer formulation derived from banana peel extract, rich in potassium and micro-nutrients for vegetable crops.",
     longDescription:
-      "A zero-waste innovation that converts banana peel ΓÇö a common agricultural by-product ΓÇö into a high-potassium liquid fertilizer proven to enhance vegetable growth and fruit quality.",
+      "A zero-waste innovation that converts banana peel — a common agricultural by-product — into a high-potassium liquid fertilizer proven to enhance vegetable growth and fruit quality.",
     features: [
       "Natural potassium concentration 3x higher than conventional fertilizers.",
       "Fully biodegradable with no chemical additives or preservatives.",
@@ -737,12 +797,12 @@ const marketplaceItems = [
     description:
       "A foldable, high-efficiency parabolic solar cooker designed for community use in off-grid areas, capable of reaching cooking temperatures in 15 minutes.",
     longDescription:
-      "Uses a parabolic mirror array to concentrate solar energy into a single focal point, achieving temperatures of 250┬░C sufficient for boiling, frying, and steaming ΓÇö with zero fuel cost.",
+      "Uses a parabolic mirror array to concentrate solar energy into a single focal point, achieving temperatures of 250°C sufficient for boiling, frying, and steaming — with zero fuel cost.",
     features: [
       "Foldable design packable into a 60cm x 40cm bag for portability.",
       "Aluminum composite reflectors with 92% solar reflectivity.",
       "Adjustable focal arm accommodating pots from 1L to 5L capacity.",
-      "Reaches boiling point (100┬░C) in under 20 minutes on clear days.",
+      "Reaches boiling point (100°C) in under 20 minutes on clear days.",
     ],
     businessPotential:
       "Addresses energy poverty for the estimated 15 million Filipinos without stable electricity. Strong demand from disaster relief agencies such as NDRRMC and international NGOs.",
@@ -765,12 +825,12 @@ const marketplaceItems = [
       "Designed for the modern urban micro-apartment, this furniture system uses an innovative dovetail snap-lock mechanism allowing reconfiguration in under 2 minutes. Crafted from sustainably sourced bamboo composite panels.",
     features: [
       "Tool-free assembly and disassembly using precision snap-lock joints.",
-      "Bamboo composite panels ΓÇö 40% lighter than wood, 3x stronger.",
+      "Bamboo composite panels — 40% lighter than wood, 3x stronger.",
       "Converts between 5 configurations: desk, table, shelving, bed frame, and storage unit.",
       "Flat-pack shipping reduces logistics cost by 60%.",
     ],
     businessPotential:
-      "The Philippine urban furniture market is valued at Γé▒12 billion. Targets the growing Metro Manila condo and dormitory segment. Highly attractive for e-commerce platforms and IKEA-style local retailers.",
+      "The Philippine urban furniture market is valued at ₱12 billion. Targets the growing Metro Manila condo and dormitory segment. Highly attractive for e-commerce platforms and IKEA-style local retailers.",
     contactPerson: "Des. Maria Soriano",
     contactEmail: "maria.soriano@psu.edu.ph",
     year: 2026,
@@ -786,17 +846,17 @@ const marketplaceItems = [
     inventor: "Engr. L. Bautista",
     college: "College of Sciences",
     description:
-      "Sustainable packaging panels made from compressed coconut coir fiber ΓÇö a fully biodegradable, water-resistant alternative to single-use plastic.",
+      "Sustainable packaging panels made from compressed coconut coir fiber — a fully biodegradable, water-resistant alternative to single-use plastic.",
     longDescription:
       "A heat-compressed molding process transforms raw coconut husk fiber into rigid, water-resistant packaging shells comparable in durability to conventional foam packaging.",
     features: [
       "Fully biodegradable in 90 days under standard composting conditions.",
-      "Water-resistant coating from natural coconut wax ΓÇö no plastic additives.",
+      "Water-resistant coating from natural coconut wax — no plastic additives.",
       "Customizable mold shapes fitting product dimensions from 5cm to 60cm.",
-      "Production waste is zero ΓÇö all fiber off-cuts are reprocessed.",
+      "Production waste is zero — all fiber off-cuts are reprocessed.",
     ],
     businessPotential:
-      "Growing regulatory pressure against single-use plastics creates a massive market opening. The Philippines produces 15 billion coconuts per year ΓÇö raw materials are abundantly available and cheap.",
+      "Growing regulatory pressure against single-use plastics creates a massive market opening. The Philippines produces 15 billion coconuts per year — raw materials are abundantly available and cheap.",
     contactPerson: "Engr. Lourdes Bautista",
     contactEmail: "lourdes.bautista@psu.edu.ph",
     year: 2025,
@@ -806,7 +866,7 @@ const marketplaceItems = [
   {
     id: 17,
     title: "PALAWAN PRIDE Brand Identity",
-    fullTitle: "PALAWAN PRIDE ΓÇö REGIONAL EXCELLENCE BRAND AND TRADEMARK",
+    fullTitle: "PALAWAN PRIDE — REGIONAL EXCELLENCE BRAND AND TRADEMARK",
     type: "Trademark",
     inventor: "PSU Design Team",
     college: "College of Arts",
@@ -815,7 +875,7 @@ const marketplaceItems = [
     longDescription:
       "A comprehensive brand system including wordmark, logo, color palette, and usage guidelines designed to certify and promote authentic products from Palawan province.",
     features: [
-      "Stylized eagle motif referencing the Philippine Eagle ΓÇö a Palawan icon.",
+      "Stylized eagle motif referencing the Philippine Eagle — a Palawan icon.",
       "Bilingual brand name (English/Filipino) for broader market appeal.",
       "Usage guidelines covering product labels, tourism signage, and digital media.",
       "Certification program for authentic Palawan product producers.",
@@ -831,7 +891,7 @@ const marketplaceItems = [
   {
     id: 18,
     title: "AGRI-SMART PSU Logo",
-    fullTitle: "AGRI-SMART PSU ΓÇö SMART AGRICULTURE DIVISION BRAND MARK",
+    fullTitle: "AGRI-SMART PSU — SMART AGRICULTURE DIVISION BRAND MARK",
     type: "Trademark",
     inventor: "ICT & Agriculture Dept.",
     college: "College of Agriculture",
@@ -890,7 +950,7 @@ const marketplaceItems = [
     description:
       "An intelligent software system that automates faculty workload computation, scheduling conflict detection, and academic calendar generation.",
     longDescription:
-      "Replaces spreadsheet-based workload computation with a rules-based engine that automatically calculates teaching units, administrative loads, and research credits per faculty member ΓÇö producing instant DepEd/CHED-compliant workload reports.",
+      "Replaces spreadsheet-based workload computation with a rules-based engine that automatically calculates teaching units, administrative loads, and research credits per faculty member — producing instant DepEd/CHED-compliant workload reports.",
     features: [
       "Automatic conflict detection across 50+ concurrent class schedules.",
       "CHED-memorandum-compliant workload computation engine.",
@@ -1080,7 +1140,7 @@ const auditLogs = [
 const ROLE_META = {
   superadmin: { label: "Super Admin", dashboard: "admin-dashboard" },
   admin: { label: "Admin", dashboard: "admin-dashboard" },
-  reviewer: { label: "Reviewer", dashboard: "admin-dashboard" },
+  reviewer: { label: "Evaluator", dashboard: "admin-dashboard" },
   applicant: { label: "Applicant", dashboard: "user-dashboard" },
 };
 
@@ -1923,6 +1983,44 @@ function resetMarketFilters() {
   else filterFullMarketplace();
 }
 
+function renderNotifications() {
+  const normRole = normalizeRole(currentRole);
+  const list = document.getElementById("notifList");
+  if (!list) return;
+
+  const roleNotifs = mockNotifications[normRole] || [];
+  const unreadCount = roleNotifs.filter((n) => !n.read).length;
+
+  const badge = document.getElementById("notifBadge");
+  if (badge) {
+    badge.innerText = unreadCount;
+    badge.style.display = unreadCount > 0 ? "flex" : "none";
+  }
+
+  if (roleNotifs.length === 0) {
+    list.innerHTML =
+      '<div style="padding:40px 20px;text-align:center;color:var(--gray-400);font-size:.85rem;"><i class="fa-solid fa-bell-slash" style="display:block;font-size:1.5rem;margin-bottom:12px;opacity:.3;"></i>No notifications yet</div>';
+    return;
+  }
+
+  list.innerHTML = roleNotifs
+    .map(
+      (n) => `
+    <div class="notif-item ${n.read ? "" : "unread"}" onclick="showToast('Notification: ${n.title}')">
+      <div class="notif-icon" style="background:${n.color}15; color:${n.color}">
+        <i class="fa-solid ${n.icon}"></i>
+      </div>
+      <div class="notif-info">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-body">${n.body}</div>
+        <div class="notif-time">${n.time}</div>
+      </div>
+    </div>
+  `,
+    )
+    .join("");
+}
+
 function renderInnovationList(items) {
   return items
     .map(
@@ -2447,7 +2545,7 @@ window.verifyOtp = function () {
   updateTopbarRole();
   navigateTo(getDefaultDashboardPage(currentRole));
 
-  showToast("MFA verified ΓÇö Successfully logged in!");
+  showToast("MFA verified — Successfully logged in!");
 };
 
 function logout() {
@@ -3317,7 +3415,7 @@ function legacyGetRoleSpecificStats(role) {
         },
         {
           label: "Revenue Flow",
-          value: "Γé▒125k",
+          value: "₱125k",
           icon: "fa-money-bill-trend-up",
           color: "indigo",
         },
@@ -4027,7 +4125,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     step: 2,
     title:
       "Technical Expert receives and acknowledges submitted application from author",
-    owner: "Reviewer",
+    owner: "Evaluator",
     lane: "Technical Expert",
     description:
       "Review and prepare a checklist, return incomplete application to author, and forward complete application to admin staff/MIS for record purposes.",
@@ -4110,7 +4208,7 @@ const COPYRIGHT_OPERATION_FLOW = [
 ];
 
 const COPYRIGHT_TRACKING_GROUPS = [
-  { label: "Submitted to Reviewer", keys: ["author-submission"] },
+  { label: "Submitted to Evaluator", keys: ["author-submission"] },
   {
     label: "Completeness Checked",
     keys: ["technical-review", "mis-recording"],
@@ -4141,7 +4239,7 @@ const IPOPHL_OPERATION_FLOW = [
     key: "technical-review",
     step: 2,
     title: "Technical Expert reviews and acknowledges application",
-    owner: "Reviewer",
+    owner: "Evaluator",
     lane: "Technical Expert",
     description:
       "The Technical Expert reviews and prepares a checklist, assists the inventor if the application is incomplete, and forwards the complete application to Admin Staff/MIS for record purposes.",
@@ -4406,7 +4504,7 @@ function getSubmissionPaymentMeta(submission) {
         icon: "fa-receipt",
         title: "Awaiting payment slip and OR copy",
         detail:
-          "After reviewer clearance, Admin issues the payment slip. The applicant then pays the university cashier and submits the official receipt copy.",
+          "After evaluator clearance, Admin issues the payment slip. The applicant then pays the university cashier and submits the official receipt copy.",
         actionLabel: "Record OR Copy",
       };
     }
@@ -4476,7 +4574,7 @@ function renderCopyrightOperationTimeline(submission) {
 
   return `
     <div class="workflow-note">
-      Reviewer = technical expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
+      Evaluator = technical expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
     </div>
     <div class="copyright-flow-grid">
       ${COPYRIGHT_OPERATION_FLOW.map((step, idx) => {
@@ -4516,7 +4614,7 @@ function renderIPOPHLOperationTimeline(submission) {
 
   return `
     <div class="workflow-note">
-      Reviewer = Technical Expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
+      Evaluator = Technical Expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
       ${feeWaived ? "<br><strong>Fee-waived route:</strong> Steps 4\u20136 are bypassed because an approved letter-request is on file." : ""}
     </div>
     <div class="copyright-flow-grid">
@@ -4604,18 +4702,18 @@ function togglePaymentStatus(id) {
 function renderIPSearchPage() {
   const normalizedRole = normalizeRole(currentRole);
   const results = (
-    normalizedRole === "reviewer"
+    normalizedRole === "evaluator"
       ? getVisibleSubmissions(currentRole)
       : submissions
   )
     .filter(
-      (item) => item.status === "Approved" || normalizedRole === "reviewer",
+      (item) => item.status === "Approved" || normalizedRole === "evaluator",
     )
     .slice(0, 5);
   return `
     <div class="page-header">
       <h1><i class="fa-solid fa-magnifying-glass"></i> Search</h1>
-      <p>${normalizedRole === "reviewer" ? "Search assigned and approved records for manual review support." : "Search through approved PSU innovations and internal reference records."}</p>
+      <p>${normalizedRole === "evaluator" ? "Search assigned and approved records for manual review support." : "Search through approved PSU innovations and internal reference records."}</p>
     </div>
     <div class="detail-panel" style="margin-bottom:24px">
       <div style="display:flex; gap:12px; margin-bottom:16px;">
@@ -4625,14 +4723,14 @@ function renderIPSearchPage() {
       <div style="display:flex; gap:20px; font-size:0.85rem; color:var(--gray-500);">
         <span><i class="fa-solid fa-sliders"></i> Filter:</span>
         <label><input type="checkbox" checked /> PSU Internal</label>
-        <label><input type="checkbox" ${normalizedRole === "reviewer" ? "" : "checked"} /> IPOPHL Records</label>
+        <label><input type="checkbox" ${normalizedRole === "evaluator" ? "" : "checked"} /> IPOPHL Records</label>
         <label><input type="checkbox" /> Public Marketplace</label>
       </div>
     </div>
     <div class="table-container">
       <div class="table-header"><h3>Recent Results</h3></div>
       <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Status</th><th>Scope</th></tr></thead><tbody>
-        ${results.map((item) => `<tr><td>${item.id}</td><td>${typeBadge(item.type)}</td><td>${item.title}</td><td>${statusBadge(item.status)}</td><td>${normalizedRole === "reviewer" ? "Assigned / Internal" : "Internal / Approved"}</td></tr>`).join("")}
+        ${results.map((item) => `<tr><td>${item.id}</td><td>${typeBadge(item.type)}</td><td>${item.title}</td><td>${statusBadge(item.status)}</td><td>${normalizedRole === "evaluator" ? "Assigned / Internal" : "Internal / Approved"}</td></tr>`).join("")}
       </tbody></table></div>
     </div>
   `;
@@ -4806,11 +4904,11 @@ function renderSubmissionDetail() {
           </div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-timeline"></i> ${normalizedRole !== "reviewer" && s.type === "Copyright" ? "Copyright Operational Flow" : normalizedRole !== "reviewer" && IPOPHL_TYPES.has(s.type) ? "IPOPHL Operational Flow" : "Activity Timeline"}</h3>
+          <h3><i class="fa-solid fa-timeline"></i> ${normalizedRole !== "evaluator" && s.type === "Copyright" ? "Copyright Operational Flow" : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type) ? "IPOPHL Operational Flow" : "Activity Timeline"}</h3>
           ${
-            normalizedRole !== "reviewer" && s.type === "Copyright"
+            normalizedRole !== "evaluator" && s.type === "Copyright"
               ? renderCopyrightOperationTimeline(s)
-              : normalizedRole !== "reviewer" && IPOPHL_TYPES.has(s.type)
+              : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type)
                 ? renderIPOPHLOperationTimeline(s)
                 : `<div class="timeline">
             ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
@@ -4836,9 +4934,9 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect original inventions & technical breakthroughs",
       term: "20 years from filing date",
       requirements: [
-        "Global Novelty ΓÇö never before disclosed",
-        "Inventive Step ΓÇö non-obvious to experts",
-        "Industrial Applicability ΓÇö can be manufactured",
+        "Global Novelty — never before disclosed",
+        "Inventive Step — non-obvious to experts",
+        "Industrial Applicability — can be manufactured",
       ],
       process: [
         { n: 1, t: "Disclosure", d: "Document technical details and field of use." },
@@ -4863,7 +4961,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Rapid protection for practical innovations",
       term: "7 years (non-renewable)",
       requirements: [
-        "Novelty ΓÇö new to the world",
+        "Novelty — new to the world",
         "Industrial Applicability",
         "Lower 'Inventive Step' threshold than patents"
       ],
@@ -4890,7 +4988,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Safeguard the unique visual style of products",
       term: "5 years (renewable up to 15)",
       requirements: [
-        "Ornamental Novelty ΓÇö unique visual appeal",
+        "Ornamental Novelty — unique visual appeal",
         "Applied to a practical article",
         "Non-functional aesthetics only"
       ],
@@ -4917,7 +5015,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect brands, logos, and corporate identity",
       term: "10 years (renewable)",
       requirements: [
-        "Distinctiveness ΓÇö unique in the marketplace",
+        "Distinctiveness — unique in the marketplace",
         "Non-descriptive of the actual goods",
         "Non-deceptive to consumers"
       ],
@@ -4944,7 +5042,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect creative works, code, and literature",
       term: "Lifetime + 50 years",
       requirements: [
-        "Originality ΓÇö must be your own creation",
+        "Originality — must be your own creation",
         "Fixation in tangible form",
         "Creative expression (not just logic)"
       ],
@@ -5110,7 +5208,7 @@ function getFormGuideContent() {
       color: "#10b981",
       steps: [
         "List all authors/creators with contributions",
-        "Describe the work ΓÇö title, type, date of creation",
+        "Describe the work — title, type, date of creation",
         "Upload complete copy of the work being registered",
         "Submit and receive Certificate of Registration",
       ],
@@ -5160,7 +5258,7 @@ function getFormGuideContent() {
   const g = guides[currentFormType] || guides.patent;
   return `<div class="form-guide-panel">
     <div class="form-guide-toggle" onclick="this.parentElement.classList.toggle('open')">
-      <span><i class="fa-solid fa-${g.icon}" style="color:${g.color}"></i> <strong>${g.title}</strong> ΓÇö Required documents & steps</span>
+      <span><i class="fa-solid fa-${g.icon}" style="color:${g.color}"></i> <strong>${g.title}</strong> — Required documents & steps</span>
       <i class="fa-solid fa-chevron-down"></i>
     </div>
     <div class="form-guide-body">
@@ -5617,7 +5715,7 @@ function renderStep3() {
     </div>
 
     <div class="proof-of-deposit" style="margin-top:28px; border:2px dashed var(--gold); border-radius:12px; padding:24px; background:rgba(255,127,80,0.04);">
-      <h4 style="font-size:.95rem; color:var(--navy); margin-bottom:6px;"><i class="fa-solid fa-receipt" style="color:var(--gold); margin-right:8px;"></i> Financial Verification ΓÇö Proof of Deposit <span class="badge badge-pending" style="font-size:.65rem; vertical-align:middle; margin-left:8px;">REQUIRED</span></h4>
+      <h4 style="font-size:.95rem; color:var(--navy); margin-bottom:6px;"><i class="fa-solid fa-receipt" style="color:var(--gold); margin-right:8px;"></i> Financial Verification — Proof of Deposit <span class="badge badge-pending" style="font-size:.65rem; vertical-align:middle; margin-left:8px;">REQUIRED</span></h4>
       <p style="font-size:.82rem; color:var(--gray-500); margin-bottom:16px; line-height:1.6;">
         Per university policy, all IP applications require a valid Proof-of-Deposit or Official Receipt before the submission can be forwarded for review. Upload a scanned copy or photo of your receipt below.
       </p>
@@ -5657,7 +5755,7 @@ function renderStep4Review() {
         ${wizardData.prodcat ? `<div class="review-item"><span class="label">Product Category</span>${val(wizardData.prodcat)}</div>` : ""}
         ${wizardData.designtype ? `<div class="review-item"><span class="label">Design Type</span>${val(wizardData.designtype)}</div>` : ""}
       </div>
-      ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "ΓÇª" : ""}</span></div>` : ""}
+      ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "…" : ""}</span></div>` : ""}
     </div>
     <div class="review-section"><h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents & Payment</h4>
       <p style="color:var(--gray-500);font-size:.9rem">Supporting documents and Proof-of-Deposit were uploaded in Step 3.</p>
@@ -5785,13 +5883,88 @@ function refreshWizard() {
   document.getElementById("wizardBody").innerHTML = renderWizardStep();
   const footer = document.querySelector(".wizard-footer");
   footer.innerHTML = `
-    <button class="btn btn-secondary" onclick="prevWizardStep()" ${currentWizardStep === 1 ? "disabled" : ""}><i class="fa-solid fa-arrow-left"></i> Previous</button>
+    <div style="display: flex; gap: 12px;">
+      <button class="btn btn-secondary" onclick="prevWizardStep()" ${currentWizardStep === 1 ? "disabled" : ""}>
+        <i class="fa-solid fa-arrow-left"></i> Previous
+      </button>
+      <button class="btn btn-outline-navy" onclick="handleSaveDraft()">
+        <i class="fa-solid fa-floppy-disk"></i> Save Draft
+      </button>
+    </div>
     ${
       currentWizardStep < 4
         ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next <i class="fa-solid fa-arrow-right"></i></button>`
         : `<button class="btn btn-success" onclick="submitForm()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>`
-    }`;
+    }
+  `;
 }
+
+window.handleSaveDraft = function() {
+  syncWizardData();
+  saveDraft();
+};
+
+function syncWizardData() {
+  // Capture basic info
+  const name = document.getElementById("wiz-name");
+  const email = document.getElementById("wiz-email");
+  const contact = document.getElementById("wiz-contact");
+  const id = document.getElementById("wiz-id");
+  
+  if (name) wizardData.applicantName = name.value;
+  if (email) wizardData.applicantEmail = email.value;
+  if (contact) wizardData.applicantPhone = contact.value;
+  if (id) wizardData.applicantId = id.value;
+
+  // Capture step-specific patent info
+  const title = document.getElementById("p-title");
+  const field = document.getElementById("p-field");
+  const desc = document.getElementById("p-desc");
+  
+  if (title) wizardData.title = title.value;
+  if (field) wizardData.field = field.value;
+  if (desc) wizardData.description = desc.value;
+
+  // Capture authorship
+  const authorType = document.querySelector('input[name="authorType"]:checked');
+  if (authorType) wizardData.authorType = authorType.value;
+}
+
+function saveDraft() {
+  const draftId = selectedSubmissionId || `DRAFT-${Date.now()}`;
+  const draft = {
+    id: draftId,
+    type: currentFormType,
+    step: currentWizardStep,
+    data: { ...wizardData },
+    date: new Date().toISOString().split('T')[0],
+    status: "Draft",
+    title: wizardData.title || "Untitled Application"
+  };
+
+  // Find existing or add new
+  const idx = submissions.findIndex(s => s.id === draftId);
+  if (idx !== -1) {
+    submissions[idx] = { ...submissions[idx], ...draft };
+  } else {
+    submissions.push(draft);
+  }
+  
+  showToast("Draft saved successfully!");
+  navigateTo("user-dashboard");
+}
+
+window.resumeDraft = function(id) {
+  const s = submissions.find(sub => sub.id === id);
+  if (!s) return;
+  
+  currentFormType = s.type;
+  currentWizardStep = s.step || 1;
+  wizardData = { ...s.data };
+  selectedSubmissionId = s.id;
+  
+  navigateTo("filing-wizard");
+};
 
 function handleFileUpload(input) {
   const list = document.getElementById("fileList");
@@ -5815,7 +5988,7 @@ function handleDepositUpload(input) {
     <i class="fa-solid fa-circle-check" style="color:var(--green);font-size:1.2rem"></i>
     <div style="flex:1">
       <div style="font-size:.9rem;font-weight:600;color:var(--navy)">${f.name}</div>
-      <div style="font-size:.8rem;color:var(--gray-400)">${(f.size / 1024).toFixed(1)} KB ΓÇö Proof of Deposit uploaded</div>
+      <div style="font-size:.8rem;color:var(--gray-400)">${(f.size / 1024).toFixed(1)} KB — Proof of Deposit uploaded</div>
     </div>
     <span class="badge badge-approved" style="font-size:.65rem">VERIFIED</span>
   </div>`;
@@ -6521,10 +6694,10 @@ function renderProfile() {
 
 function renderAdminRecords() {
   const approved = submissions.filter((s) => s.status === "Approved");
-  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties ΓÇö metadata is locked for integrity.</p></div>
+  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties — metadata is locked for integrity.</p></div>
     <div style="padding:12px 18px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-shield-halved" style="color:#6366f1; font-size:1.1rem;"></i>
-      <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> ΓÇö All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions.</p>
+      <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> — All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions.</p>
     </div>
     <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th></tr></thead><tbody>
       ${approved
@@ -6706,25 +6879,25 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "View all cases",
-          sa: "Γ£ô",
-          pa: "Γ£ô",
+          sa: "✓",
+          pa: "✓",
           rv: "Assigned",
           cl: "Own only",
         },
         {
           action: "Create / edit cases",
-          sa: "Γ£ô",
-          pa: "Γ£ô",
+          sa: "✓",
+          pa: "✓",
           rv: "Assigned",
-          cl: "Γ£ù",
+          cl: "✗",
         },
-        { action: "Advance stage", sa: "Γ£ô", pa: "Γ£ô", rv: "Γ£ô", cl: "Γ£ù" },
+        { action: "Advance stage", sa: "✓", pa: "✓", rv: "✓", cl: "✗" },
         {
           action: "Delete / archive cases",
-          sa: "Γ£ô",
+          sa: "✓",
           pa: "Archive only",
-          rv: "Γ£ù",
-          cl: "Γ£ù",
+          rv: "✗",
+          cl: "✗",
         },
       ],
     },
@@ -6733,24 +6906,24 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Upload documents",
-          sa: "Γ£ô",
-          pa: "Γ£ô",
-          rv: "Γ£ô",
+          sa: "✓",
+          pa: "✓",
+          rv: "✓",
           cl: "Own cases",
         },
         {
           action: "Download CONFIDENTIAL",
-          sa: "Γ£ô",
-          pa: "Γ£ô",
+          sa: "✓",
+          pa: "✓",
           rv: "Assigned",
-          cl: "Γ£ù",
+          cl: "✗",
         },
         {
           action: "Download TOP SECRET",
-          sa: "Γ£ô",
+          sa: "✓",
           pa: "With approval",
-          rv: "Γ£ù",
-          cl: "Γ£ù",
+          rv: "✗",
+          cl: "✗",
         },
       ],
     },
@@ -6759,16 +6932,16 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Execute patent search",
-          sa: "Γ£ô",
-          pa: "Γ£ô",
-          rv: "Γ£ô",
+          sa: "✓",
+          pa: "✓",
+          rv: "✓",
           cl: "Limited query",
         },
         {
           action: "View full search results",
-          sa: "Γ£ô",
-          pa: "Γ£ô",
-          rv: "Γ£ô",
+          sa: "✓",
+          pa: "✓",
+          rv: "✓",
           cl: "Public only",
         },
       ],
@@ -6778,33 +6951,33 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Manage user roles",
-          sa: "Γ£ô",
+          sa: "✓",
           pa: "Non-admin only",
-          rv: "Γ£ù",
-          cl: "Γ£ù",
+          rv: "✗",
+          cl: "✗",
         },
         {
           action: "View audit trail",
-          sa: "Γ£ô",
+          sa: "✓",
           pa: "Operational only",
-          rv: "Γ£ù",
-          cl: "Γ£ù",
+          rv: "✗",
+          cl: "✗",
         },
-        { action: "System configuration", sa: "Γ£ô", pa: "Γ£ù", rv: "Γ£ù", cl: "Γ£ù" },
+        { action: "System configuration", sa: "✓", pa: "✗", rv: "✗", cl: "✗" },
         {
           action: "Encryption key management",
-          sa: "Γ£ô",
-          pa: "Γ£ù",
-          rv: "Γ£ù",
-          cl: "Γ£ù",
+          sa: "✓",
+          pa: "✗",
+          rv: "✗",
+          cl: "✗",
         },
       ],
     },
   ];
   const badge = (v) => {
-    if (v === "Γ£ô")
-      return '<span style="color:var(--green);font-size:1.1rem">Γ£ô</span>';
-    if (v === "Γ£ù") return '<span style="color:var(--gray-400)">Γ£ù</span>';
+    if (v === "✓")
+      return '<span style="color:var(--green);font-size:1.1rem">✓</span>';
+    if (v === "✗") return '<span style="color:var(--gray-400)">✗</span>';
     return `<span class="badge badge-pending" style="font-size:.7rem">${v}</span>`;
   };
   let rows = "";
@@ -6819,7 +6992,7 @@ function legacyRenderRolePermissions() {
       <th>MODULE / ACTION</th>
       <th style="text-align:center;color:var(--green)">SUPER ADMIN</th>
       <th style="text-align:center;color:var(--blue)">PITBI ADMIN</th>
-      <th style="text-align:center;color:var(--gold)">REVIEWER</th>
+      <th style="text-align:center;color:var(--gold)">EVALUATOR</th>
       <th style="text-align:center;color:var(--gold-dark)">APPLICANT</th>
     </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
@@ -6851,7 +7024,7 @@ function legacyRenderCreateAccount() {
         <div class="form-group" id="dept-group"><label>Department *</label>
           <select id="newUserDept"><option value="">Select Department</option><option>IT Office</option><option>IP Office</option><option>Research Office</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option></select></div>
         <div class="form-group" id="role-group"><label>Assign Role *</label>
-          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option>Super Admin</option><option>PITBI Admin</option><option>Reviewer</option><option>Applicant</option></select></div>
+          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option>Super Admin</option><option>PITBI Admin</option><option>Evaluator</option><option>Applicant</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Temporary Password *</label><input type="password" id="newUserPass" placeholder="Min 8 characters" /></div>
@@ -7262,9 +7435,9 @@ function renderRolePermissions() {
   ];
   const badge = (value) => {
     if (value === "check")
-      return '<span style="color:var(--green);font-size:1.1rem">Γ£ô</span>';
+      return '<span style="color:var(--green);font-size:1.1rem">✓</span>';
     if (value === "deny")
-      return '<span style="color:var(--red);font-size:1.1rem">Γ£ò</span>';
+      return '<span style="color:var(--red);font-size:1.1rem">✕</span>';
     return `<span class="badge badge-pending" style="font-size:.7rem">${value}</span>`;
   };
   let rows = "";
@@ -7279,7 +7452,7 @@ function renderRolePermissions() {
       <th>MODULE / ACTION</th>
       <th style="text-align:center;color:var(--green)">SUPER ADMIN</th>
       <th style="text-align:center;color:var(--blue)">PITBI ADMIN</th>
-      <th style="text-align:center;color:var(--gold)">REVIEWER</th>
+      <th style="text-align:center;color:var(--gold)">EVALUATOR</th>
       <th style="text-align:center;color:var(--gold-dark)">APPLICANT</th>
     </tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
@@ -7450,7 +7623,7 @@ function renderForms() {
         <i class="fa-solid fa-circle-info" style="color: var(--navy);"></i>
         <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-600);">Need help with the legal requirements? Visit our <a href="#" onclick="navigateTo('ip-guidelines')" style="color: var(--navy); text-decoration: underline;">Guidelines Section</a>.</span>
       </div>
-      <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office ΓÇö Authorized Document Repository</p>
+      <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office — Authorized Document Repository</p>
     </div>
   `;
 }
@@ -7463,33 +7636,16 @@ window.toggleNotifications = function () {
   const bell = document.getElementById("notifBell");
   if (dropdown) dropdown.classList.toggle("open", notifOpen);
   if (bell) bell.classList.toggle("active", notifOpen);
+
   if (notifOpen) {
-    // Mark all as read after open
+    renderNotifications();
+    // Mark as read for current role after 2 seconds
     setTimeout(() => {
-      mockNotifications.forEach((n) => (n.read = true));
-      const badge = document.getElementById("notifBadge");
-      if (badge) badge.style.display = "none";
+      const norm = normalizeRole(currentRole);
+      const roleNotifs = mockNotifications[norm] || [];
+      roleNotifs.forEach((n) => (n.read = true));
+      renderNotifications();
     }, 2000);
-    // Render notifications
-    const list = document.getElementById("notifList");
-    if (list) {
-      list.innerHTML = mockNotifications
-        .map(
-          (n) => `
-        <div style="display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--gray-100);${n.read ? "opacity:.65" : ""};cursor:pointer;" onmouseenter="this.style.background='var(--gray-50)'" onmouseleave="this.style.background=''">
-          <div style="width:36px;height:36px;border-radius:50%;background:${n.color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i class="fa-solid ${n.icon}" style="color:${n.color};font-size:.85rem;"></i>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:.85rem;font-weight:${n.read ? "500" : "700"};color:var(--navy);margin-bottom:2px;">${n.title}</div>
-            <div style="font-size:.78rem;color:var(--gray-500);line-height:1.4;">${n.body}</div>
-            <div style="font-size:.72rem;color:var(--gray-400);margin-top:4px;">${n.time}</div>
-          </div>
-          ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;flex-shrink:0;margin-top:6px;"></div>' : ""}
-        </div>`,
-        )
-        .join("");
-    }
   }
   // Close on outside click
   if (notifOpen) {
@@ -7590,26 +7746,27 @@ window.showAnnouncementModal = function(id = null) {
 
   modalTitle.innerText = isEdit ? 'Edit Announcement' : 'Add New Announcement';
 
+  // Use a data attribute or hidden input to store the ID for safer retrieval
   modalBody.innerHTML = `
     <form id="announcementForm" onsubmit="saveAnnouncement(event, ${id === null ? 'null' : id})">
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="annTitle" value="${a.title}" required />
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--navy);">Title</label>
+        <input type="text" id="annTitle" value="${a.title}" required style="width: 100%; padding: 10px; border: 1.5px solid var(--gray-200); border-radius: 8px;" />
       </div>
-      <div class="form-group">
-        <label>Category</label>
-        <select id="annCategory">
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--navy);">Category</label>
+        <select id="annCategory" style="width: 100%; padding: 10px; border: 1.5px solid var(--gray-200); border-radius: 8px;">
           <option ${a.category === 'News' ? 'selected' : ''}>News</option>
           <option ${a.category === 'Event' ? 'selected' : ''}>Event</option>
           <option ${a.category === 'Alert' ? 'selected' : ''}>Alert</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" id="annDate" value="${a.date}" required />
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--navy);">Date</label>
+        <input type="date" id="annDate" value="${a.date}" required style="width: 100%; padding: 10px; border: 1.5px solid var(--gray-200); border-radius: 8px;" />
       </div>
-      <div class="form-group">
-        <label>Announcement Image</label>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--navy);">Announcement Image</label>
         <div class="file-upload-zone" onclick="document.getElementById('annImageInput').click()" style="padding: 20px; border: 2px dashed var(--gray-200); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
           <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--gold); margin-bottom: 12px;"></i>
           <p id="annImageStatus" style="margin: 0; font-size: 0.9rem; color: var(--gray-500);">${a.image ? 'Image selected: ' + a.image.split('/').pop() : 'Click to upload or drag and drop image'}</p>
@@ -7618,9 +7775,9 @@ window.showAnnouncementModal = function(id = null) {
         </div>
         ${a.image ? `<img id="annImagePreview" src="${a.image}" style="margin-top: 10px; max-width: 100%; border-radius: 8px; height: 120px; object-fit: cover;" />` : `<img id="annImagePreview" style="margin-top: 10px; max-width: 100%; border-radius: 8px; height: 120px; object-fit: cover; display: none;" />`}
       </div>
-      <div class="form-group">
-        <label>Content</label>
-        <textarea id="annContent" rows="4" required>${a.content}</textarea>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--navy);">Content</label>
+        <textarea id="annContent" rows="4" required style="width: 100%; padding: 10px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-family: inherit;">${a.content}</textarea>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
         <button type="button" class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
