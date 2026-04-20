@@ -315,6 +315,78 @@ let submissions = [
     dateConceived: "2026-01-12",
   },
   {
+    id: "PSU-DFT-2026-007",
+    type: "Patent",
+    title: "Low-Cost Hydroponic Monitoring System",
+    applicant: "Dr. Elena Vance",
+    department: "External Partner",
+    email: "elena.vance@globalresearch.org",
+    status: "Draft",
+    date: "2026-04-15",
+    description: "Initial draft for a sensors-based monitoring system for urban gardening.",
+  },
+  {
+    id: "PSU-DFT-2026-008",
+    type: "Trademark",
+    title: "Palawan Pearl Brand Identity",
+    applicant: "Dr. Elena Vance",
+    department: "External Partner",
+    email: "elena.vance@globalresearch.org",
+    status: "Draft",
+    date: "2026-04-18",
+    description: "Branding materials draft for the local pearl export initiative.",
+  },
+  {
+    id: "EXT-PAT-2026-012",
+    type: "Patent",
+    title: "Hybrid Solar-Wind Micro-Grid",
+    applicant: "Dr. Elena Vance",
+    department: "External Research Partner",
+    email: "elena.vance@globalresearch.org",
+    contact: "09995551234",
+    status: "Pending",
+    date: "2026-04-10",
+    description: "A small-scale energy solution for remote island communities in Palawan.",
+    field: "Energy",
+  },
+  {
+    id: "EXT-TM-2026-013",
+    type: "Trademark",
+    title: "Global Eco-Marine Logo",
+    applicant: "Dr. Elena Vance",
+    department: "External Research Partner",
+    email: "elena.vance@globalresearch.org",
+    contact: "09995551234",
+    status: "Approved",
+    date: "2026-03-25",
+    description: "Certification mark for seaweed-based bioplastics.",
+  },
+  {
+    id: "EXT-COP-2026-014",
+    type: "Copyright",
+    title: "Indigenous Palawan Knowledge Systems",
+    applicant: "Dr. Elena Vance",
+    department: "External Research Partner",
+    email: "elena.vance@globalresearch.org",
+    contact: "09995551234",
+    status: "Rejected",
+    date: "2026-03-15",
+    description: "A collaborative paper on preserving indigenous agricultural practices.",
+  },
+  {
+    id: "EXT-PAT-2026-015",
+    type: "Patent",
+    title: "Portable Mangrove Desalination Kit",
+    applicant: "Dr. Elena Vance",
+    department: "External Research Partner",
+    email: "elena.vance@globalresearch.org",
+    contact: "09995551234",
+    status: "Awaiting Documents",
+    date: "2026-04-12",
+    description: "A bio-mimetic kit for purifying water using mangrove properties.",
+    field: "Bio-Tech",
+  },
+  {
     id: "PSU-ID-2026-010",
     type: "Industrial Design",
     title: "Tectonic Wave Furniture",
@@ -2771,6 +2843,7 @@ function renderUserDashboard() {
   const rejected = userSubmissions.filter(
     (s) => s.status === "Rejected",
   ).length;
+  const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
   const recent = userSubmissions.slice(0, 5);
   const user = getCurrentUser(role);
 
@@ -2788,6 +2861,10 @@ function renderUserDashboard() {
       <div class="stat-card" onclick="navigateTo('user-submissions')" style="cursor:pointer">
         <div class="stat-card-icon yellow"><i class="fa-solid fa-hourglass-half"></i></div>
         <div class="stat-card-info"><h3>${pending}</h3><p>In Manual Review</p></div>
+      </div>
+      <div class="stat-card" onclick="navigateTo('user-submissions')" style="cursor:pointer">
+        <div class="stat-card-icon" style="background:rgba(255, 186, 173, 0.1); color:#FFBAAD;"><i class="fa-solid fa-file-signature"></i></div>
+        <div class="stat-card-info"><h3>${drafts}</h3><p>Saved Drafts</p></div>
       </div>
       <div class="stat-card" onclick="navigateTo('user-submissions')" style="cursor:pointer">
         <div class="stat-card-icon green"><i class="fa-solid fa-circle-check"></i></div>
@@ -3803,6 +3880,25 @@ function viewSubmission(id) {
   navigateTo("submission-detail");
 }
 
+function resumeDraft(id) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return;
+
+  // Set global state for wizard
+  wizardData = { ...submission };
+  selectedSubmissionId = id;
+  currentWizardStep = 1;
+
+  // Determine form type
+  let formPage = "patent-form";
+  if (submission.type === "Trademark") formPage = "trademark-form";
+  if (submission.type === "Copyright") formPage = "copyright-form";
+
+  currentFormType = submission.type.toLowerCase();
+
+  navigateTo(formPage);
+}
+
 const COPYRIGHT_OPERATION_FLOW = [
   {
     key: "author-submission",
@@ -4751,40 +4847,41 @@ function renderWizardStep() {
 }
 
 function renderStep1() {
+  const user = getCurrentUser();
   return `<h3 style="margin-bottom:24px">Applicant Information</h3>
     <div class="form-row">
-      <div class="form-group"><label>Full Name *</label><input type="text" id="wiz-name" placeholder="Enter full name" required /></div>
-      <div class="form-group"><label>Email *</label><input type="email" id="wiz-email" placeholder="your.email@psu.edu.ph" required /></div>
+      <div class="form-group"><label>Full Name *</label><input type="text" id="wiz-name" value="${wizardData.applicant || user.name}" placeholder="Enter full name" required /></div>
+      <div class="form-group"><label>Email *</label><input type="email" id="wiz-email" value="${wizardData.email || user.email}" placeholder="your.email@psu.edu.ph" required /></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Department *</label><input type="text" id="wiz-dept" placeholder="e.g., College of Engineering" required /></div>
+      <div class="form-group"><label>Department *</label><input type="text" id="wiz-dept" value="${wizardData.department || user.dept || ""}" placeholder="e.g., College of Engineering" required /></div>
       <div class="form-group"><label>College *</label>
         <select id="wiz-college"><option value="">Select College</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option><option>Research Office</option></select></div>
     </div>
-    <div class="form-group"><label>Contact Number</label><input type="tel" id="wiz-contact" placeholder="09XX XXX XXXX" /></div>`;
+    <div class="form-group"><label>Contact Number</label><input type="tel" id="wiz-contact" value="${wizardData.contact || ""}" placeholder="09XX XXX XXXX" /></div>`;
 }
 
 function renderStep2() {
   if (currentFormType === "patent") {
     return `<h3 style="margin-bottom:24px">Invention Details</h3>
-      <div class="form-group"><label>Title of Invention *</label><input type="text" id="wiz-title" placeholder="Enter invention title" /></div>
+      <div class="form-group"><label>Title of Invention *</label><input type="text" id="wiz-title" value="${wizardData.title || ""}" placeholder="Enter invention title" /></div>
       <div class="form-row">
-        <div class="form-group"><label>Field of Invention *</label><input type="text" id="wiz-field" placeholder="e.g., Environmental Engineering" /></div>
-        <div class="form-group"><label>Date Conceived *</label><input type="date" id="wiz-date" /></div>
+        <div class="form-group"><label>Field of Invention *</label><input type="text" id="wiz-field" value="${wizardData.field || ""}" placeholder="e.g., Environmental Engineering" /></div>
+        <div class="form-group"><label>Date Conceived *</label><input type="date" id="wiz-date" value="${wizardData.date || ""}" /></div>
       </div>
-      <div class="form-group"><label>Abstract (150 words max) *</label><textarea id="wiz-abstract" placeholder="Provide a concise abstract of your invention..." maxlength="900"></textarea></div>
-      <div class="form-group"><label>Description *</label><textarea id="wiz-desc" placeholder="Provide a detailed description of your invention..."></textarea></div>
+      <div class="form-group"><label>Abstract (150 words max) *</label><textarea id="wiz-abstract" placeholder="Provide a concise abstract of your invention..." maxlength="900">${wizardData.abstract || ""}</textarea></div>
+      <div class="form-group"><label>Description *</label><textarea id="wiz-desc" placeholder="Provide a detailed description of your invention...">${wizardData.description || ""}</textarea></div>
       <div class="form-group"><label>Claims Statement *</label><textarea id="wiz-claims" placeholder="List the specific claims of your invention..."></textarea></div>`;
   } else if (currentFormType === "trademark") {
     return `<h3 style="margin-bottom:24px">Mark Details</h3>
-      <div class="form-group"><label>Mark Name *</label><input type="text" id="wiz-title" placeholder="Enter mark name" /></div>
+      <div class="form-group"><label>Mark Name *</label><input type="text" id="wiz-title" value="${wizardData.title || ""}" placeholder="Enter mark name" /></div>
       <div class="form-row">
         <div class="form-group"><label>Mark Type *</label>
           <select id="wiz-marktype"><option value="">Select Type</option><option>Word</option><option>Logo</option><option>Word & Logo</option></select></div>
-        <div class="form-group"><label>Date of First Use</label><input type="date" id="wiz-date" /></div>
+        <div class="form-group"><label>Date of First Use</label><input type="date" id="wiz-date" value="${wizardData.date || ""}" /></div>
       </div>
-      <div class="form-group"><label>Goods/Services Description *</label><textarea id="wiz-desc" placeholder="Describe the goods or services associated with this mark..."></textarea></div>
-      <div class="form-group"><label>Color Claim Statement (if applicable)</label><textarea id="wiz-colorclaim" placeholder="Describe specific color claims for the mark, if any..."></textarea></div>`;
+      <div class="form-group"><label>Goods/Services Description *</label><textarea id="wiz-desc" placeholder="Describe the goods or services associated with this mark...">${wizardData.description || ""}</textarea></div>
+      <div class="form-group"><label>Color Claim Statement (if applicable)</label><textarea id="wiz-colorclaim" placeholder="Describe specific color claims for the mark, if any...">${wizardData.colorclaim || ""}</textarea></div>`;
   } else if (currentFormType === "utility") {
     return `<h3 style="margin-bottom:24px">Utility Model Details</h3>
       <div class="form-group"><label>Title of Utility Model *</label><input type="text" id="wiz-title" placeholder="Enter utility model title" /></div>
@@ -5608,6 +5705,7 @@ function getStatusCounts() {
     Approved: 0,
     Rejected: 0,
     "Awaiting Documents": 0,
+    Draft: 0,
   };
   visible.forEach((s) => {
     if (counts[s.status] !== undefined) counts[s.status]++;
@@ -5630,6 +5728,7 @@ function renderUserSubmissions() {
     { id: "Under Review", label: "Reviewing" },
     { id: "Approved", label: "Approved" },
     { id: "Rejected", label: "Rejected" },
+    { id: "Draft", label: "Saved Draft" },
     { id: "Awaiting Documents", label: "Action Needed" },
   ];
 
@@ -5813,6 +5912,15 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                   <button class="btn btn-sm btn-outline-navy" style="width:100%; justify-content:center;" onclick="viewSubmission('${s.id}')">
                     <i class="fa-solid fa-circle-info"></i> Full Details & History
                   </button>
+                  ${
+                    s.status === "Draft"
+                      ? `
+                    <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="resumeDraft('${s.id}')">
+                      <i class="fa-solid fa-play"></i> Resume Application
+                    </button>
+                  `
+                      : ""
+                  }
                   ${
                     needsAction
                       ? `
