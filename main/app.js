@@ -2499,8 +2499,11 @@ function updateTopbarRole() {
   const topSelect = document.getElementById("topbarRoleSelect");
   const normRole = normalizeRole(currentRole);
 
-  if (pubSelect) pubSelect.value = normRole;
-  if (topSelect) topSelect.value = normRole;
+  let uiRole = normRole;
+  if (normRole === "reviewer") uiRole = "evaluator";
+
+  if (pubSelect) pubSelect.value = uiRole;
+  if (topSelect) topSelect.value = uiRole;
 
   const user = getCurrentUser();
   const userName = user?.name || "User";
