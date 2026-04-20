@@ -26,6 +26,8 @@ const ROLE_ALIASES = {
   "PITBI Admin": "superadmin",
   reviewer: "reviewer",
   specialist: "reviewer",
+  evaluator: "reviewer",
+  Evaluator: "reviewer",
   Reviewer: "reviewer",
   applicant: "applicant",
   inventor: "applicant",
