@@ -6677,7 +6677,7 @@ function legacyToggleUserStatus(userId) {
 }
 
 function legacyRenderAdminSettings() {
-  return `<div class="page-header"><h1>System Settings</h1><p>Configure application preferences.</p></div>
+  return `<div class="page-header"><h1>System Settings</h1><p>Configure global application settings.</p></div>
     <div class="detail-panel" style="max-width:600px">
       <h3><i class="fa-solid fa-gear"></i> General Settings</h3>
       <div class="form-group"><label>System Name</label><input type="text" value="The Creator's Bulwark" /></div>
