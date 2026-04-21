@@ -1669,6 +1669,7 @@ function statusBadge(status) {
     Pending: "badge-pending",
     "Under Review": "badge-review",
     Rejected: "badge-rejected",
+    Cancelled: "badge-rejected",
     "Awaiting Documents": "badge-review",
   };
   return `<span class="badge ${m[status] || "badge-pending"}">${status}</span>`;
@@ -2959,14 +2960,9 @@ function renderUserDashboard() {
   const role = "applicant";
   const userSubmissions = getVisibleSubmissions(role);
   const total = userSubmissions.length;
-  const pending = userSubmissions.filter(
-    (s) =>
-      s.status === "Pending" ||
-      s.status === "Under Review" ||
-      s.status === "Awaiting Documents",
-  ).length;
+  const activeReviews = userSubmissions.filter(s => s.status === "Pending" || s.status === "Under Review").length;
+  const actionRequired = userSubmissions.filter(s => s.status === "Awaiting Documents").length;
   const approved = userSubmissions.filter((s) => s.status === "Approved").length;
-  const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
   const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
   const officialTotal = total - drafts;
   const recent = userSubmissions.filter(s => s.status !== 'Draft').slice(0, 3);
@@ -3018,16 +3014,17 @@ function renderUserDashboard() {
         </div>
         <div>
           <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${officialTotal}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Official Records</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Total Applications</div>
         </div>
       </div>
+
       <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Under Review')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="width:48px; height:48px; border-radius:12px; background:#f59e0b15; color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
           <i class="fa-solid fa-hourglass-half"></i>
         </div>
         <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${pending}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Action / Review</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${activeReviews}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">In Review</div>
         </div>
       </div>
 
@@ -3040,23 +3037,35 @@ function renderUserDashboard() {
           <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Saved Drafts</div>
         </div>
       </div>
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Approved')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="width:48px; height:48px; border-radius:12px; background:#10b98115; color:#10b981; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
-          <i class="fa-solid fa-certificate"></i>
+
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 10px 20px -10px rgba(239,68,68,0.2); cursor:pointer; transition: transform 0.2s; border-left: 4px solid #ef4444;" onclick="goToFilteredSubmissions('ActionRequired')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="width:48px; height:48px; border-radius:12px; background:#ef444415; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-circle-exclamation"></i>
         </div>
         <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${approved}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Certified Records</div>
+          <div style="font-size:1.8rem; font-weight:800; color:#ef4444; line-height:1;">${actionRequired}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:600; margin-top:4px;">Action Required</div>
         </div>
       </div>
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Rejected')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="width:48px; height:48px; border-radius:12px; background:#ef444415; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
-          <i class="fa-solid fa-circle-xmark"></i>
-        </div>
-        <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${rejected}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Returned Packets</div>
-        </div>
+    </div>
+
+    <div class="dashboard-section" style="background:white; border-radius:16px; border:1px solid var(--gray-100); padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.02); margin-bottom: 24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:1.1rem; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-bullhorn" style="color:var(--gold);"></i> News & Announcements
+        </h3>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+        ${announcements.slice(0, 3).map(a => `
+          <div class="bulletin-item" onclick="showAnnouncementModal(${a.id})" style="padding:16px; background:var(--gray-50); border-radius:12px; cursor:pointer; transition:all 0.2s ease; border:1.5px solid transparent;" onmouseover="this.style.borderColor='var(--gold-light)'; this.style.background='white'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='transparent'; this.style.background='var(--gray-50)'; this.style.transform='translateY(0)'">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span class="ann-badge ${a.category.toLowerCase()}" style="font-size:0.65rem; padding:4px 8px;">${a.category}</span>
+              <span style="font-size:0.75rem; color:var(--gray-400); font-weight:600;">${a.date}</span>
+            </div>
+            <h4 style="font-size:0.9rem; font-weight:700; color:var(--navy); margin-bottom:4px; line-height:1.4;">${a.title}</h4>
+            <p style="font-size:0.8rem; color:var(--gray-500); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${a.content}</p>
+          </div>
+        `).join('')}
       </div>
     </div>
 
@@ -3969,7 +3978,8 @@ let adminFilterType = "All",
   adminSearchQuery = "";
 let userFilterType = "All",
   userFilterStatus = "All",
-  userSearchQuery = "";
+  userSearchQuery = "",
+  userPeriod = "All";
 
 function filterAdminTable(type) {
   adminFilterType = type;
@@ -4791,6 +4801,20 @@ function renderSubmissionDetail() {
     </div>
 
     ${
+      s.status === "Cancelled" && s.cancellationReason
+        ? `
+      <div style="background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.2); border-radius:12px; padding:16px; margin-bottom:24px; display:flex; gap:16px; align-items:center;">
+        <i class="fa-solid fa-circle-info" style="color:var(--red); font-size:1.5rem;"></i>
+        <div>
+          <div style="font-weight:700; color:var(--navy); font-size:0.9rem; margin-bottom:4px;">Cancellation Reason Provided:</div>
+          <div style="color:var(--gray-600); font-size:0.85rem; font-style:italic;">"${s.cancellationReason}"</div>
+        </div>
+      </div>
+    `
+        : ""
+    }
+
+    ${
       frozen
         ? `<div style="padding:14px 20px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-lock" style="color:#6366f1; font-size:1.2rem;"></i>
@@ -4837,6 +4861,16 @@ function renderSubmissionDetail() {
             ${confidentialAccess === "allow" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Downloading confidential packet for ${s.id}')"><i class="fa-solid fa-download"></i> Download Confidential</button>` : ""}
             ${topSecretAccess === "allow" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Downloading top secret annex for ${s.id}')"><i class="fa-solid fa-shield-halved"></i> Download Top Secret</button>` : ""}
             ${topSecretAccess === "approval" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Top secret download for ${s.id} requires super admin approval.')"><i class="fa-solid fa-key"></i> Top Secret Approval</button>` : ""}
+            
+            ${
+              normalizeRole(currentRole) === "applicant" &&
+              (s.status === "Pending" || s.status === "Under Review" || s.status === "Draft" || s.status === "Awaiting Documents")
+                ? `<button class="btn btn-outline-danger btn-sm" onclick="handleCancelSubmission('${s.id}')">
+                    <i class="fa-solid ${s.status === "Draft" ? "fa-trash-can" : "fa-ban"}"></i> 
+                    ${s.status === "Draft" ? "Discard Draft" : "Cancel Application"}
+                   </button>`
+                : ""
+            }
           </div>
           <div style="padding:14px;background:${paymentStyles.bg};border:1px solid ${paymentStyles.border};border-radius:8px;display:flex;align-items:center;gap:10px">
             <i class="fa-solid ${paymentMeta.icon}" style="color:${paymentStyles.color};font-size:1.2rem"></i>
@@ -5292,10 +5326,7 @@ function renderFormWizard(title) {
           <h1 style="color:var(--navy); font-weight:800; font-size:1.8rem; margin-bottom:4px;">${title}</h1>
           <p style="color:var(--gray-500); font-size:0.95rem;">${greeting}, ${getCurrentUser().name}. Please complete the institutional pre-filing requirements below.</p>
         </div>
-        <div style="background:var(--gray-50); padding:8px 16px; border-radius:10px; border:1.5px solid var(--gray-200); display:flex; align-items:center; gap:10px;">
-          <div style="width:10px; height:10px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px rgba(34,197,94,0.15);"></div>
-          <span style="font-size:0.8rem; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px;">Live Session Active</span>
-        </div>
+        <div style="display:none;"></div>
       </div>
     </div>
 
@@ -5320,9 +5351,13 @@ function renderFormWizard(title) {
 
       <div class="wizard-footer" style="padding:24px 40px; background:var(--gray-50); border-top:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center;">
         <div style="display:flex; gap:16px;">
-          <button class="btn btn-secondary" onclick="prevWizardStep()" ${currentWizardStep === 1 ? "disabled" : ""} style="padding:12px 24px;">
-            <i class="fa-solid fa-arrow-left"></i> Previous
-          </button>
+          ${
+            currentWizardStep > 1
+              ? `<button class="btn btn-secondary" onclick="prevWizardStep()" style="padding:12px 24px;">
+                  <i class="fa-solid fa-arrow-left"></i> Previous
+                </button>`
+              : ""
+          }
           <button class="btn btn-outline-navy" onclick="showToast('Progress saved as draft.')" style="padding:12px 24px;">
             <i class="fa-solid fa-file-pen"></i> Save as Draft
           </button>
@@ -5966,6 +6001,150 @@ window.resumeDraft = function(id) {
   navigateTo("filing-wizard");
 };
 
+window.handleCancelSubmission = function (id) {
+  const s = submissions.find((sub) => sub.id === id);
+  if (!s) return;
+
+  const isDraft = s.status === "Draft";
+  if (isDraft) {
+    showDiscardDraftModal(id);
+  } else {
+    showCancellationModal(id);
+  }
+};
+
+window.showDiscardDraftModal = function(id) {
+  const overlay = document.getElementById('modalOverlay');
+  const modalBody = document.getElementById('modalBody');
+  const modalTitle = document.getElementById('modalTitle');
+  
+  modalTitle.innerText = "Discard this Draft?";
+  modalTitle.style.display = "block";
+
+  modalBody.innerHTML = `
+    <div style="padding: 0 8px; text-align: center;">
+      <div style="width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 1.8rem;">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <p style="color: var(--gray-700); font-weight: 600; margin-bottom: 8px;">Are you sure you want to discard this draft?</p>
+      <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 32px;">This action cannot be undone. All unsaved progress on this filing will be permanently lost.</p>
+      
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-outline-navy" style="flex: 1; justify-content: center;" onclick="closeModal()">Keep Draft</button>
+        <button class="btn btn-danger" style="flex: 1; justify-content: center; background: #ef4444; color: white;" onclick="confirmDiscardDraft('${id}')">Discard Permanently</button>
+      </div>
+    </div>
+  `;
+
+  overlay.classList.add('active');
+};
+
+window.confirmDiscardDraft = function(id) {
+  const idx = submissions.findIndex((sub) => sub.id === id);
+  if (idx !== -1) {
+    submissions.splice(idx, 1);
+    showToast("Draft discarded successfully.");
+    closeModal();
+    navigateTo("user-dashboard");
+  }
+};
+
+window.showCancellationModal = function(id) {
+  const s = submissions.find(sub => sub.id === id);
+  if (!s) return;
+
+  const overlay = document.getElementById('modalOverlay');
+  const modalBody = document.getElementById('modalBody');
+  const modalTitle = document.getElementById('modalTitle');
+  
+  modalTitle.innerText = "Why are you cancelling?";
+  modalTitle.style.display = "block";
+
+  modalBody.innerHTML = `
+    <div style="padding: 0 8px;">
+      <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 20px;">Please select the most accurate reason for withdrawing this application. This helps us improve our filing process.</p>
+      
+      <div class="reason-list">
+        <div class="reason-option" onclick="selectCancellationReason(this, 'Change of mind / No longer interested')">
+          <div class="reason-dot"></div>
+          <div class="reason-text">Change of mind / No longer interested</div>
+        </div>
+        <div class="reason-option" onclick="selectCancellationReason(this, 'Incorrect information provided')">
+          <div class="reason-dot"></div>
+          <div class="reason-text">Incorrect information provided</div>
+        </div>
+        <div class="reason-option" onclick="selectCancellationReason(this, 'Duplicate application')">
+          <div class="reason-dot"></div>
+          <div class="reason-text">Duplicate application</div>
+        </div>
+        <div class="reason-option" onclick="selectCancellationReason(this, 'Found a better alternative')">
+          <div class="reason-dot"></div>
+          <div class="reason-text">Found a better alternative</div>
+        </div>
+        <div class="reason-option" onclick="selectCancellationReason(this, 'Other')">
+          <div class="reason-dot"></div>
+          <div class="reason-text">Other (Please specify below)</div>
+        </div>
+      </div>
+
+      <div id="otherReasonWrapper" style="display: none; margin-top: 16px; animation: slideInUp 0.3s ease;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--gray-500); margin-bottom: 8px; text-transform: uppercase;">Specify Reason</label>
+        <textarea id="customCancellationReason" placeholder="Please tell us more..." 
+                  style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid var(--gray-200); border-radius: 12px; font-family: inherit; resize: none; outline: none; transition: border-color 0.2s;"></textarea>
+      </div>
+
+      <div style="margin-top: 32px; display: flex; gap: 12px;">
+        <button class="btn btn-outline-navy" style="flex: 1; justify-content: center;" onclick="closeModal()">Nevermind</button>
+        <button class="btn btn-primary" id="confirmCancelBtn" style="flex: 1; justify-content: center;" disabled onclick="confirmCancellation('${id}')">Confirm Cancellation</button>
+      </div>
+    </div>
+  `;
+
+  overlay.classList.add('active');
+};
+
+window.selectCancellationReason = function(el, reason) {
+  document.querySelectorAll('.reason-option').forEach(opt => opt.classList.remove('selected'));
+  el.classList.add('selected');
+  
+  const wrapper = document.getElementById('otherReasonWrapper');
+  const confirmBtn = document.getElementById('confirmCancelBtn');
+  confirmBtn.disabled = false;
+  
+  if (reason === 'Other') {
+    wrapper.style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('customCancellationReason').focus();
+    }, 100);
+  } else {
+    wrapper.style.display = 'none';
+  }
+  
+  window.selectedReasonType = reason;
+};
+
+window.confirmCancellation = function(id) {
+  const s = submissions.find(sub => sub.id === id);
+  if (!s) return;
+
+  let finalReason = window.selectedReasonType;
+  if (finalReason === 'Other') {
+    const custom = document.getElementById('customCancellationReason').value.trim();
+    if (!custom) {
+      alert("Please specify your reason in the text area.");
+      return;
+    }
+    finalReason = custom;
+  }
+
+  s.status = "Cancelled";
+  s.cancellationReason = finalReason;
+  
+  closeModal();
+  showToast("Application cancelled successfully.");
+  navigateTo("user-dashboard");
+};
+
 function handleFileUpload(input) {
   const list = document.getElementById("fileList");
   if (!list) return;
@@ -6309,20 +6488,16 @@ function getStatusCounts() {
     Rejected: 0,
     "Awaiting Documents": 0,
     Draft: 0,
+    ActionRequired: 0,
   };
   visible.forEach((s) => {
     if (counts[s.status] !== undefined) counts[s.status]++;
+    if (s.status === "Awaiting Documents") counts.ActionRequired++;
   });
   return counts;
 }
 
 function renderUserSubmissions() {
-  if (typeof userFilterType === "undefined") {
-    userFilterType = "All";
-    userFilterStatus = "All";
-    userSearchQuery = "";
-  }
-
   const counts = getStatusCounts();
   const statuses = [
     { id: "All", label: "All" },
@@ -6330,8 +6505,8 @@ function renderUserSubmissions() {
     { id: "Under Review", label: "Reviewing" },
     { id: "Approved", label: "Approved" },
     { id: "Rejected", label: "Rejected" },
+    { id: "ActionRequired", label: "Action Needed" },
     { id: "Draft", label: "Saved Draft" },
-    { id: "Awaiting Documents", label: "Action Needed" },
   ];
 
   return `
@@ -6350,11 +6525,21 @@ function renderUserSubmissions() {
                  style="padding-left:42px; width:100%; height:42px; border-radius:10px; border:1.5px solid var(--gray-200); outline:none;">
         </div>
 
-        <div style="display:flex; align-items:center; gap:8px; background:var(--gray-50); padding:4px 12px; border:1.5px solid var(--gray-200); border-radius:10px; height:42px;">
-          <span style="font-size:0.75rem; font-weight:700; color:var(--gray-400); text-transform:uppercase;">From:</span>
-          <input type="date" id="dateFrom" style="border:none; background:none; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none;" onchange="renderUserSubmissionsTable()">
-          <span style="font-size:0.75rem; font-weight:700; color:var(--gray-400); text-transform:uppercase;">To:</span>
-          <input type="date" id="dateTo" style="border:none; background:none; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none;" onchange="renderUserSubmissionsTable()">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <select id="userPeriodSelect" onchange="userPeriod=this.value; renderUserSubmissionsTable()" 
+                  style="height:42px; border-radius:10px; border:1.5px solid var(--gray-200); padding:0 12px; font-weight:600; color:var(--navy); outline:none; background:var(--gray-50);">
+            <option value="All" ${userPeriod === "All" ? "selected" : ""}>All Time</option>
+            <option value="Recent" ${userPeriod === "Recent" ? "selected" : ""}>Recent (30 Days)</option>
+            <option value="ThisYear" ${userPeriod === "ThisYear" ? "selected" : ""}>This Year</option>
+            <option value="Custom" ${userPeriod === "Custom" ? "selected" : ""}>Custom Range...</option>
+          </select>
+
+          <div id="customDateRange" style="display:${userPeriod === "Custom" ? "flex" : "none"}; align-items:center; gap:8px; background:white; padding:0 12px; border:1.5px solid var(--gold-light); border-radius:10px; height:42px;">
+            <span style="font-size:0.7rem; font-weight:700; color:var(--gray-400); text-transform:uppercase;">From:</span>
+            <input type="date" id="dateFrom" style="border:none; background:none; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none;" onchange="renderUserSubmissionsTable()">
+            <span style="font-size:0.7rem; font-weight:700; color:var(--gray-400); text-transform:uppercase;">To:</span>
+            <input type="date" id="dateTo" style="border:none; background:none; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none;" onchange="renderUserSubmissionsTable()">
+          </div>
         </div>
       </div>
 
@@ -6368,7 +6553,6 @@ function renderUserSubmissions() {
           <option value="Utility Model" ${userFilterType === "Utility Model" ? "selected" : ""}>Utility Model</option>
           <option value="Industrial Design" ${userFilterType === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
         </select>
-        <button class="btn btn-primary" onclick="navigateTo('filing-hub')" style="height:42px;"><i class="fa-solid fa-plus"></i> New Filing</button>
       </div>
     </div>
 
@@ -6401,12 +6585,41 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
     const fs = filterStatus || userFilterStatus;
     const sq = searchQuery !== undefined ? searchQuery : userSearchQuery;
 
-    // Date filtering
+    // Period filtering
+    const customRange = document.getElementById('customDateRange');
+    if (customRange) customRange.style.display = userPeriod === "Custom" ? "flex" : "none";
+
+    let dateLimit = null;
+    if (userPeriod === "Recent") {
+      dateLimit = new Date();
+      dateLimit.setDate(dateLimit.getDate() - 30);
+    } else if (userPeriod === "ThisYear") {
+      dateLimit = new Date(new Date().getFullYear(), 0, 1);
+    }
+
+    if (dateLimit) {
+      filtered = filtered.filter(s => new Date(s.date) >= dateLimit);
+    }
+
     const dateFrom = document.getElementById('dateFrom')?.value;
     const dateTo = document.getElementById('dateTo')?.value;
 
+    if (userPeriod === "Custom") {
+      if (dateFrom) {
+        filtered = filtered.filter(s => new Date(s.date) >= new Date(dateFrom));
+      }
+      if (dateTo) {
+        filtered = filtered.filter(s => new Date(s.date) <= new Date(dateTo));
+      }
+    }
+
     if (ft && ft !== "All") filtered = filtered.filter((s) => s.type === ft);
-    if (fs && fs !== "All") filtered = filtered.filter((s) => s.status === fs);
+    
+    if (fs === "ActionRequired") {
+      filtered = filtered.filter((s) => s.status === "Awaiting Documents");
+    } else if (fs && fs !== "All") {
+      filtered = filtered.filter((s) => s.status === fs);
+    }
 
     if (sq) {
       const q = sq.toLowerCase();
@@ -7739,14 +7952,35 @@ function renderAdminAnnouncementsPage() {
 window.showAnnouncementModal = function(id = null) {
   const isEdit = id !== null;
   const a = isEdit ? announcements.find(item => item.id === id) : { title: '', content: '', category: 'News', date: new Date().toISOString().split('T')[0], image: '' };
+  const isAdmin = normalizeRole(currentRole) === 'admin' || normalizeRole(currentRole) === 'superadmin';
 
   const modalBody = document.getElementById('modalBody');
   const modalTitle = document.getElementById('modalTitle');
   const modalOverlay = document.getElementById('modalOverlay');
 
-  modalTitle.innerText = isEdit ? 'Edit Announcement' : 'Add New Announcement';
+  if (!isAdmin && isEdit) {
+    // Applicant viewing an announcement
+    modalTitle.innerText = 'Announcement Notice';
+    modalBody.innerHTML = `
+      <div style="padding: 10px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <span class="ann-badge ${a.category.toLowerCase()}">${a.category}</span>
+          <span style="font-size: 0.85rem; color: var(--gray-400); font-weight: 600;">Published on ${a.date}</span>
+        </div>
+        <h2 style="font-size: 1.5rem; color: var(--navy); margin-bottom: 16px; font-weight: 800; line-height: 1.3;">${a.title}</h2>
+        <div style="background: var(--gray-50); padding: 24px; border-radius: 16px; color: var(--gray-700); line-height: 1.8; font-size: 1rem; border: 1px solid var(--gray-100);">
+          ${a.content.replace(/\n/g, '<br>')}
+        </div>
+        <div style="margin-top: 30px; text-align: right;">
+          <button class="btn btn-navy" onclick="closeModal()">Close Notice</button>
+        </div>
+      </div>
+    `;
+    modalOverlay.classList.add('active');
+    return;
+  }
 
-  // Use a data attribute or hidden input to store the ID for safer retrieval
+  modalTitle.innerText = isEdit ? 'Edit Announcement' : 'Add New Announcement';
   modalBody.innerHTML = `
     <form id="announcementForm" onsubmit="saveAnnouncement(event, ${id === null ? 'null' : id})">
       <div class="form-group" style="margin-bottom: 20px;">
@@ -7841,9 +8075,7 @@ function renderLandingAnnouncements() {
 
   grid.innerHTML = announcements.map(a => `
     <div class="announcement-card" style="animation: fadeInUp 0.5s ease forwards;">
-      ${a.image ? `<div class="ann-image-wrapper" style="margin: -30px -30px 20px -30px; height: 180px; overflow: hidden; border-radius: 20px 20px 0 0;">
-        <img src="${a.image}" alt="${a.title}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
-      </div>` : ''}
+
       <div class="ann-badge-line">
         <span class="ann-badge ${a.category.toLowerCase()}">${a.category}</span>
         <span class="ann-date">${a.date}</span>
@@ -7851,7 +8083,7 @@ function renderLandingAnnouncements() {
       <h3 class="ann-title">${a.title}</h3>
       <p class="ann-content">${a.content}</p>
       <div class="ann-footer">
-        <a href="#" class="ann-link" onclick="event.preventDefault(); ${a.title.toLowerCase().includes('guidelines') ? 'navigateTo(\'guidelines\')' : 'showAnnouncementModal(' + a.id + ')' }">Read More <i class="fa-solid fa-arrow-right"></i></a>
+        <a href="#" class="ann-link" onclick="event.preventDefault(); ${a.title.toLowerCase().includes('guidelines') ? 'navigateTo(\'guidelines\')' : 'showAnnouncementModal(' + a.id + ')' }">${(normalizeRole(currentRole) === 'admin' || normalizeRole(currentRole) === 'superadmin') ? 'Edit Notice' : 'View Details'} <i class="fa-solid fa-arrow-right"></i></a>
       </div>
     </div>
   `).join('');
