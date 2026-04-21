@@ -12,6 +12,7 @@ let sidebarCollapsed = false;
 let selectedLoginRole = "client";
 let currentWizardStep = 1;
 let currentFormType = "";
+let submissionMethod = "online"; // 'online' or 'upload'
 let selectedSubmissionId = null;
 let wizardData = {};
 let notifOpen = false;
@@ -2784,7 +2785,7 @@ function renderFilingHub() {
 
     <div class="filing-hub-grid">
       ${options.map(opt => `
-        <div class="filing-card" onclick="navigateTo('${opt.id}')">
+        <div class="filing-card" onclick="showSubmissionMethodModal('${opt.id}')">
           <div class="filing-card-icon"><i class="fa-solid ${opt.icon}"></i></div>
           <h3 style="color:var(--navy); font-weight:800; margin-bottom:8px;">${opt.title}</h3>
           <p style="color:var(--gray-500); font-size:0.88rem; line-height:1.5; margin-bottom:16px;">${opt.desc}</p>
@@ -5899,13 +5900,21 @@ function captureWizardData() {
 function nextWizardStep() {
   captureWizardData();
   if (currentWizardStep < 4) {
-    currentWizardStep++;
+    if (currentWizardStep === 1 && submissionMethod === "upload") {
+      currentWizardStep = 3; // Fast-track to upload step
+    } else {
+      currentWizardStep++;
+    }
     refreshWizard();
   }
 }
 function prevWizardStep() {
   if (currentWizardStep > 1) {
-    currentWizardStep--;
+    if (currentWizardStep === 3 && submissionMethod === "upload") {
+      currentWizardStep = 1; // Back to start from fast-track
+    } else {
+      currentWizardStep--;
+    }
     refreshWizard();
   }
 }
@@ -6143,6 +6152,57 @@ window.confirmCancellation = function(id) {
   closeModal();
   showToast("Application cancelled successfully.");
   navigateTo("user-dashboard");
+};
+
+// ===== SUBMISSION METHOD SELECTION =====
+window.showSubmissionMethodModal = function(typeId) {
+  const overlay = document.getElementById('modalOverlay');
+  const modalBody = document.getElementById('modalBody');
+  const modalTitle = document.getElementById('modalTitle');
+  
+  const typeMap = {
+    'patent-form': 'Patent Application',
+    'trademark-form': 'Trademark Application',
+    'copyright-form': 'Copyright Registration',
+    'utility-form': 'Utility Model Registration',
+    'industrial-form': 'Industrial Design Registration'
+  };
+  
+  const title = typeMap[typeId] || "New Submission";
+  modalTitle.innerText = "How would you like to proceed?";
+  modalTitle.style.display = "block";
+
+  modalBody.innerHTML = `
+    <div style="padding: 0 8px;">
+      <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 24px; text-align: center;">Pick the most convenient way for you to register your ${title}.</p>
+      
+      <div class="method-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
+        <div class="method-card" onclick="startSubmissionFlow('${typeId}', 'upload')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
+          <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
+            <i class="fa-solid fa-file-export"></i>
+          </div>
+          <h4 style="color: var(--navy); font-weight: 800; margin-bottom: 8px; font-size: 1rem;">Upload Completed Form</h4>
+          <p style="font-size: 0.8rem; color: var(--gray-500); line-height: 1.5;">Already filled out your application? Upload it here.</p>
+        </div>
+
+        <div class="method-card" onclick="startSubmissionFlow('${typeId}', 'online')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
+          <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <h4 style="color: var(--navy); font-weight: 800; margin-bottom: 8px; font-size: 1rem;">Fill Out Online Form</h4>
+          <p style="font-size: 0.8rem; color: var(--gray-500); line-height: 1.5;">Complete your application directly in the system.</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  overlay.classList.add('active');
+};
+
+window.startSubmissionFlow = function(typeId, method) {
+  submissionMethod = method;
+  closeModal();
+  navigateTo(typeId);
 };
 
 function handleFileUpload(input) {
