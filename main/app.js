@@ -3050,14 +3050,19 @@ function renderConditionalPaymentUploadPanel(
   if (infoOnly) {
     return `
       <div style="padding:18px 20px; background:rgba(255,127,80,0.05); border:1px solid rgba(255,127,80,0.18); border-radius:14px;">
-        <div style="display:flex; gap:12px; align-items:flex-start;">
-          <i class="fa-solid fa-receipt" style="color:var(--gold-dark); margin-top:2px;"></i>
-          <div>
-            <div style="font-size:0.9rem; font-weight:700; color:var(--navy);">Payment Requested</div>
-            <div style="font-size:0.82rem; color:var(--gray-500); line-height:1.6; margin-top:4px;">
-              The evaluator has requested payment for this application. Upload proof of payment to continue the review cycle.
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+          <div style="display:flex; gap:12px; align-items:flex-start; flex:1;">
+            <i class="fa-solid fa-receipt" style="color:var(--gold-dark); margin-top:2px;"></i>
+            <div>
+              <div style="font-size:0.9rem; font-weight:700; color:var(--navy);">Payment Requested</div>
+              <div style="font-size:0.82rem; color:var(--gray-500); line-height:1.6; margin-top:4px;">
+                The evaluator has requested payment for this application. Upload proof of payment to continue the review cycle.
+              </div>
             </div>
           </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="showPaymentGuideModal()" style="white-space:nowrap;">
+            <i class="fa-solid fa-map-location-dot"></i> View Payment Guide & Map
+          </button>
         </div>
         ${statusMarkup}
       </div>
@@ -3067,11 +3072,14 @@ function renderConditionalPaymentUploadPanel(
   return `
     <div style="border:1.5px dashed var(--gold); border-radius:16px; padding:22px; background:rgba(255,127,80,0.04);">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
-        <div>
+        <div style="flex:1; min-width:280px;">
           <h4 style="font-size:0.95rem; color:var(--navy); margin:0 0 6px;"><i class="fa-solid fa-receipt" style="color:var(--gold); margin-right:8px;"></i> Upload Proof of Payment</h4>
-          <p style="font-size:0.82rem; color:var(--gray-500); margin:0; line-height:1.6;">
+          <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px; line-height:1.6;">
             Payment was requested by the evaluator. Upload the receipt or proof of payment to move this case forward.
           </p>
+          <button type="button" class="btn btn-outline btn-sm" onclick="showPaymentGuideModal()" style="font-size:0.75rem; padding:6px 12px; background:white;">
+            <i class="fa-solid fa-map-location-dot"></i> View Payment Guide & Map
+          </button>
         </div>
         <button type="button" class="btn ${paymentFile ? "btn-outline-navy" : "btn-primary"} btn-sm" onclick="document.getElementById('${inputId}').click()">
           <i class="fa-solid fa-${paymentFile ? "arrows-rotate" : "upload"}"></i> ${paymentFile ? "Replace Proof" : "Choose File"}
@@ -3403,6 +3411,15 @@ function renderUserDashboard() {
         <div class="action-card-content">
           <h3>Register New IP</h3>
           <p>Begin a new submission for Patent, Trademark, or Copyright.</p>
+        </div>
+        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+
+      <div class="action-card" onclick="showPaymentGuideModal()">
+        <div class="action-card-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+        <div class="action-card-content">
+          <h3>Payment Guide</h3>
+          <p>View the campus map and instructions on where to pay.</p>
         </div>
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
@@ -5290,6 +5307,11 @@ function renderSubmissionDetail() {
           <div style="margin-bottom:16px">${statusBadge(s.status)}</div>
           <div style="margin-bottom:16px; padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:10px;">
             ${renderApplicantStatusLegend(s.status)}
+            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--gray-100);">
+              <a href="#" onclick="showPaymentGuideModal()" style="font-size:0.75rem; font-weight:700; color:var(--gold-dark); display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-map-location-dot"></i> View Payment Guide & Map
+              </a>
+            </div>
           </div>
           ${
             copyrightStage
@@ -5530,11 +5552,14 @@ function renderIpGuidelines(filterId = null) {
       <h2 style="font-size:1.2rem; font-weight:800; margin-bottom:16px; color:var(--gold); display:flex; align-items:center; gap:10px;">
         <i class="fa-solid fa-shield-halved"></i> Institutional Protocol
       </h2>
-      <ul style="color:rgba(255,255,255,0.85); font-size:0.92rem; line-height:1.8; padding-left:20px; list-style:none;">
+      <ul style="color:rgba(255,255,255,0.85); font-size:0.92rem; line-height:1.8; padding-left:20px; list-style:none; margin-bottom:20px;">
         <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> This system is a <strong>pre-filing optimization engine</strong>. Verified packets are forwarded to <strong>IPOPHL</strong> or the <strong>National Library</strong>.</li>
         <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Payment is <strong>conditional</strong> and only requested after evaluator review when needed.</li>
         <li><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Review is performed <strong>manually</strong> by PSU IP Office specialists.</li>
       </ul>
+      <button class="btn btn-primary" onclick="showPaymentGuideModal()" style="background:white; color:var(--navy); font-size:0.85rem; padding:10px 20px; border-radius:50px;">
+        <i class="fa-solid fa-map-location-dot" style="color:var(--gold-dark)"></i> View Payment Guide & Campus Map
+      </button>
     </div>
 
     <div style="display:flex; flex-direction:column; gap:32px; padding-bottom:80px;">
@@ -15869,3 +15894,58 @@ document.addEventListener("DOMContentLoaded", () => {
     navigateTo("landing");
   }
 });
+
+window.showPaymentGuideModal = function() {
+  const overlay = document.getElementById('modalOverlay');
+  const modalBody = document.getElementById('modalBody');
+  const modalTitle = document.getElementById('modalTitle');
+
+  modalTitle.innerText = "Payment Guide & Campus Map";
+  modalTitle.style.display = "block";
+
+  modalBody.innerHTML = `
+    <div style="padding: 0 10px;">
+      <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.6;">
+        To complete your submission, please follow these steps to pay the filing fee:
+      </p>
+      
+      <div style="display: grid; gap: 16px; margin-bottom: 24px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">1</div>
+          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Visit the <strong>PSU Cashier's Office</strong> located at the Administration Building.</div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">2</div>
+          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Present your <strong>Application Reference Number</strong> or the printed payment slip.</div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">3</div>
+          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Secure your <strong>Official Receipt (OR)</strong> and take a clear photo or scan of it.</div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">4</div>
+          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Upload the receipt in your dashboard to proceed with the evaluation.</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden; background: white;">
+        <div style="padding: 12px 16px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.8rem; font-weight: 700; color: var(--navy);"><i class="fa-solid fa-map-location-dot" style="margin-right: 6px;"></i> PSU Campus Map Guide</span>
+          <span style="font-size: 0.72rem; color: var(--gray-500);">Administration Bldg. (Cashier)</span>
+        </div>
+        <div style="padding: 10px; background: white; text-align: center;">
+          <img src="images/psu-map-real.png" alt="PSU Campus Map" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" />
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding: 12px; background: rgba(59,130,246,0.05); border-radius: 10px; display: flex; gap: 10px; align-items: center;">
+        <i class="fa-solid fa-clock" style="color: #2563eb; font-size: 0.9rem;"></i>
+        <div style="font-size: 0.8rem; color: #1e40af; line-height: 1.4;">
+          <strong>Cashier Hours:</strong> Monday - Friday, 8:00 AM - 5:00 PM (No Noon Break)
+        </div>
+      </div>
+    </div>
+  `;
+
+  overlay.classList.add('active');
+};
