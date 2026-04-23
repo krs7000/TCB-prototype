@@ -11634,7 +11634,7 @@ window.showSubmissionMethodModal = function(typeId) {
       <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 24px; text-align: center;">Pick the most convenient way for you to register your ${title}.</p>
       
       <div class="method-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
-        <div class="method-card" onclick="startSubmissionFlow('${typeId}', 'upload')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
+        <div class="method-card" onclick="${typeId === 'copyright-form' ? `showApplicantTypeModal('${typeId}', 'upload')` : `startSubmissionFlow('${typeId}', 'upload')`}" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
           <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
             <i class="fa-solid fa-file-export"></i>
           </div>
@@ -11642,7 +11642,7 @@ window.showSubmissionMethodModal = function(typeId) {
           <p style="font-size: 0.8rem; color: var(--gray-500); line-height: 1.5;">Already filled out your application? Upload it here.</p>
         </div>
 
-        <div class="method-card" onclick="startSubmissionFlow('${typeId}', 'online')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
+        <div class="method-card" onclick="${typeId === 'copyright-form' ? `showApplicantTypeModal('${typeId}', 'online')` : `startSubmissionFlow('${typeId}', 'online')`}" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
           <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
           </div>
@@ -11654,6 +11654,42 @@ window.showSubmissionMethodModal = function(typeId) {
   `;
 
   overlay.classList.add('active');
+};
+
+window.showApplicantTypeModal = function(typeId, method) {
+  const modalBody = document.getElementById('modalBody');
+  const modalTitle = document.getElementById('modalTitle');
+
+  modalTitle.innerText = "Select Applicant Type";
+  
+  modalBody.innerHTML = `
+    <div style="padding: 0 8px;">
+      <div class="method-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
+        <div class="method-card" onclick="setApplicantTypeAndStart('${typeId}', '${method}', 'Individual')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
+          <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
+            👤
+          </div>
+          <h4 style="color: var(--navy); font-weight: 800; margin-bottom: 8px; font-size: 1rem;">Individual</h4>
+          <p style="font-size: 0.8rem; color: var(--gray-500); line-height: 1.5;">For personal copyright applications</p>
+        </div>
+
+        <div class="method-card" onclick="setApplicantTypeAndStart('${typeId}', '${method}', 'Institution')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
+          <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
+            🏢
+          </div>
+          <h4 style="color: var(--navy); font-weight: 800; margin-bottom: 8px; font-size: 1rem;">Institution / Organization</h4>
+          <p style="font-size: 0.8rem; color: var(--gray-500); line-height: 1.5;">For companies, schools, or groups</p>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+window.setApplicantTypeAndStart = function(typeId, method, applicantType) {
+  startSubmissionFlow(typeId, method);
+  if (typeof wizardData !== 'undefined') {
+    wizardData.applicantTypeGroup = applicantType;
+  }
 };
 
 window.initiateDirectRegistration = function(typeId, method) {
