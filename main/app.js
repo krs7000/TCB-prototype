@@ -1,5 +1,5 @@
 // ============================================================
-// THE CREATOR'S BULWARK â€” APP.JS
+// THE CREATOR'S BULWARK — APP.JS
 // Complete application logic with mock data & interactivity
 // ============================================================
 
@@ -179,9 +179,9 @@ let submissions = [
     id: "PSU-PAT-2026-001",
     type: "Patent",
     title: "Bamboo-Based Water Filtration Device",
-    applicant: "Maria Santos",
+    applicant: "Juan dela Cruz",
     department: "College of Engineering",
-    email: "maria.santos@psu.edu.ph",
+    email: "juan.delacruz@psu.edu.ph",
     contact: "09171234567",
     status: "Approved",
     date: "2026-01-15",
@@ -209,9 +209,9 @@ let submissions = [
     id: "PSU-TM-2026-003",
     type: "Trademark",
     title: "AquaGuard Brand Mark",
-    applicant: "Anna Reyes",
-    department: "Research Office",
-    email: "anna.reyes@psu.edu.ph",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
     contact: "09191234567",
     status: "Under Review",
     date: "2026-02-28",
@@ -224,9 +224,9 @@ let submissions = [
     id: "PSU-PAT-2026-004",
     type: "Patent",
     title: "Solar-Powered Rice Dryer",
-    applicant: "Rodel Magtibay",
-    department: "College of Agriculture",
-    email: "rodel.magtibay@psu.edu.ph",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
     contact: "09201234567",
     status: "Rejected",
     date: "2026-03-01",
@@ -269,9 +269,9 @@ let submissions = [
     id: "PSU-DFT-2026-007",
     type: "Patent",
     title: "Low-Cost Hydroponic Monitoring System",
-    applicant: "Dr. Elena Vance",
-    department: "External Partner",
-    email: "elena.vance@globalresearch.org",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
     status: "Draft",
     date: "2026-04-15",
     description: "Initial draft for a sensors-based monitoring system for urban gardening.",
@@ -280,10 +280,10 @@ let submissions = [
     id: "PSU-DFT-2026-008",
     type: "Trademark",
     title: "Palawan Pearl Brand Identity",
-    applicant: "Dr. Elena Vance",
-    department: "External Partner",
-    email: "elena.vance@globalresearch.org",
-    status: "Draft",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
+    status: "ActionRequired",
     date: "2026-04-18",
     description: "Branding materials draft for the local pearl export initiative.",
   },
@@ -321,20 +321,26 @@ let submissions = [
     id: "PSU-UM-2026-009",
     type: "Utility Model",
     title: "Compact Folding Hand Tractor",
-    applicant: "Engr. Leo Hernandez",
-    department: "College of Agriculture",
-    email: "leo.hernandez@psu.edu.ph",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
     contact: "09251234567",
-    status: "Under Review",
+    status: "Validated",
     date: "2026-03-25",
-    description:
-      "A foldable hand tractor designed for easier transport in small-scale Palawan farms.",
-
+    description: "A foldable hand tractor designed for easier transport in small-scale Palawan farms.",
+    field: "Agricultural Engineering",
+  },
+  {
+    id: "PSU-ID-2026-010",
+    type: "Industrial Design",
+    title: "Tectonic Modular Furniture",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
     contact: "09261234567",
-    status: "Approved",
+    status: "Payment Requested",
     date: "2026-03-30",
-    description:
-      "A modular furniture system inspired by tectonic formations and traditional Palawan weaving patterns.",
+    description: "A modular furniture system inspired by tectonic formations and traditional Palawan weaving patterns.",
     field: "Product Design",
   },
   {
@@ -559,7 +565,7 @@ const marketplaceItems = [
     longDescription:
       "A portable handheld device that uses advanced imaging to detect changes in the crystalline lens of the fish eye associated with formalin preservation.",
     features: [
-      "Non-destructive testing â€” no need to slice or damage the sample.",
+      "Non-destructive testing — no need to slice or damage the sample.",
       "Instant result displaying Safe/Warning levels on a digital screen.",
       "Calibration for multiple fish species common in local wet markets.",
     ],
@@ -755,7 +761,7 @@ const marketplaceItems = [
     features: [
       "Dual-mode verification: fingerprint + face recognition for high accuracy.",
       "Automatic generation of attendance reports and parent notifications.",
-      "Offline mode capability â€” syncs to cloud when connection is restored.",
+      "Offline mode capability — syncs to cloud when connection is restored.",
       "Integration-ready with existing Student Information Systems (SIS).",
     ],
     businessPotential:
@@ -777,7 +783,7 @@ const marketplaceItems = [
     description:
       "A sustainable fertilizer formulation derived from banana peel extract, rich in potassium and micro-nutrients for vegetable crops.",
     longDescription:
-      "A zero-waste innovation that converts banana peel â€” a common agricultural by-product â€” into a high-potassium liquid fertilizer proven to enhance vegetable growth and fruit quality.",
+      "A zero-waste innovation that converts banana peel — a common agricultural by-product — into a high-potassium liquid fertilizer proven to enhance vegetable growth and fruit quality.",
     features: [
       "Natural potassium concentration 3x higher than conventional fertilizers.",
       "Fully biodegradable with no chemical additives or preservatives.",
@@ -802,12 +808,12 @@ const marketplaceItems = [
     description:
       "A foldable, high-efficiency parabolic solar cooker designed for community use in off-grid areas, capable of reaching cooking temperatures in 15 minutes.",
     longDescription:
-      "Uses a parabolic mirror array to concentrate solar energy into a single focal point, achieving temperatures of 250Â°C sufficient for boiling, frying, and steaming â€” with zero fuel cost.",
+      "Uses a parabolic mirror array to concentrate solar energy into a single focal point, achieving temperatures of 250°C sufficient for boiling, frying, and steaming — with zero fuel cost.",
     features: [
       "Foldable design packable into a 60cm x 40cm bag for portability.",
       "Aluminum composite reflectors with 92% solar reflectivity.",
       "Adjustable focal arm accommodating pots from 1L to 5L capacity.",
-      "Reaches boiling point (100Â°C) in under 20 minutes on clear days.",
+      "Reaches boiling point (100°C) in under 20 minutes on clear days.",
     ],
     businessPotential:
       "Addresses energy poverty for the estimated 15 million Filipinos without stable electricity. Strong demand from disaster relief agencies such as NDRRMC and international NGOs.",
@@ -830,12 +836,12 @@ const marketplaceItems = [
       "Designed for the modern urban micro-apartment, this furniture system uses an innovative dovetail snap-lock mechanism allowing reconfiguration in under 2 minutes. Crafted from sustainably sourced bamboo composite panels.",
     features: [
       "Tool-free assembly and disassembly using precision snap-lock joints.",
-      "Bamboo composite panels â€” 40% lighter than wood, 3x stronger.",
+      "Bamboo composite panels — 40% lighter than wood, 3x stronger.",
       "Converts between 5 configurations: desk, table, shelving, bed frame, and storage unit.",
       "Flat-pack shipping reduces logistics cost by 60%.",
     ],
     businessPotential:
-      "The Philippine urban furniture market is valued at â‚±12 billion. Targets the growing Metro Manila condo and dormitory segment. Highly attractive for e-commerce platforms and IKEA-style local retailers.",
+      "The Philippine urban furniture market is valued at ₱12 billion. Targets the growing Metro Manila condo and dormitory segment. Highly attractive for e-commerce platforms and IKEA-style local retailers.",
     contactPerson: "Des. Maria Soriano",
     contactEmail: "maria.soriano@psu.edu.ph",
     year: 2026,
@@ -851,17 +857,17 @@ const marketplaceItems = [
     inventor: "Engr. L. Bautista",
     college: "College of Sciences",
     description:
-      "Sustainable packaging panels made from compressed coconut coir fiber â€” a fully biodegradable, water-resistant alternative to single-use plastic.",
+      "Sustainable packaging panels made from compressed coconut coir fiber — a fully biodegradable, water-resistant alternative to single-use plastic.",
     longDescription:
       "A heat-compressed molding process transforms raw coconut husk fiber into rigid, water-resistant packaging shells comparable in durability to conventional foam packaging.",
     features: [
       "Fully biodegradable in 90 days under standard composting conditions.",
-      "Water-resistant coating from natural coconut wax â€” no plastic additives.",
+      "Water-resistant coating from natural coconut wax — no plastic additives.",
       "Customizable mold shapes fitting product dimensions from 5cm to 60cm.",
-      "Production waste is zero â€” all fiber off-cuts are reprocessed.",
+      "Production waste is zero — all fiber off-cuts are reprocessed.",
     ],
     businessPotential:
-      "Growing regulatory pressure against single-use plastics creates a massive market opening. The Philippines produces 15 billion coconuts per year â€” raw materials are abundantly available and cheap.",
+      "Growing regulatory pressure against single-use plastics creates a massive market opening. The Philippines produces 15 billion coconuts per year — raw materials are abundantly available and cheap.",
     contactPerson: "Engr. Lourdes Bautista",
     contactEmail: "lourdes.bautista@psu.edu.ph",
     year: 2025,
@@ -871,7 +877,7 @@ const marketplaceItems = [
   {
     id: 17,
     title: "PALAWAN PRIDE Brand Identity",
-    fullTitle: "PALAWAN PRIDE â€” REGIONAL EXCELLENCE BRAND AND TRADEMARK",
+    fullTitle: "PALAWAN PRIDE — REGIONAL EXCELLENCE BRAND AND TRADEMARK",
     type: "Trademark",
     inventor: "PSU Design Team",
     college: "College of Arts",
@@ -880,7 +886,7 @@ const marketplaceItems = [
     longDescription:
       "A comprehensive brand system including wordmark, logo, color palette, and usage guidelines designed to certify and promote authentic products from Palawan province.",
     features: [
-      "Stylized eagle motif referencing the Philippine Eagle â€” a Palawan icon.",
+      "Stylized eagle motif referencing the Philippine Eagle — a Palawan icon.",
       "Bilingual brand name (English/Filipino) for broader market appeal.",
       "Usage guidelines covering product labels, tourism signage, and digital media.",
       "Certification program for authentic Palawan product producers.",
@@ -896,7 +902,7 @@ const marketplaceItems = [
   {
     id: 18,
     title: "AGRI-SMART PSU Logo",
-    fullTitle: "AGRI-SMART PSU â€” SMART AGRICULTURE DIVISION BRAND MARK",
+    fullTitle: "AGRI-SMART PSU — SMART AGRICULTURE DIVISION BRAND MARK",
     type: "Trademark",
     inventor: "ICT & Agriculture Dept.",
     college: "College of Agriculture",
@@ -955,7 +961,7 @@ const marketplaceItems = [
     description:
       "An intelligent software system that automates faculty workload computation, scheduling conflict detection, and academic calendar generation.",
     longDescription:
-      "Replaces spreadsheet-based workload computation with a rules-based engine that automatically calculates teaching units, administrative loads, and research credits per faculty member â€” producing instant DepEd/CHED-compliant workload reports.",
+      "Replaces spreadsheet-based workload computation with a rules-based engine that automatically calculates teaching units, administrative loads, and research credits per faculty member — producing instant DepEd/CHED-compliant workload reports.",
     features: [
       "Automatic conflict detection across 50+ concurrent class schedules.",
       "CHED-memorandum-compliant workload computation engine.",
@@ -3088,7 +3094,7 @@ function renderDynamicRequirementUploaders(formType = currentFormType) {
             <div style="flex:1; min-width:240px;">
               <div style="font-size:0.9rem; font-weight:700; color:var(--navy); line-height:1.45;">Upload a file for ${entry.doc.name}</div>
               <div style="font-size:0.78rem; color:var(--gray-500); margin-top:6px;">
-                ${entry.file ? `${entry.file.name} â€¢ ${(entry.file.size / 1024).toFixed(1)} KB` : "Accepted formats: PDF, DOCX, JPG, PNG"}
+                ${entry.file ? `${entry.file.name} • ${(entry.file.size / 1024).toFixed(1)} KB` : "Accepted formats: PDF, DOCX, JPG, PNG"}
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
@@ -3158,10 +3164,7 @@ function renderFilingHub() {
           <h3 style="color:var(--navy); font-weight:800; margin-bottom:8px;">${opt.title}</h3>
           <p style="color:var(--gray-500); font-size:0.88rem; line-height:1.5; margin-bottom:16px;">${opt.desc}</p>
           
-          <div class="filing-badge-group">
-            <span class="filing-badge badge-docs"><i class="fa-solid fa-file-invoice"></i> ${getRequiredDocumentCount(opt.typeKey)} Docs</span>
-            <span class="filing-badge badge-time"><i class="fa-solid fa-clock"></i> ${opt.time}</span>
-          </div>
+
         </div>
       `).join('')}
     </div>
@@ -3334,19 +3337,10 @@ function renderUserDashboard() {
   const role = "applicant";
   const userSubmissions = getVisibleSubmissions(role);
   const total = userSubmissions.length;
-  const activeReviews = userSubmissions.filter(
-    (s) =>
-      s.status === "Pending" ||
-      s.status === "Under Review" ||
-      s.status === "Validated" ||
-      s.status === "Payment Requested",
-  ).length;
-  const actionRequired = userSubmissions.filter(
-    (s) => s.status === "Awaiting Documents" || s.status === "Payment Requested",
-  ).length;
-  const approved = userSubmissions.filter((s) => s.status === "Approved").length;
+  const actionRequired = userSubmissions.filter((s) => s.status === "ActionRequired").length;
   const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
-  const officialTotal = total - drafts;
+  const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
+  const paymentRequested = userSubmissions.filter((s) => s.status === "Payment Requested").length;
   const recent = userSubmissions.filter(s => s.status !== 'Draft').slice(0, 3);
 
   // Stats clicking helper
@@ -3392,43 +3386,47 @@ function renderUserDashboard() {
     </div>
 
     <div class="dashboard-stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:24px; margin-bottom:40px;">
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('All')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="width:48px; height:48px; border-radius:12px; background:#3b82f615; color:#3b82f6; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
-          <i class="fa-solid fa-box-open"></i>
+      <!-- Payment Card -->
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; border-left: 4px solid var(--blue);" onclick="goToFilteredSubmissions('Payment Requested')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="width:48px; height:48px; border-radius:12px; background:var(--blue-light); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-credit-card"></i>
         </div>
         <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${officialTotal}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Total Applications</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${paymentRequested}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Payment</div>
         </div>
       </div>
 
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Under Review')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="width:48px; height:48px; border-radius:12px; background:#f59e0b15; color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
-          <i class="fa-solid fa-hourglass-half"></i>
+      <!-- Rejected Card -->
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; border-left: 4px solid var(--red);" onclick="goToFilteredSubmissions('Rejected')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="width:48px; height:48px; border-radius:12px; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-circle-xmark"></i>
         </div>
         <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${activeReviews}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">In Review</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--red); line-height:1;">${rejected}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Rejected</div>
         </div>
       </div>
 
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s;" onclick="goToFilteredSubmissions('Draft')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="width:48px; height:48px; border-radius:12px; background:#64748b15; color:#64748b; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
-          <i class="fa-solid fa-file-pen"></i>
-        </div>
-        <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${drafts}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Saved Drafts</div>
-        </div>
-      </div>
-
+      <!-- Action Needed Card -->
       <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 10px 20px -10px rgba(239,68,68,0.2); cursor:pointer; transition: transform 0.2s; border-left: 4px solid #ef4444;" onclick="goToFilteredSubmissions('ActionRequired')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="width:48px; height:48px; border-radius:12px; background:#ef444415; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
           <i class="fa-solid fa-circle-exclamation"></i>
         </div>
         <div>
           <div style="font-size:1.8rem; font-weight:800; color:#ef4444; line-height:1;">${actionRequired}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:600; margin-top:4px;">Action Required</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:600; margin-top:4px;">Action Needed</div>
+        </div>
+      </div>
+
+      <!-- Saved Draft Card -->
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; border-left: 4px solid var(--gray-500);" onclick="goToFilteredSubmissions('Draft')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="width:48px; height:48px; border-radius:12px; background:var(--gray-100); color:var(--gray-600); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-file-pen"></i>
+        </div>
+        <div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${drafts}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Saved Draft</div>
         </div>
       </div>
     </div>
@@ -3808,7 +3806,7 @@ function legacyGetRoleSpecificStats(role) {
         },
         {
           label: "Revenue Flow",
-          value: "â‚±125k",
+          value: "₱125k",
           icon: "fa-money-bill-trend-up",
           color: "indigo",
         },
@@ -5355,9 +5353,9 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect original inventions & technical breakthroughs",
       term: "20 years from filing date",
       requirements: [
-        "Global Novelty â€” never before disclosed",
-        "Inventive Step â€” non-obvious to experts",
-        "Industrial Applicability â€” can be manufactured",
+        "Global Novelty — never before disclosed",
+        "Inventive Step — non-obvious to experts",
+        "Industrial Applicability — can be manufactured",
       ],
       process: [
         { n: 1, t: "Disclosure", d: "Document technical details and field of use." },
@@ -5382,7 +5380,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Rapid protection for practical innovations",
       term: "7 years (non-renewable)",
       requirements: [
-        "Novelty â€” new to the world",
+        "Novelty — new to the world",
         "Industrial Applicability",
         "Lower 'Inventive Step' threshold than patents"
       ],
@@ -5409,7 +5407,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Safeguard the unique visual style of products",
       term: "5 years (renewable up to 15)",
       requirements: [
-        "Ornamental Novelty â€” unique visual appeal",
+        "Ornamental Novelty — unique visual appeal",
         "Applied to a practical article",
         "Non-functional aesthetics only"
       ],
@@ -5436,7 +5434,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect brands, logos, and corporate identity",
       term: "10 years (renewable)",
       requirements: [
-        "Distinctiveness â€” unique in the marketplace",
+        "Distinctiveness — unique in the marketplace",
         "Non-descriptive of the actual goods",
         "Non-deceptive to consumers"
       ],
@@ -5463,7 +5461,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect creative works, code, and literature",
       term: "Lifetime + 50 years",
       requirements: [
-        "Originality â€” must be your own creation",
+        "Originality — must be your own creation",
         "Fixation in tangible form",
         "Creative expression (not just logic)"
       ],
@@ -5632,7 +5630,7 @@ function getFormGuideContent() {
       color: "#10b981",
       steps: [
         "List all authors/creators with contributions",
-        "Describe the work â€” title, type, date of creation",
+        "Describe the work — title, type, date of creation",
         "Upload complete copy of the work being registered",
         "Submit and receive Certificate of Registration",
       ],
@@ -5685,7 +5683,7 @@ function getFormGuideContent() {
   const requiredCount = getRequiredDocumentCount(currentFormType);
   return `<div class="form-guide-panel">
     <div class="form-guide-toggle" onclick="this.parentElement.classList.toggle('open')">
-      <span><i class="fa-solid fa-${g.icon}" style="color:${g.color}"></i> <strong>${g.title}</strong> â€” Required documents & steps</span>
+      <span><i class="fa-solid fa-${g.icon}" style="color:${g.color}"></i> <strong>${g.title}</strong> &mdash; Required documents & steps</span>
       <i class="fa-solid fa-chevron-down"></i>
     </div>
     <div class="form-guide-body">
@@ -9960,7 +9958,7 @@ function renderIndustrialGoogleForm(
           <div class="patent-gform-card">
             <span class="patent-gform-side-label">How This Works</span>
             <ul class="patent-gform-note-list">
-              <li>The guided fields follow IPOPHLâ€™s published industrial design filing requirements.</li>
+              <li>The guided fields follow IPOPHL's published industrial design filing requirements.</li>
               <li>The preview focuses on applicant, designer, design specification, claim, and representation details.</li>
               <li>Required uploads still need to be attached before submission is allowed.</li>
             </ul>
@@ -10500,7 +10498,7 @@ function renderFormWizard(title) {
 
   return `
     ${renderBackNav('filing-hub', 'Filing Hub')}
-    <div class="page-header" style="margin-bottom: 24px;">
+    <div class="page-header" style="margin-bottom: 8px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px;">
         <div>
           <h1 style="color:var(--navy); font-weight:800; font-size:1.8rem; margin-bottom:4px;">${title}</h1>
@@ -10512,12 +10510,12 @@ function renderFormWizard(title) {
 
     ${getFormGuideContent()}
     
-    <div class="wizard-container" style="margin-top:24px; box-shadow:0 20px 40px rgba(0,0,0,0.04); border-radius:20px;">
+    <div class="wizard-container" style="margin-top:8px; box-shadow:0 20px 40px rgba(0,0,0,0.04); border-radius:20px;">
       <div class="wizard-progress" style="background:white; border-bottom:1px solid var(--gray-100); padding:10px 0;">
         ${steps
           .map(
             (s, i) => `
-          <div class="wizard-step ${i + 1 === currentWizardStep ? "active" : ""} ${i + 1 < currentWizardStep ? "completed" : ""}" id="wizStep${i + 1}" style="padding:16px 10px;">
+          <div class="wizard-step ${i + 1 === currentWizardStep ? "active" : ""} ${i + 1 < currentWizardStep ? "completed" : ""}" id="wizStep${i + 1}" style="padding:8px 6px;">
             <div class="step-num" style="width:32px; height:32px; font-size:0.85rem; margin-bottom:6px;">${i + 1 < currentWizardStep ? '<i class="fa-solid fa-check"></i>' : i + 1}</div>
             <span class="step-text" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">${s}</span>
           </div>`,
@@ -10525,11 +10523,11 @@ function renderFormWizard(title) {
           .join("")}
       </div>
 
-      <div class="wizard-body" id="wizardBody" style="padding:40px; min-height:400px;">
+      <div class="wizard-body" id="wizardBody" style="padding:15px; min-height:auto;">
         ${renderWizardStep()}
       </div>
 
-      <div class="wizard-footer" style="padding:24px 40px; background:var(--gray-50); border-top:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center;">
+      <div class="wizard-footer" style="padding:12px 15px; background:var(--gray-50); border-top:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center;">
         <div style="display:flex; gap:16px;">
           ${
             currentWizardStep > 1
@@ -10598,11 +10596,11 @@ function renderWizardStep() {
   };
 
   return `
-    <div style="display:grid; grid-template-columns: 1fr 280px; gap:40px;">
+    <div style="display:grid; grid-template-columns: 1fr 280px; gap:24px; align-items: start;">
       <div class="wizard-main-content">
         ${content}
       </div>
-      <div class="wizard-sidebar" style="border-left:1px solid var(--gray-100); padding-left:40px;">
+      <div class="wizard-sidebar" style="border-left:1px solid var(--gray-100); padding-left:24px;">
         <div style="background:linear-gradient(to right, #f8fafc, #ffffff); border:1px solid var(--gray-100); border-radius:16px; padding:18px; margin-bottom:20px;">
           <h4 style="font-size:0.82rem; color:var(--navy); font-weight:800; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.08em;">Required Documents</h4>
           ${renderRequirementChecklistPanel(currentFormType, { compact: true })}
@@ -10639,7 +10637,7 @@ function renderWizardStep() {
 function renderStep1() {
   const user = getCurrentUser();
   return `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="margin:0;">Applicant Information</h3>
       <span style="font-size:0.8rem; color:var(--gray-400); font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i> Secure & Encrypted</span>
     </div>
@@ -10860,7 +10858,7 @@ function renderStep3() {
       : "Awaiting upload"
     : "Not requested";
   return `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="margin:0;">Required Documents and Steps</h3>
       <div style="background:var(--gray-50); padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; color:var(--gray-500); border:1px solid var(--gray-200);">
         ${uploadedCount} of ${totalRequired} REQUIRED UPLOADED
@@ -10937,7 +10935,7 @@ function renderStep4Review() {
         ${wizardData.prodcat ? `<div class="review-item"><span class="label">Product Category</span>${val(wizardData.prodcat)}</div>` : ""}
         ${wizardData.designtype ? `<div class="review-item"><span class="label">Design Type</span>${val(wizardData.designtype)}</div>` : ""}
       </div>
-      ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "â€¦" : ""}</span></div>` : ""}
+      ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "…" : ""}</span></div>` : ""}
     </div>
     <div class="review-section"><h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents & Payment</h4>
       <p style="color:var(--gray-500);font-size:.9rem; margin-bottom:14px;">Required uploads are summarized below. Proof of payment stays hidden unless an evaluator requests it later in the review flow.</p>
@@ -11852,7 +11850,7 @@ function handleDepositUpload(input) {
     <i class="fa-solid fa-circle-check" style="color:var(--green);font-size:1.2rem"></i>
     <div style="flex:1">
       <div style="font-size:.9rem;font-weight:600;color:var(--navy)">${f.name}</div>
-      <div style="font-size:.8rem;color:var(--gray-400)">${(f.size / 1024).toFixed(1)} KB â€” Proof of payment uploaded</div>
+      <div style="font-size:.8rem;color:var(--gray-400)">${(f.size / 1024).toFixed(1)} KB — Proof of payment uploaded</div>
     </div>
     <span class="badge badge-approved" style="font-size:.65rem">VERIFIED</span>
   </div>`;
@@ -12992,10 +12990,10 @@ function renderProfile() {
 
 function renderAdminRecords() {
   const approved = submissions.filter((s) => s.status === "Approved");
-  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties â€” metadata is locked for integrity.</p></div>
+  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties — metadata is locked for integrity.</p></div>
     <div style="padding:12px 18px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-shield-halved" style="color:#6366f1; font-size:1.1rem;"></i>
-      <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> â€” All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions.</p>
+      <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> — All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions.</p>
     </div>
     <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th></tr></thead><tbody>
       ${approved
@@ -13177,25 +13175,25 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "View all cases",
-          sa: "âœ“",
-          pa: "âœ“",
+          sa: "✓",
+          pa: "✓",
           rv: "Assigned",
           cl: "Own only",
         },
         {
           action: "Create / edit cases",
-          sa: "âœ“",
-          pa: "âœ“",
+          sa: "✓",
+          pa: "✓",
           rv: "Assigned",
-          cl: "âœ—",
+          cl: "✗",
         },
-        { action: "Advance stage", sa: "âœ“", pa: "âœ“", rv: "âœ“", cl: "âœ—" },
+        { action: "Advance stage", sa: "✓", pa: "✓", rv: "✓", cl: "✗" },
         {
           action: "Delete / archive cases",
-          sa: "âœ“",
+          sa: "✓",
           pa: "Archive only",
-          rv: "âœ—",
-          cl: "âœ—",
+          rv: "✗",
+          cl: "✗",
         },
       ],
     },
@@ -13204,24 +13202,24 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Upload documents",
-          sa: "âœ“",
-          pa: "âœ“",
-          rv: "âœ“",
+          sa: "✓",
+          pa: "✓",
+          rv: "✓",
           cl: "Own cases",
         },
         {
           action: "Download CONFIDENTIAL",
-          sa: "âœ“",
-          pa: "âœ“",
+          sa: "✓",
+          pa: "✓",
           rv: "Assigned",
-          cl: "âœ—",
+          cl: "✗",
         },
         {
           action: "Download TOP SECRET",
-          sa: "âœ“",
+          sa: "✓",
           pa: "With approval",
-          rv: "âœ—",
-          cl: "âœ—",
+          rv: "✗",
+          cl: "✗",
         },
       ],
     },
@@ -13230,16 +13228,16 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Execute patent search",
-          sa: "âœ“",
-          pa: "âœ“",
-          rv: "âœ“",
+          sa: "✓",
+          pa: "✓",
+          rv: "✓",
           cl: "Limited query",
         },
         {
           action: "View full search results",
-          sa: "âœ“",
-          pa: "âœ“",
-          rv: "âœ“",
+          sa: "✓",
+          pa: "✓",
+          rv: "✓",
           cl: "Public only",
         },
       ],
@@ -13249,33 +13247,33 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Manage user roles",
-          sa: "âœ“",
+          sa: "✓",
           pa: "Non-admin only",
-          rv: "âœ—",
-          cl: "âœ—",
+          rv: "✗",
+          cl: "✗",
         },
         {
           action: "View audit trail",
-          sa: "âœ“",
+          sa: "✓",
           pa: "Operational only",
-          rv: "âœ—",
-          cl: "âœ—",
+          rv: "✗",
+          cl: "✗",
         },
-        { action: "System configuration", sa: "âœ“", pa: "âœ—", rv: "âœ—", cl: "âœ—" },
+        { action: "System configuration", sa: "✓", pa: "✗", rv: "✗", cl: "✗" },
         {
           action: "Encryption key management",
-          sa: "âœ“",
-          pa: "âœ—",
-          rv: "âœ—",
-          cl: "âœ—",
+          sa: "✓",
+          pa: "✗",
+          rv: "✗",
+          cl: "✗",
         },
       ],
     },
   ];
   const badge = (v) => {
-    if (v === "âœ“")
-      return '<span style="color:var(--green);font-size:1.1rem">âœ“</span>';
-    if (v === "âœ—") return '<span style="color:var(--gray-400)">âœ—</span>';
+    if (v === "✓")
+      return '<span style="color:var(--green);font-size:1.1rem">✓</span>';
+    if (v === "✗") return '<span style="color:var(--gray-400)">✗</span>';
     return `<span class="badge badge-pending" style="font-size:.7rem">${v}</span>`;
   };
   let rows = "";
@@ -13572,7 +13570,7 @@ window.toggleContactQuickLinks = function() {
 };
 
 function renderContactUs() {
-  const campusCoordinates = `9Â°46â€²40â€³N 118Â°44â€²00â€³E`;
+  const campusCoordinates = `9°46′40″N 118°44′00″E`;
   const mapLink =
     "https://www.google.com/maps/search/?api=1&query=9%C2%B046%E2%80%B240%E2%80%B3N%20118%C2%B044%E2%80%B200%E2%80%B3E";
   const facebookLink = "https://www.facebook.com/PalawanStateUniversity/";
@@ -13775,9 +13773,9 @@ function renderRolePermissions() {
   ];
   const badge = (value) => {
     if (value === "check")
-      return '<span style="color:var(--green);font-size:1.1rem">âœ“</span>';
+      return '<span style="color:var(--green);font-size:1.1rem">✓</span>';
     if (value === "deny")
-      return '<span style="color:var(--red);font-size:1.1rem">âœ•</span>';
+      return '<span style="color:var(--red);font-size:1.1rem">✗</span>';
     return `<span class="badge badge-pending" style="font-size:.7rem">${value}</span>`;
   };
   let rows = "";
@@ -13950,7 +13948,7 @@ function renderForms() {
         <i class="fa-solid fa-circle-info" style="color: var(--navy);"></i>
         <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-600);">Need help with the legal requirements? Visit our <a href="#" onclick="navigateTo('ip-guidelines')" style="color: var(--navy); text-decoration: underline;">Guidelines Section</a>.</span>
       </div>
-      <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office â€” Authorized Document Repository</p>
+      <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office — Authorized Document Repository</p>
     </div>
   `;
 }
