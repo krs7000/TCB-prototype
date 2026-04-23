@@ -413,7 +413,7 @@ i[class*="fa-"] {
   left: 100%;
   transform: translateX(10px);
   background: #ffffff;
-  min-width: 180px;
+  min-width: 200px;
   box-shadow: 0 10px 35px rgba(255, 127, 80, 0.15);
   border-radius: var(--radius-sm);
   padding: 8px 0;
@@ -422,6 +422,7 @@ i[class*="fa-"] {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 110;
   border: 1px solid rgba(255, 127, 80, 0.12);
+  white-space: nowrap;
 }
 .nav-item-sub-dropdown:hover .sub-dropdown-content {
   opacity: 1;
@@ -430,11 +431,49 @@ i[class*="fa-"] {
 }
 .sub-dropdown-content a {
   padding-left: 20px !important;
+  white-space: nowrap;
 }
 .sub-dropdown-content a:hover {
   padding-left: 24px !important;
 }
+
+/* 3rd Level Nesting (Sub-Sub-Dropdown) */
+.nav-item-sub-sub-dropdown {
+  position: relative;
+}
+.sub-sub-dropdown-content {
+  position: absolute;
+  top: -8px;
+  left: 100%;
+  transform: translateX(10px);
+  background: #ffffff;
+  min-width: 220px;
+  box-shadow: 0 10px 35px rgba(255, 127, 80, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 8px 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 120;
+  border: 1px solid rgba(255, 127, 80, 0.12);
+  white-space: nowrap;
+}
+.nav-item-sub-sub-dropdown:hover > .sub-sub-dropdown-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+.sub-sub-dropdown-content a {
+  padding-left: 20px !important;
+  white-space: nowrap;
+}
+.sub-sub-dropdown-content a:hover {
+  padding-left: 24px !important;
+  background: var(--gray-50);
+}
+
 .dropdown-content i {
+
   color: var(--gold-dark);
   width: 16px;
   text-align: center;
@@ -2021,11 +2060,11 @@ body.top-nav-layout .topbar-user .user-name {
 .topbar-user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
   cursor: pointer;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  transition: var(--transition);
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s;
 }
 .topbar-user:hover {
   background: var(--gray-100);

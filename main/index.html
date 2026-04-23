@@ -47,55 +47,85 @@
               <div class="nav-item-sub-dropdown">
                 <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-lightbulb"></i> Patent <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
                 <div class="sub-dropdown-content">
-                  <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> File Patent</a>
-                  <a href="#" onclick="navigateTo('guidelines', false, { serviceId: 'patent' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+                  <div class="nav-item-sub-sub-dropdown">
+                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Patent <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
+                    <div class="sub-sub-dropdown-content">
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('patent-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('patent-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
+                    </div>
+                  </div>
+                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'patent' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
                 </div>
               </div>
               <div class="nav-item-sub-dropdown">
                 <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-stamp"></i> Trademark <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
                 <div class="sub-dropdown-content">
-                  <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> File Trademark</a>
-                  <a href="#" onclick="navigateTo('guidelines', false, { serviceId: 'trademark' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+                  <div class="nav-item-sub-sub-dropdown">
+                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Trademark <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
+                    <div class="sub-sub-dropdown-content">
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('trademark-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('trademark-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
+                    </div>
+                  </div>
+                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'trademark' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
                 </div>
               </div>
               <div class="nav-item-sub-dropdown">
                 <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-copyright"></i> Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
                 <div class="sub-dropdown-content">
-                  <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> File Copyright</a>
-                  <a href="#" onclick="navigateTo('guidelines', false, { serviceId: 'copyright' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+                  <div class="nav-item-sub-sub-dropdown">
+                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
+                    <div class="sub-sub-dropdown-content">
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
+                    </div>
+                  </div>
+                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'copyright' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
                 </div>
               </div>
               <div class="nav-item-sub-dropdown">
                 <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-gears"></i> Utility Model <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
                 <div class="sub-dropdown-content">
-                  <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> File Utility Model</a>
-                  <a href="#" onclick="navigateTo('guidelines', false, { serviceId: 'utility' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+                  <div class="nav-item-sub-sub-dropdown">
+                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Utility Model <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
+                    <div class="sub-sub-dropdown-content">
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('utility-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('utility-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
+                    </div>
+                  </div>
+                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'utility' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
                 </div>
               </div>
               <div class="nav-item-sub-dropdown">
                 <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-pen-nib"></i> Industrial Design <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
                 <div class="sub-dropdown-content">
-                  <a href="#" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> File Design</a>
-                  <a href="#" onclick="navigateTo('guidelines', false, { serviceId: 'industrial' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+                  <div class="nav-item-sub-sub-dropdown">
+                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Industrial Design <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
+                    <div class="sub-sub-dropdown-content">
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('industrial-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('industrial-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
+                    </div>
+                  </div>
+                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'industrial' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
                 </div>
               </div>
             </div>
           </li>
 
-          <li><a href="#" class="nav-link" onclick="navigateTo('news')">News</a></li>
-          <li><a href="#" class="nav-link" onclick="navigateTo('forms')">Forms</a></li>
-          <li><a href="#" class="nav-link" onclick="navigateTo('marketplace')">Marketplace</a></li>
-          <li><a href="#" class="nav-link" onclick="navigateTo('about')">About</a></li>
+          <li><a href="javascript:void(0)" class="nav-link" onclick="navigateTo('news')">News</a></li>
+          <li><a href="javascript:void(0)" class="nav-link" onclick="navigateTo('forms')">Forms</a></li>
+          <li><a href="javascript:void(0)" class="nav-link" onclick="navigateTo('marketplace')">Marketplace</a></li>
+          <li><a href="javascript:void(0)" class="nav-link" onclick="navigateTo('about')">About</a></li>
           <li class="nav-item-dropdown">
-            <a href="#" class="nav-link" onclick="event.preventDefault()">Help <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; margin-left:3px;"></i></a>
+            <a href="javascript:void(0)" class="nav-link" onclick="event.preventDefault()">Help <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; margin-left:3px;"></i></a>
             <div class="dropdown-content">
-              <a href="#" onclick="navigateTo('faq')"><i class="fa-solid fa-circle-question"></i> FAQ</a>
-              <a href="#" onclick="navigateTo('guidelines')"><i class="fa-solid fa-book-open"></i> Guidelines</a>
-              <a href="#" onclick="navigateTo('contact')"><i class="fa-solid fa-envelope"></i> Contact Us</a>
+              <a href="javascript:void(0)" onclick="navigateTo('faq')"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+              <a href="javascript:void(0)" onclick="navigateTo('guidelines')"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+              <a href="javascript:void(0)" onclick="navigateTo('contact')"><i class="fa-solid fa-envelope"></i> Contact Us</a>
             </div>
           </li>
-          <li><a href="#" class="nav-link btn-signup" onclick="navigateTo('signup')">Sign Up</a></li>
-          <li><a href="#" class="nav-link btn-login" onclick="navigateTo('login')">Login</a></li>
+          <li><a href="javascript:void(0)" class="nav-link btn-signup" onclick="navigateTo('signup')">Sign Up</a></li>
+          <li><a href="javascript:void(0)" class="nav-link btn-login" onclick="navigateTo('login')">Login</a></li>
         </ul>
       </div>
     </nav>
@@ -144,7 +174,6 @@
           <div class="topbar-user-wrap" id="profileDropdownWrap">
             <div class="topbar-user" onclick="toggleProfileDropdown()">
               <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
-              <span class="user-name" id="topbarUserName">Juan dela Cruz</span>
             </div>
             
             <div class="profile-dropdown" id="profileDropdown">
@@ -388,7 +417,7 @@
               <label for="loginEmail">Email Address</label>
               <div class="input-icon">
                 <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="loginEmail" placeholder="your.name@psu.palawan.edu.ph or personal email" required />
+                <input type="email" id="loginEmail" placeholder="@psu.palawan.edu.ph or personal email" />
               </div>
               <span class="error-msg" id="loginEmailError"></span>
             </div>
@@ -396,7 +425,7 @@
               <label for="loginPassword">Password</label>
               <div class="input-icon">
                 <i class="fa-solid fa-lock"></i>
-                <input type="password" id="loginPassword" placeholder="Enter your password" required />
+                <input type="password" id="loginPassword" placeholder="Enter your password" />
               </div>
               <span class="error-msg" id="loginPasswordError"></span>
             </div>
@@ -472,7 +501,7 @@
                 <label for="regUsername">Username</label>
                 <div class="input-icon">
                   <i class="fa-solid fa-user-tag"></i>
-                  <input type="text" id="regUsername" placeholder="Enter your username" required />
+                  <input type="text" id="regUsername" placeholder="Enter your full name" />
                 </div>
               </div>
 
@@ -480,7 +509,7 @@
                 <label for="regEmail">Email Address</label>
                 <div class="input-icon">
                   <i class="fa-solid fa-envelope"></i>
-                  <input type="email" id="regEmail" placeholder="Enter your email" required />
+                  <input type="email" id="regEmail" placeholder="Enter your email" />
                 </div>
                 <span class="error-msg" id="regEmailError"></span>
                 <small id="regEmailHint"></small>
@@ -490,7 +519,7 @@
                 <label for="regPassword">Password</label>
                 <div class="input-icon">
                   <i class="fa-solid fa-lock"></i>
-                  <input type="password" id="regPassword" placeholder="Create a strong password" required />
+                  <input type="password" id="regPassword" placeholder="Create a password" />
                 </div>
               </div>
 
@@ -498,7 +527,7 @@
                 <label for="regPasswordConfirm">Confirm Password</label>
                 <div class="input-icon">
                   <i class="fa-solid fa-shield-heart"></i>
-                  <input type="password" id="regPasswordConfirm" placeholder="Re-enter your password" required />
+                  <input type="password" id="regPasswordConfirm" placeholder="Confirm your password" />
                 </div>
                 <span class="error-msg" id="regPasswordError"></span>
               </div>
@@ -551,35 +580,35 @@
     </section>
 
     <!-- FAQ PAGE -->
-    <section id="page-faq" class="page container" style="padding-top: 160px !important;">
+    <section id="page-faq" class="page container" style="padding-top: 100px !important;">
       <div id="faqPublicContent">
         <!-- FAQ content injected by JS -->
       </div>
     </section>
 
     <!-- ====== GUIDELINES PAGE (PUBLIC) ====== -->
-    <section id="page-guidelines" class="page container" style="padding-top: 160px !important;">
+    <section id="page-guidelines" class="page container" style="padding-top: 100px !important;">
       <div id="guidelinesPublicContent">
         <!-- Guidelines content injected by JS -->
       </div>
     </section>
 
     <!-- ====== CONTACT US PAGE (PUBLIC) ====== -->
-    <section id="page-contact" class="page container" style="padding-top: 160px !important;">
+    <section id="page-contact" class="page container" style="padding-top: 100px !important;">
       <div id="contactPublicContent">
         <!-- Contact Us content injected by JS -->
       </div>
     </section>
 
     <!-- ====== FORMS PAGE (PUBLIC) ====== -->
-    <section id="page-forms" class="page container" style="padding-top: 160px !important;">
+    <section id="page-forms" class="page container" style="padding-top: 100px !important;">
       <div id="formsPublicContent">
         <!-- Forms content injected by JS -->
       </div>
     </section>
 
     <!-- ====== MARKETPLACE PAGE (PUBLIC) ====== -->
-    <section id="page-marketplace" class="page container" style="padding-top: 160px !important;">
+    <section id="page-marketplace" class="page container" style="padding-top: 100px !important;">
       <div id="marketplacePublicContent">
         <!-- Marketplace content injected by JS -->
       </div>

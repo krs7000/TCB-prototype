@@ -1,5 +1,5 @@
 // ============================================================
-// THE CREATOR'S BULWARK — APP.JS
+// THE CREATOR'S BULWARK â€” APP.JS
 // Complete application logic with mock data & interactivity
 // ============================================================
 
@@ -17,7 +17,8 @@ let selectedSubmissionId = null;
 let wizardData = {};
 let notifOpen = false;
 let pendingSignupData = null; // Holds signup data during OTP verification
-let currentParams = {};
+let pendingParams = {};
+let pendingAction = null; // Stores action to perform after login/signup
 const ROLE_ALIASES = {
   superadmin: "superadmin",
   "Admin": "superadmin",
@@ -558,7 +559,7 @@ const marketplaceItems = [
     longDescription:
       "A portable handheld device that uses advanced imaging to detect changes in the crystalline lens of the fish eye associated with formalin preservation.",
     features: [
-      "Non-destructive testing — no need to slice or damage the sample.",
+      "Non-destructive testing â€” no need to slice or damage the sample.",
       "Instant result displaying Safe/Warning levels on a digital screen.",
       "Calibration for multiple fish species common in local wet markets.",
     ],
@@ -754,7 +755,7 @@ const marketplaceItems = [
     features: [
       "Dual-mode verification: fingerprint + face recognition for high accuracy.",
       "Automatic generation of attendance reports and parent notifications.",
-      "Offline mode capability — syncs to cloud when connection is restored.",
+      "Offline mode capability â€” syncs to cloud when connection is restored.",
       "Integration-ready with existing Student Information Systems (SIS).",
     ],
     businessPotential:
@@ -776,7 +777,7 @@ const marketplaceItems = [
     description:
       "A sustainable fertilizer formulation derived from banana peel extract, rich in potassium and micro-nutrients for vegetable crops.",
     longDescription:
-      "A zero-waste innovation that converts banana peel — a common agricultural by-product — into a high-potassium liquid fertilizer proven to enhance vegetable growth and fruit quality.",
+      "A zero-waste innovation that converts banana peel â€” a common agricultural by-product â€” into a high-potassium liquid fertilizer proven to enhance vegetable growth and fruit quality.",
     features: [
       "Natural potassium concentration 3x higher than conventional fertilizers.",
       "Fully biodegradable with no chemical additives or preservatives.",
@@ -801,12 +802,12 @@ const marketplaceItems = [
     description:
       "A foldable, high-efficiency parabolic solar cooker designed for community use in off-grid areas, capable of reaching cooking temperatures in 15 minutes.",
     longDescription:
-      "Uses a parabolic mirror array to concentrate solar energy into a single focal point, achieving temperatures of 250°C sufficient for boiling, frying, and steaming — with zero fuel cost.",
+      "Uses a parabolic mirror array to concentrate solar energy into a single focal point, achieving temperatures of 250Â°C sufficient for boiling, frying, and steaming â€” with zero fuel cost.",
     features: [
       "Foldable design packable into a 60cm x 40cm bag for portability.",
       "Aluminum composite reflectors with 92% solar reflectivity.",
       "Adjustable focal arm accommodating pots from 1L to 5L capacity.",
-      "Reaches boiling point (100°C) in under 20 minutes on clear days.",
+      "Reaches boiling point (100Â°C) in under 20 minutes on clear days.",
     ],
     businessPotential:
       "Addresses energy poverty for the estimated 15 million Filipinos without stable electricity. Strong demand from disaster relief agencies such as NDRRMC and international NGOs.",
@@ -829,12 +830,12 @@ const marketplaceItems = [
       "Designed for the modern urban micro-apartment, this furniture system uses an innovative dovetail snap-lock mechanism allowing reconfiguration in under 2 minutes. Crafted from sustainably sourced bamboo composite panels.",
     features: [
       "Tool-free assembly and disassembly using precision snap-lock joints.",
-      "Bamboo composite panels — 40% lighter than wood, 3x stronger.",
+      "Bamboo composite panels â€” 40% lighter than wood, 3x stronger.",
       "Converts between 5 configurations: desk, table, shelving, bed frame, and storage unit.",
       "Flat-pack shipping reduces logistics cost by 60%.",
     ],
     businessPotential:
-      "The Philippine urban furniture market is valued at ₱12 billion. Targets the growing Metro Manila condo and dormitory segment. Highly attractive for e-commerce platforms and IKEA-style local retailers.",
+      "The Philippine urban furniture market is valued at â‚±12 billion. Targets the growing Metro Manila condo and dormitory segment. Highly attractive for e-commerce platforms and IKEA-style local retailers.",
     contactPerson: "Des. Maria Soriano",
     contactEmail: "maria.soriano@psu.edu.ph",
     year: 2026,
@@ -850,17 +851,17 @@ const marketplaceItems = [
     inventor: "Engr. L. Bautista",
     college: "College of Sciences",
     description:
-      "Sustainable packaging panels made from compressed coconut coir fiber — a fully biodegradable, water-resistant alternative to single-use plastic.",
+      "Sustainable packaging panels made from compressed coconut coir fiber â€” a fully biodegradable, water-resistant alternative to single-use plastic.",
     longDescription:
       "A heat-compressed molding process transforms raw coconut husk fiber into rigid, water-resistant packaging shells comparable in durability to conventional foam packaging.",
     features: [
       "Fully biodegradable in 90 days under standard composting conditions.",
-      "Water-resistant coating from natural coconut wax — no plastic additives.",
+      "Water-resistant coating from natural coconut wax â€” no plastic additives.",
       "Customizable mold shapes fitting product dimensions from 5cm to 60cm.",
-      "Production waste is zero — all fiber off-cuts are reprocessed.",
+      "Production waste is zero â€” all fiber off-cuts are reprocessed.",
     ],
     businessPotential:
-      "Growing regulatory pressure against single-use plastics creates a massive market opening. The Philippines produces 15 billion coconuts per year — raw materials are abundantly available and cheap.",
+      "Growing regulatory pressure against single-use plastics creates a massive market opening. The Philippines produces 15 billion coconuts per year â€” raw materials are abundantly available and cheap.",
     contactPerson: "Engr. Lourdes Bautista",
     contactEmail: "lourdes.bautista@psu.edu.ph",
     year: 2025,
@@ -870,7 +871,7 @@ const marketplaceItems = [
   {
     id: 17,
     title: "PALAWAN PRIDE Brand Identity",
-    fullTitle: "PALAWAN PRIDE — REGIONAL EXCELLENCE BRAND AND TRADEMARK",
+    fullTitle: "PALAWAN PRIDE â€” REGIONAL EXCELLENCE BRAND AND TRADEMARK",
     type: "Trademark",
     inventor: "PSU Design Team",
     college: "College of Arts",
@@ -879,7 +880,7 @@ const marketplaceItems = [
     longDescription:
       "A comprehensive brand system including wordmark, logo, color palette, and usage guidelines designed to certify and promote authentic products from Palawan province.",
     features: [
-      "Stylized eagle motif referencing the Philippine Eagle — a Palawan icon.",
+      "Stylized eagle motif referencing the Philippine Eagle â€” a Palawan icon.",
       "Bilingual brand name (English/Filipino) for broader market appeal.",
       "Usage guidelines covering product labels, tourism signage, and digital media.",
       "Certification program for authentic Palawan product producers.",
@@ -895,7 +896,7 @@ const marketplaceItems = [
   {
     id: 18,
     title: "AGRI-SMART PSU Logo",
-    fullTitle: "AGRI-SMART PSU — SMART AGRICULTURE DIVISION BRAND MARK",
+    fullTitle: "AGRI-SMART PSU â€” SMART AGRICULTURE DIVISION BRAND MARK",
     type: "Trademark",
     inventor: "ICT & Agriculture Dept.",
     college: "College of Agriculture",
@@ -954,7 +955,7 @@ const marketplaceItems = [
     description:
       "An intelligent software system that automates faculty workload computation, scheduling conflict detection, and academic calendar generation.",
     longDescription:
-      "Replaces spreadsheet-based workload computation with a rules-based engine that automatically calculates teaching units, administrative loads, and research credits per faculty member — producing instant DepEd/CHED-compliant workload reports.",
+      "Replaces spreadsheet-based workload computation with a rules-based engine that automatically calculates teaching units, administrative loads, and research credits per faculty member â€” producing instant DepEd/CHED-compliant workload reports.",
     features: [
       "Automatic conflict detection across 50+ concurrent class schedules.",
       "CHED-memorandum-compliant workload computation engine.",
@@ -1826,6 +1827,9 @@ function renderBackNav(customTarget = null, customLabel = null) {
 }
 
 function navigateTo(page, isBack = false, params = null) {
+  // Ensure mobile menu closes on every navigation
+  document.getElementById("navLinks")?.classList.remove("open");
+
   if (params) currentParams = params;
   else if (!isBack) currentParams = {};
 
@@ -1969,8 +1973,7 @@ function navigateTo(page, isBack = false, params = null) {
     if (typeof updateBottomNavItemActive === 'function') updateBottomNavItemActive(page);
   }
 
-  // Close mobile menu
-  document.getElementById("navLinks")?.classList.remove("open");
+
   window.scrollTo(0, 0);
 
   // Update UI Back Buttons
@@ -1986,7 +1989,7 @@ function navigateTo(page, isBack = false, params = null) {
   const IS_APPLICANT = userRole === 'applicant';
 
   if (dashBack) {
-    dashBack.style.display = (IS_APPLICANT) ? "none" : (showBack ? "block" : "none");
+    dashBack.style.display = "none";
   }
 
   if (topbarRight) {
@@ -2486,45 +2489,22 @@ window.updateRegEmailHint = function() {
 };
 
 window.handleSignUp = function(e) {
-  e.preventDefault();
-  const username = document.getElementById('regUsername').value;
-  const type = document.getElementById('regType').value;
-  const email = document.getElementById('regEmail').value.toLowerCase();
-  const pass = document.getElementById('regPassword').value;
-  const passConfirm = document.getElementById('regPasswordConfirm').value;
-  const emailError = document.getElementById('regEmailError');
-  const passError = document.getElementById('regPasswordError');
+  if (e) e.preventDefault();
   
-  if (emailError) emailError.innerText = '';
-  if (passError) passError.innerText = '';
+  // PROTOTYPE BYPASS: Go directly to dashboard
+  isLoggedIn = true;
+  currentRole = 'applicant';
+  updateTopbarRole();
   
-  // Validation: PSU Email
-  if (type === 'psu_member') {
-    if (!email.endsWith('@psu.palawan.edu.ph')) {
-      if (emailError) emailError.innerText = 'PSU Institutional members must use a @psu.palawan.edu.ph email address.';
-      return;
-    }
+  showToast("Prototype Access: Account created and logged in!");
+
+  if (pendingAction && pendingAction.type === 'registration') {
+    const action = pendingAction;
+    pendingAction = null;
+    startSubmissionFlow(action.typeId, action.method);
+  } else {
+    navigateTo(getDefaultDashboardPage(currentRole));
   }
-  
-  // Validation: Passwords Match
-  if (pass !== passConfirm) {
-    if (passError) passError.innerText = 'Passwords do not match. Please re-enter.';
-    return;
-  }
-  
-  // Store data for later
-  pendingSignupData = {
-    username: username,
-    email: email,
-    password: pass,
-    type: type
-  };
-  
-  // Prepare and switch to Step 3
-  document.getElementById('displayRegEmail').innerText = email;
-  document.getElementById('signup-step-2').style.display = 'none';
-  document.getElementById('signup-step-3').style.display = 'block';
-  showToast("Verification code sent to your email!");
 };
 
 window.verifySignupOtp = function() {
@@ -2561,7 +2541,14 @@ window.verifySignupOtp = function() {
   
   // Reset and navigate to Dashboard
   pendingSignupData = null;
-  navigateTo(getDefaultDashboardPage(currentRole));
+  
+  if (pendingAction && pendingAction.type === 'registration') {
+    const action = pendingAction;
+    pendingAction = null;
+    startSubmissionFlow(action.typeId, action.method);
+  } else {
+    navigateTo(getDefaultDashboardPage(currentRole));
+  }
 };
 
 window.signupOtpAutoFocus = function(el) {
@@ -2581,62 +2568,21 @@ window.resendSignupOtp = function() {
 };
 
 function handleLogin(e) {
-  e.preventDefault();
-  const email = document.getElementById("loginEmail").value;
-  const pass = document.getElementById("loginPassword").value;
-  let valid = true;
+  if (e) e.preventDefault();
+  
+  // PROTOTYPE BYPASS: Go directly to applicant dashboard
+  isLoggedIn = true;
+  currentRole = 'applicant';
+  updateTopbarRole();
+  
+  showToast("Prototype Access: Logged in as APPLICANT");
 
-  if (!email) {
-    showError("loginEmailError", "Email is required");
-    valid = false;
+  if (pendingAction && pendingAction.type === 'registration') {
+    const action = pendingAction;
+    pendingAction = null;
+    startSubmissionFlow(action.typeId, action.method);
   } else {
-    hideError("loginEmailError");
-  }
-  if (!pass) {
-    showError("loginPasswordError", "Password is required");
-    valid = false;
-  } else if (pass.length < 3) {
-    showError("loginPasswordError", "Password too short");
-    valid = false;
-  } else {
-    hideError("loginPasswordError");
-  }
-
-  if (!valid) return;
-
-  // Show MFA OTP verification screen
-  const loginPage = document.getElementById("page-login");
-  if (loginPage) {
-    loginPage.innerHTML = `
-      <div class="login-container" style="animation: fadeIn 0.4s ease-out;">
-        <div class="login-card">
-          <div style="text-align:center; margin-bottom:32px;">
-            <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, var(--gold), var(--gold-dark)); display:inline-flex; align-items:center; justify-content:center; margin-bottom:20px; box-shadow:0 8px 24px rgba(255,127,80,0.3);">
-              <i class="fa-solid fa-shield-halved" style="font-size:1.8rem; color:white;"></i>
-            </div>
-            <h2 style="font-size:1.5rem; font-weight:800; color:var(--navy); margin-bottom:8px;">Two-Factor Authentication</h2>
-            <p style="color:var(--gray-500); font-size:.9rem; line-height:1.5;">A 6-digit verification code has been sent to<br><strong style="color:var(--navy)">${email}</strong></p>
-          </div>
-          <div class="otp-inputs" style="display:flex; justify-content:center; gap:12px; margin-bottom:28px;">
-            <input type="text" maxlength="1" class="otp-box" oninput="otpAutoFocus(this)" onkeydown="otpBackspace(event, this)" autofocus />
-            <input type="text" maxlength="1" class="otp-box" oninput="otpAutoFocus(this)" onkeydown="otpBackspace(event, this)" />
-            <input type="text" maxlength="1" class="otp-box" oninput="otpAutoFocus(this)" onkeydown="otpBackspace(event, this)" />
-            <input type="text" maxlength="1" class="otp-box" oninput="otpAutoFocus(this)" onkeydown="otpBackspace(event, this)" />
-            <input type="text" maxlength="1" class="otp-box" oninput="otpAutoFocus(this)" onkeydown="otpBackspace(event, this)" />
-            <input type="text" maxlength="1" class="otp-box" oninput="otpAutoFocus(this)" onkeydown="otpBackspace(event, this)" />
-          </div>
-          <button class="btn btn-primary btn-block" onclick="verifyOtp()" style="margin-bottom:16px; padding:14px;"><i class="fa-solid fa-check-double"></i> Verify & Login</button>
-          <div style="text-align:center;">
-            <p style="font-size:.85rem; color:var(--gray-400); margin-bottom:8px;">Didn't receive a code?</p>
-            <button onclick="showToast('A new code has been sent to your email.')" style="background:none; border:none; color:var(--gold-dark); font-weight:600; cursor:pointer; font-size:.85rem;">Resend Code</button>
-            <span style="color:var(--gray-300); margin:0 8px;">|</span>
-            <button onclick="navigateTo('login')" style="background:none; border:none; color:var(--gray-500); cursor:pointer; font-size:.85rem;">Cancel</button>
-          </div>
-          <div style="margin-top:24px; padding:16px; background:var(--gray-50); border-radius:8px; text-align:center; border:1px solid var(--gray-200);">
-            <p style="font-size:.75rem; color:var(--gray-400);"><i class="fa-solid fa-info-circle" style="color:var(--blue); margin-right:4px;"></i> <strong>Demo Mode:</strong> Enter any 6 digits to proceed.</p>
-          </div>
-        </div>
-      </div>`;
+    navigateTo(getDefaultDashboardPage(currentRole));
   }
 }
 
@@ -2665,9 +2611,16 @@ window.verifyOtp = function () {
   isLoggedIn = true;
   currentRole = normalizeRole(selectedLoginRole);
   updateTopbarRole();
-  navigateTo(getDefaultDashboardPage(currentRole));
-
+  
   showToast("MFA verified — Successfully logged in!");
+
+  if (pendingAction && pendingAction.type === 'registration') {
+    const action = pendingAction;
+    pendingAction = null;
+    startSubmissionFlow(action.typeId, action.method);
+  } else {
+    navigateTo(getDefaultDashboardPage(currentRole));
+  }
 };
 
 function logout() {
@@ -2744,6 +2697,13 @@ function updateTopbarRole() {
   const roleLabel = document.querySelector(".user-role-label");
   if (roleLabel) {
     roleLabel.textContent = userRole + " Portal";
+  }
+
+  // Hide topbar branding for Admin/Evaluator (they have sidebar brand)
+  const isAdminOrEvaluator = normRole === "superadmin" || normRole === "reviewer";
+  const topbarBrand = document.querySelector(".topbar-brand");
+  if (topbarBrand) {
+    topbarBrand.style.display = isAdminOrEvaluator ? "none" : "flex";
   }
 }
 
@@ -2863,16 +2823,15 @@ function renderSidebar() {
     // Normal Sidebar handling for Reviewer/Admin
     if (sidebar) {
       sidebar.style.display = "flex";
-      sidebar.style.width = "var(--sidebar-w, 260px)";
       sidebar.classList.remove("canva-mode");
     }
-    if (mainContent) mainContent.style.marginLeft = "var(--sidebar-w, 260px)";
+    if (mainContent) mainContent.style.marginLeft = ""; // Let CSS handle it via .sidebar.collapsed ~ #main-content
     if (topbar) {
-      topbar.style.left = "var(--sidebar-w, 260px)";
+      topbar.style.left = sidebarCollapsed ? "var(--sidebar-collapsed-w)" : "var(--sidebar-w, 260px)";
       topbar.style.display = "flex";
     }
     if (sidebarToggle) sidebarToggle.style.display = "block";
-    if (bottomNav) bottomNav.style.display = "none"; // Admin/Reviewer usually don't have bottom nav in this design
+    if (bottomNav) bottomNav.style.display = "none";
     document.body.classList.remove("top-nav-layout");
     document.body.classList.remove("compact-layout");
   }
@@ -3129,7 +3088,7 @@ function renderDynamicRequirementUploaders(formType = currentFormType) {
             <div style="flex:1; min-width:240px;">
               <div style="font-size:0.9rem; font-weight:700; color:var(--navy); line-height:1.45;">Upload a file for ${entry.doc.name}</div>
               <div style="font-size:0.78rem; color:var(--gray-500); margin-top:6px;">
-                ${entry.file ? `${entry.file.name} • ${(entry.file.size / 1024).toFixed(1)} KB` : "Accepted formats: PDF, DOCX, JPG, PNG"}
+                ${entry.file ? `${entry.file.name} â€¢ ${(entry.file.size / 1024).toFixed(1)} KB` : "Accepted formats: PDF, DOCX, JPG, PNG"}
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
@@ -3424,14 +3383,7 @@ function renderUserDashboard() {
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
 
-      <div class="action-card" onclick="showToast('Connecting to PSU IP Support...')">
-        <div class="action-card-icon"><i class="fa-solid fa-comments"></i></div>
-        <div class="action-card-content">
-          <h3>Expert Support</h3>
-          <p>Request a consultation with our IP experts.</p>
-        </div>
-        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
+
     </div>
 
     <div class="page-header" style="margin-bottom: 24px;">
@@ -3856,7 +3808,7 @@ function legacyGetRoleSpecificStats(role) {
         },
         {
           label: "Revenue Flow",
-          value: "₱125k",
+          value: "â‚±125k",
           icon: "fa-money-bill-trend-up",
           color: "indigo",
         },
@@ -5403,9 +5355,9 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect original inventions & technical breakthroughs",
       term: "20 years from filing date",
       requirements: [
-        "Global Novelty — never before disclosed",
-        "Inventive Step — non-obvious to experts",
-        "Industrial Applicability — can be manufactured",
+        "Global Novelty â€” never before disclosed",
+        "Inventive Step â€” non-obvious to experts",
+        "Industrial Applicability â€” can be manufactured",
       ],
       process: [
         { n: 1, t: "Disclosure", d: "Document technical details and field of use." },
@@ -5430,7 +5382,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Rapid protection for practical innovations",
       term: "7 years (non-renewable)",
       requirements: [
-        "Novelty — new to the world",
+        "Novelty â€” new to the world",
         "Industrial Applicability",
         "Lower 'Inventive Step' threshold than patents"
       ],
@@ -5457,7 +5409,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Safeguard the unique visual style of products",
       term: "5 years (renewable up to 15)",
       requirements: [
-        "Ornamental Novelty — unique visual appeal",
+        "Ornamental Novelty â€” unique visual appeal",
         "Applied to a practical article",
         "Non-functional aesthetics only"
       ],
@@ -5484,7 +5436,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect brands, logos, and corporate identity",
       term: "10 years (renewable)",
       requirements: [
-        "Distinctiveness — unique in the marketplace",
+        "Distinctiveness â€” unique in the marketplace",
         "Non-descriptive of the actual goods",
         "Non-deceptive to consumers"
       ],
@@ -5511,7 +5463,7 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect creative works, code, and literature",
       term: "Lifetime + 50 years",
       requirements: [
-        "Originality — must be your own creation",
+        "Originality â€” must be your own creation",
         "Fixation in tangible form",
         "Creative expression (not just logic)"
       ],
@@ -5680,7 +5632,7 @@ function getFormGuideContent() {
       color: "#10b981",
       steps: [
         "List all authors/creators with contributions",
-        "Describe the work — title, type, date of creation",
+        "Describe the work â€” title, type, date of creation",
         "Upload complete copy of the work being registered",
         "Submit and receive Certificate of Registration",
       ],
@@ -5733,7 +5685,7 @@ function getFormGuideContent() {
   const requiredCount = getRequiredDocumentCount(currentFormType);
   return `<div class="form-guide-panel">
     <div class="form-guide-toggle" onclick="this.parentElement.classList.toggle('open')">
-      <span><i class="fa-solid fa-${g.icon}" style="color:${g.color}"></i> <strong>${g.title}</strong> — Required documents & steps</span>
+      <span><i class="fa-solid fa-${g.icon}" style="color:${g.color}"></i> <strong>${g.title}</strong> â€” Required documents & steps</span>
       <i class="fa-solid fa-chevron-down"></i>
     </div>
     <div class="form-guide-body">
@@ -10008,7 +9960,7 @@ function renderIndustrialGoogleForm(
           <div class="patent-gform-card">
             <span class="patent-gform-side-label">How This Works</span>
             <ul class="patent-gform-note-list">
-              <li>The guided fields follow IPOPHL’s published industrial design filing requirements.</li>
+              <li>The guided fields follow IPOPHLâ€™s published industrial design filing requirements.</li>
               <li>The preview focuses on applicant, designer, design specification, claim, and representation details.</li>
               <li>Required uploads still need to be attached before submission is allowed.</li>
             </ul>
@@ -10985,7 +10937,7 @@ function renderStep4Review() {
         ${wizardData.prodcat ? `<div class="review-item"><span class="label">Product Category</span>${val(wizardData.prodcat)}</div>` : ""}
         ${wizardData.designtype ? `<div class="review-item"><span class="label">Design Type</span>${val(wizardData.designtype)}</div>` : ""}
       </div>
-      ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "…" : ""}</span></div>` : ""}
+      ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "â€¦" : ""}</span></div>` : ""}
     </div>
     <div class="review-section"><h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents & Payment</h4>
       <p style="color:var(--gray-500);font-size:.9rem; margin-bottom:14px;">Required uploads are summarized below. Proof of payment stays hidden unless an evaluator requests it later in the review flow.</p>
@@ -11706,6 +11658,21 @@ window.showSubmissionMethodModal = function(typeId) {
   overlay.classList.add('active');
 };
 
+window.initiateDirectRegistration = function(typeId, method) {
+  // Always force signup for prototype testing of the flow
+  isLoggedIn = false; 
+  updateTopbarRole();
+  
+  pendingAction = {
+    type: 'registration',
+    typeId: typeId,
+    method: method
+  };
+  
+  showToast(`Starting ${method} registration — please create your account.`, "info");
+  navigateTo('signup');
+};
+
 function createSubmissionWizardSeed() {
   return {
     requirementUploads: {},
@@ -11777,6 +11744,22 @@ window.launchIndustrialOnlineForm = function() {
   navigateTo("forms", false, { formView: "industrial-online" });
 };
 
+window.launchTrademarkOnlineForm = function() {
+  wizardData = createSubmissionWizardSeed();
+  selectedSubmissionId = null;
+  currentWizardStep = 1;
+  currentFormType = "trademark";
+  submissionMethod = "online";
+
+  if (isLoggedIn) {
+    navigateTo("trademark-form");
+    return;
+  }
+
+  navigateTo("forms", false, { formView: "trademark-online" });
+};
+
+
 function renderFormsPublicContent() {
   if (currentParams.formView === "patent-online") {
     currentFormType = "patent";
@@ -11801,6 +11784,13 @@ function renderFormsPublicContent() {
     submissionMethod = "online";
     return renderIndustrialGoogleForm("forms", "Forms");
   }
+
+  if (currentParams.formView === "trademark-online") {
+    currentFormType = "trademark";
+    submissionMethod = "online";
+    return renderTrademarkGoogleForm("forms", "Forms");
+  }
+
 
   return renderForms();
 }
@@ -11862,7 +11852,7 @@ function handleDepositUpload(input) {
     <i class="fa-solid fa-circle-check" style="color:var(--green);font-size:1.2rem"></i>
     <div style="flex:1">
       <div style="font-size:.9rem;font-weight:600;color:var(--navy)">${f.name}</div>
-      <div style="font-size:.8rem;color:var(--gray-400)">${(f.size / 1024).toFixed(1)} KB — Proof of payment uploaded</div>
+      <div style="font-size:.8rem;color:var(--gray-400)">${(f.size / 1024).toFixed(1)} KB â€” Proof of payment uploaded</div>
     </div>
     <span class="badge badge-approved" style="font-size:.65rem">VERIFIED</span>
   </div>`;
@@ -12270,7 +12260,7 @@ window.deleteMarketListing = function(id) {
 
 function renderMarketplace() {
   return `
-    ${renderBackNav()}
+    ${renderBackNav("landing", "Home")}
     <div class="page-header"><h1>Innovation Marketplace</h1><p>Discover and connect with PSU innovations and research outputs.</p></div>
     <div class="marketplace-layout">
       <div class="filter-panel">
@@ -13002,10 +12992,10 @@ function renderProfile() {
 
 function renderAdminRecords() {
   const approved = submissions.filter((s) => s.status === "Approved");
-  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties — metadata is locked for integrity.</p></div>
+  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties â€” metadata is locked for integrity.</p></div>
     <div style="padding:12px 18px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-shield-halved" style="color:#6366f1; font-size:1.1rem;"></i>
-      <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> — All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions.</p>
+      <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> â€” All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions.</p>
     </div>
     <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th></tr></thead><tbody>
       ${approved
@@ -13187,25 +13177,25 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "View all cases",
-          sa: "✓",
-          pa: "✓",
+          sa: "âœ“",
+          pa: "âœ“",
           rv: "Assigned",
           cl: "Own only",
         },
         {
           action: "Create / edit cases",
-          sa: "✓",
-          pa: "✓",
+          sa: "âœ“",
+          pa: "âœ“",
           rv: "Assigned",
-          cl: "✗",
+          cl: "âœ—",
         },
-        { action: "Advance stage", sa: "✓", pa: "✓", rv: "✓", cl: "✗" },
+        { action: "Advance stage", sa: "âœ“", pa: "âœ“", rv: "âœ“", cl: "âœ—" },
         {
           action: "Delete / archive cases",
-          sa: "✓",
+          sa: "âœ“",
           pa: "Archive only",
-          rv: "✗",
-          cl: "✗",
+          rv: "âœ—",
+          cl: "âœ—",
         },
       ],
     },
@@ -13214,24 +13204,24 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Upload documents",
-          sa: "✓",
-          pa: "✓",
-          rv: "✓",
+          sa: "âœ“",
+          pa: "âœ“",
+          rv: "âœ“",
           cl: "Own cases",
         },
         {
           action: "Download CONFIDENTIAL",
-          sa: "✓",
-          pa: "✓",
+          sa: "âœ“",
+          pa: "âœ“",
           rv: "Assigned",
-          cl: "✗",
+          cl: "âœ—",
         },
         {
           action: "Download TOP SECRET",
-          sa: "✓",
+          sa: "âœ“",
           pa: "With approval",
-          rv: "✗",
-          cl: "✗",
+          rv: "âœ—",
+          cl: "âœ—",
         },
       ],
     },
@@ -13240,16 +13230,16 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Execute patent search",
-          sa: "✓",
-          pa: "✓",
-          rv: "✓",
+          sa: "âœ“",
+          pa: "âœ“",
+          rv: "âœ“",
           cl: "Limited query",
         },
         {
           action: "View full search results",
-          sa: "✓",
-          pa: "✓",
-          rv: "✓",
+          sa: "âœ“",
+          pa: "âœ“",
+          rv: "âœ“",
           cl: "Public only",
         },
       ],
@@ -13259,33 +13249,33 @@ function legacyRenderRolePermissions() {
       items: [
         {
           action: "Manage user roles",
-          sa: "✓",
+          sa: "âœ“",
           pa: "Non-admin only",
-          rv: "✗",
-          cl: "✗",
+          rv: "âœ—",
+          cl: "âœ—",
         },
         {
           action: "View audit trail",
-          sa: "✓",
+          sa: "âœ“",
           pa: "Operational only",
-          rv: "✗",
-          cl: "✗",
+          rv: "âœ—",
+          cl: "âœ—",
         },
-        { action: "System configuration", sa: "✓", pa: "✗", rv: "✗", cl: "✗" },
+        { action: "System configuration", sa: "âœ“", pa: "âœ—", rv: "âœ—", cl: "âœ—" },
         {
           action: "Encryption key management",
-          sa: "✓",
-          pa: "✗",
-          rv: "✗",
-          cl: "✗",
+          sa: "âœ“",
+          pa: "âœ—",
+          rv: "âœ—",
+          cl: "âœ—",
         },
       ],
     },
   ];
   const badge = (v) => {
-    if (v === "✓")
-      return '<span style="color:var(--green);font-size:1.1rem">✓</span>';
-    if (v === "✗") return '<span style="color:var(--gray-400)">✗</span>';
+    if (v === "âœ“")
+      return '<span style="color:var(--green);font-size:1.1rem">âœ“</span>';
+    if (v === "âœ—") return '<span style="color:var(--gray-400)">âœ—</span>';
     return `<span class="badge badge-pending" style="font-size:.7rem">${v}</span>`;
   };
   let rows = "";
@@ -13582,7 +13572,7 @@ window.toggleContactQuickLinks = function() {
 };
 
 function renderContactUs() {
-  const campusCoordinates = `9°46′40″N 118°44′00″E`;
+  const campusCoordinates = `9Â°46â€²40â€³N 118Â°44â€²00â€³E`;
   const mapLink =
     "https://www.google.com/maps/search/?api=1&query=9%C2%B046%E2%80%B240%E2%80%B3N%20118%C2%B044%E2%80%B200%E2%80%B3E";
   const facebookLink = "https://www.facebook.com/PalawanStateUniversity/";
@@ -13785,9 +13775,9 @@ function renderRolePermissions() {
   ];
   const badge = (value) => {
     if (value === "check")
-      return '<span style="color:var(--green);font-size:1.1rem">✓</span>';
+      return '<span style="color:var(--green);font-size:1.1rem">âœ“</span>';
     if (value === "deny")
-      return '<span style="color:var(--red);font-size:1.1rem">✕</span>';
+      return '<span style="color:var(--red);font-size:1.1rem">âœ•</span>';
     return `<span class="badge badge-pending" style="font-size:.7rem">${value}</span>`;
   };
   let rows = "";
@@ -13905,7 +13895,8 @@ function renderForms() {
       icon: "fa-stamp",
       color: "#f59e0b",
       gradient: "linear-gradient(135deg, #f59e0b, #d97706)",
-      forms: ["Registration Form"]
+      forms: ["Registration Form"],
+      onlineAction: "launchTrademarkOnlineForm()",
     },
     {
       title: "Copyright",
@@ -13921,8 +13912,8 @@ function renderForms() {
   ];
 
   return `
-    ${renderBackNav()}
-    <div class="page-header" style="margin-bottom:48px; text-align:center;">
+    ${renderBackNav("landing", "Home")}
+    <div class="page-header" style="margin-bottom:24px; text-align:center;">
       <span class="m-eyebrow" style="display:inline-block; margin-bottom:12px;">Official Documentation</span>
       <h1 style="color:var(--navy); font-weight:900; font-size:2.8rem; margin:0; letter-spacing:-0.5px;">Institutional Forms</h1>
       <p style="color:var(--gray-500); font-size:1.1rem; margin-top:12px; max-width:600px; margin-left:auto; margin-right:auto;">Access the complete repository of pre-filing documents and official registration forms for all IP categories.</p>
@@ -13949,15 +13940,6 @@ function renderForms() {
                 ${form}
               </div>
             `).join('')}
-            ${
-              cat.onlineAction
-                ? `
-                  <button class="btn btn-primary" style="justify-content:center; width:100%; margin-top:6px; padding:12px 14px; font-size:0.78rem;" onclick="${cat.onlineAction}">
-                    <i class="fa-solid fa-file-signature"></i> Fill Out Online Form
-                  </button>
-                `
-                : ""
-            }
           </div>
         </div>
       `).join('')}
@@ -13968,7 +13950,7 @@ function renderForms() {
         <i class="fa-solid fa-circle-info" style="color: var(--navy);"></i>
         <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-600);">Need help with the legal requirements? Visit our <a href="#" onclick="navigateTo('ip-guidelines')" style="color: var(--navy); text-decoration: underline;">Guidelines Section</a>.</span>
       </div>
-      <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office — Authorized Document Repository</p>
+      <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office â€” Authorized Document Repository</p>
     </div>
   `;
 }
@@ -14327,1563 +14309,6 @@ function normalizeSubmissionWorkflowDefaults() {
 
 normalizeSubmissionWorkflowDefaults();
 
-function statusBadge(status) {
-  const m = {
-    Approved: "badge-approved",
-    Pending: "badge-pending",
-    "Under Review": "badge-review",
-    Validated: "badge-approved",
-    "Payment Requested": "badge-review",
-    Rejected: "badge-rejected",
-    Cancelled: "badge-rejected",
-    Archived: "badge-rejected",
-    Draft: "badge-pending",
-    "Awaiting Documents": "badge-review",
-  };
-  return `<span class="badge ${m[status] || "badge-pending"}">${status}</span>`;
-}
-
-function isPatentGoogleFlow() {
-  return currentFormType === "patent" && submissionMethod === "online";
-}
-
-function getFormGuideContent() {
-  const titles = {
-    patent: "Patent Application Guide",
-    trademark: "Trademark Registration Guide",
-    copyright: "Copyright Registration Guide",
-    utility: "Utility Model Guide",
-    industrial: "Industrial Design Guide",
-  };
-  const docs = getRequiredDocumentsForType(currentFormType);
-  const steps = FORM_GUIDE_STEPS[currentFormType] || FORM_GUIDE_STEPS.patent;
-
-  return `
-    <div class="form-guide-panel open">
-      <div class="form-guide-toggle" style="cursor:default;">
-        <span><i class="fa-solid fa-list-check" style="color:var(--gold)"></i> <strong>${titles[currentFormType] || titles.patent}</strong> - Required Documents and Steps</span>
-        <span class="badge badge-pending" style="font-size:0.68rem;">ALWAYS VISIBLE</span>
-      </div>
-      <div class="form-guide-body" style="max-height:none;">
-        <div class="form-guide-cols">
-          <div>
-            <h4><i class="fa-solid fa-list-ol"></i> Steps</h4>
-            <ol class="guide-steps-list">${steps.map((step) => `<li>${step}</li>`).join("")}</ol>
-          </div>
-          <div>
-            <h4><i class="fa-solid fa-file-lines"></i> Required Documents</h4>
-            <ul class="guide-docs-list">${docs.map((doc) => `<li><i class="fa-solid fa-circle-check" style="color:var(--green);font-size:.8rem"></i> ${doc.name}</li>`).join("")}</ul>
-          </div>
-        </div>
-        <div style="margin:0 24px 24px; padding:14px 16px; border-radius:12px; background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.12); color:var(--gray-600); font-size:0.82rem; line-height:1.6;">
-          Payment is excluded from the initial submission. The system reveals the Proof of Payment step only when an evaluator requests it after review.
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function validateWizardStep() {
-  const stepContainer = document.getElementById("wizardBody");
-  if (!stepContainer) return true;
-
-  if (currentWizardStep === 3) {
-    const missing =
-      getRequiredDocumentCount(currentFormType) -
-      getUploadedRequiredCount(currentFormType, wizardData);
-    if (missing > 0) {
-      showToast(
-        `Upload ${missing} more required document${missing > 1 ? "s" : ""} before proceeding.`,
-        "error",
-      );
-      return false;
-    }
-    if (!isCopyrightGoogleFlow()) {
-      return true;
-    }
-  }
-
-  const requiredFields = stepContainer.querySelectorAll("[required]:not([disabled])");
-  let isValid = true;
-  requiredFields.forEach((field) => {
-    if (!String(field.value || "").trim()) {
-      field.style.border = "1.5px solid var(--red)";
-      isValid = false;
-    } else {
-      field.style.border = "1px solid var(--gray-200)";
-    }
-  });
-
-  if (!isValid) {
-    showToast("Please fill in all required fields (*) before proceeding.", "error");
-  }
-
-  return isValid;
-}
-
-function captureWizardData() {
-  if (isCopyrightGoogleFlow()) {
-    captureCopyrightGoogleData();
-    return;
-  }
-
-  if (isUtilityGoogleFlow()) {
-    captureUtilityGoogleData();
-    return;
-  }
-
-  if (isIndustrialGoogleFlow()) {
-    captureIndustrialGoogleData();
-    return;
-  }
-
-  if (isPatentGoogleFlow()) {
-    const currentUser = getCurrentUser();
-
-    wizardData.title =
-      document.getElementById("patent-title")?.value || wizardData.title || "";
-    wizardData.applicationRoute =
-      document.querySelector('input[name="applicationRoute"]:checked')?.value ||
-      wizardData.applicationRoute ||
-      "direct";
-    wizardData.priorityClaim =
-      document.querySelector('input[name="priorityClaim"]:checked')?.value ||
-      wizardData.priorityClaim ||
-      "no";
-    wizardData.divisionalParentApplicationNo =
-      document.getElementById("patent-div-parent-no")?.value ||
-      wizardData.divisionalParentApplicationNo ||
-      "";
-    wizardData.divisionalParentFilingDate =
-      document.getElementById("patent-div-parent-date")?.value ||
-      wizardData.divisionalParentFilingDate ||
-      "";
-    wizardData.priorityNumber =
-      document.getElementById("patent-priority-number")?.value ||
-      wizardData.priorityNumber ||
-      "";
-    wizardData.priorityDate =
-      document.getElementById("patent-priority-date")?.value ||
-      wizardData.priorityDate ||
-      "";
-    wizardData.priorityCountry =
-      document.getElementById("patent-priority-country")?.value ||
-      wizardData.priorityCountry ||
-      "";
-    wizardData.priorityCertifiedCopy =
-      document.getElementById("patent-priority-certified")?.value ||
-      wizardData.priorityCertifiedCopy ||
-      "";
-    wizardData.internationalAppNo =
-      document.getElementById("patent-intl-app-no")?.value ||
-      wizardData.internationalAppNo ||
-      "";
-    wizardData.internationalFileDate =
-      document.getElementById("patent-intl-file-date")?.value ||
-      wizardData.internationalFileDate ||
-      "";
-    wizardData.internationalPublicationNo =
-      document.getElementById("patent-intl-pub-no")?.value ||
-      wizardData.internationalPublicationNo ||
-      "";
-    wizardData.internationalPublicationDate =
-      document.getElementById("patent-intl-pub-date")?.value ||
-      wizardData.internationalPublicationDate ||
-      "";
-    wizardData.applicantType =
-      document.querySelector('input[name="applicantType"]:checked')?.value ||
-      wizardData.applicantType ||
-      "individual";
-    wizardData.entityStatus =
-      document.querySelector('input[name="entityStatus"]:checked')?.value ||
-      wizardData.entityStatus ||
-      "small";
-    wizardData.applicantCompany =
-      document.getElementById("patent-app-company")?.value ||
-      wizardData.applicantCompany ||
-      "";
-    wizardData.applicantPosition =
-      document.getElementById("patent-app-position")?.value ||
-      wizardData.applicantPosition ||
-      "";
-    wizardData.applicantSex =
-      document.querySelector('input[name="applicantSex"]:checked')?.value ||
-      wizardData.applicantSex ||
-      "";
-    wizardData.applicantLastName =
-      document.getElementById("patent-app-last-name")?.value ||
-      wizardData.applicantLastName ||
-      "";
-    wizardData.applicantFirstName =
-      document.getElementById("patent-app-first-name")?.value ||
-      wizardData.applicantFirstName ||
-      "";
-    wizardData.applicantMiddleName =
-      document.getElementById("patent-app-middle-name")?.value ||
-      wizardData.applicantMiddleName ||
-      "";
-    wizardData.applicantAddress =
-      document.getElementById("patent-app-address")?.value ||
-      wizardData.applicantAddress ||
-      "";
-    wizardData.applicantTown =
-      document.getElementById("patent-app-town")?.value ||
-      wizardData.applicantTown ||
-      "";
-    wizardData.applicantProvince =
-      document.getElementById("patent-app-province")?.value ||
-      wizardData.applicantProvince ||
-      "";
-    wizardData.applicantZip =
-      document.getElementById("patent-app-zip")?.value ||
-      wizardData.applicantZip ||
-      "";
-    wizardData.applicantCountry =
-      document.getElementById("patent-app-country")?.value ||
-      wizardData.applicantCountry ||
-      "Philippines";
-    wizardData.applicantContact =
-      document.getElementById("patent-app-contact")?.value ||
-      wizardData.applicantContact ||
-      "";
-    wizardData.applicantEmail =
-      document.getElementById("patent-app-email")?.value ||
-      wizardData.applicantEmail ||
-      currentUser.email ||
-      "";
-    wizardData.applicantNationality =
-      document.getElementById("patent-app-nationality")?.value ||
-      wizardData.applicantNationality ||
-      "";
-    wizardData.inventorSex =
-      document.querySelector('input[name="inventorSex"]:checked')?.value ||
-      wizardData.inventorSex ||
-      "";
-    wizardData.inventorLastName =
-      document.getElementById("patent-inv-last-name")?.value ||
-      wizardData.inventorLastName ||
-      "";
-    wizardData.inventorFirstName =
-      document.getElementById("patent-inv-first-name")?.value ||
-      wizardData.inventorFirstName ||
-      "";
-    wizardData.inventorMiddleName =
-      document.getElementById("patent-inv-middle-name")?.value ||
-      wizardData.inventorMiddleName ||
-      "";
-    wizardData.inventorAddress =
-      document.getElementById("patent-inv-address")?.value ||
-      wizardData.inventorAddress ||
-      "";
-    wizardData.inventorTown =
-      document.getElementById("patent-inv-town")?.value ||
-      wizardData.inventorTown ||
-      "";
-    wizardData.inventorProvince =
-      document.getElementById("patent-inv-province")?.value ||
-      wizardData.inventorProvince ||
-      "";
-    wizardData.inventorZip =
-      document.getElementById("patent-inv-zip")?.value ||
-      wizardData.inventorZip ||
-      "";
-    wizardData.inventorCountry =
-      document.getElementById("patent-inv-country")?.value ||
-      wizardData.inventorCountry ||
-      "Philippines";
-    wizardData.inventorContact =
-      document.getElementById("patent-inv-contact")?.value ||
-      wizardData.inventorContact ||
-      "";
-    wizardData.inventorEmail =
-      document.getElementById("patent-inv-email")?.value ||
-      wizardData.inventorEmail ||
-      "";
-    wizardData.inventorNationality =
-      document.getElementById("patent-inv-nationality")?.value ||
-      wizardData.inventorNationality ||
-      "";
-    wizardData.agentRegistrationNo =
-      document.getElementById("patent-agent-no")?.value ||
-      wizardData.agentRegistrationNo ||
-      "";
-    wizardData.agentCompany =
-      document.getElementById("patent-agent-company")?.value ||
-      wizardData.agentCompany ||
-      "";
-    wizardData.agentPosition =
-      document.getElementById("patent-agent-position")?.value ||
-      wizardData.agentPosition ||
-      "";
-    wizardData.agentSex =
-      document.querySelector('input[name="agentSex"]:checked')?.value ||
-      wizardData.agentSex ||
-      "";
-    wizardData.agentLastName =
-      document.getElementById("patent-agent-last-name")?.value ||
-      wizardData.agentLastName ||
-      "";
-    wizardData.agentFirstName =
-      document.getElementById("patent-agent-first-name")?.value ||
-      wizardData.agentFirstName ||
-      "";
-    wizardData.agentMiddleName =
-      document.getElementById("patent-agent-middle-name")?.value ||
-      wizardData.agentMiddleName ||
-      "";
-    wizardData.agentAddress =
-      document.getElementById("patent-agent-address")?.value ||
-      wizardData.agentAddress ||
-      "";
-    wizardData.agentTown =
-      document.getElementById("patent-agent-town")?.value ||
-      wizardData.agentTown ||
-      "";
-    wizardData.agentProvince =
-      document.getElementById("patent-agent-province")?.value ||
-      wizardData.agentProvince ||
-      "";
-    wizardData.agentZip =
-      document.getElementById("patent-agent-zip")?.value ||
-      wizardData.agentZip ||
-      "";
-    wizardData.agentCountry =
-      document.getElementById("patent-agent-country")?.value ||
-      wizardData.agentCountry ||
-      "Philippines";
-    wizardData.agentContact =
-      document.getElementById("patent-agent-contact")?.value ||
-      wizardData.agentContact ||
-      "";
-    wizardData.agentEmail =
-      document.getElementById("patent-agent-email")?.value ||
-      wizardData.agentEmail ||
-      "";
-    wizardData.agentNationality =
-      document.getElementById("patent-agent-nationality")?.value ||
-      wizardData.agentNationality ||
-      "";
-    wizardData.drawingsCount =
-      document.getElementById("patent-drawings-count")?.value ||
-      wizardData.drawingsCount ||
-      "";
-    wizardData.claimsCount =
-      document.getElementById("patent-claims-count")?.value ||
-      wizardData.claimsCount ||
-      "";
-    wizardData.supportingNotes =
-      document.getElementById("patent-supporting-notes")?.value ||
-      wizardData.supportingNotes ||
-      "";
-    wizardData.figureNumber =
-      document.getElementById("patent-figure-number")?.value ||
-      wizardData.figureNumber ||
-      "";
-    wizardData.signaturePrintedName =
-      document.getElementById("patent-signature-name")?.value ||
-      wizardData.signaturePrintedName ||
-      "";
-    wizardData.certificateDelivery =
-      document.querySelector('input[name="certificateDelivery"]:checked')?.value ||
-      wizardData.certificateDelivery ||
-      "pickup";
-    wizardData.biologicalMaterial =
-      document.querySelector('input[name="biologicalMaterial"]:checked')?.value ||
-      wizardData.biologicalMaterial ||
-      "no";
-    wizardData.biologicalMaterialDetails =
-      document.getElementById("patent-bio-details")?.value ||
-      wizardData.biologicalMaterialDetails ||
-      "";
-    wizardData.traditionalKnowledge =
-      document.querySelector('input[name="traditionalKnowledge"]:checked')?.value ||
-      wizardData.traditionalKnowledge ||
-      "no";
-    wizardData.traditionalKnowledgeDetails =
-      document.getElementById("patent-traditional-details")?.value ||
-      wizardData.traditionalKnowledgeDetails ||
-      "";
-    wizardData.indigenousKnowledge =
-      document.querySelector('input[name="indigenousKnowledge"]:checked')?.value ||
-      wizardData.indigenousKnowledge ||
-      "no";
-    wizardData.indigenousKnowledgeDetails =
-      document.getElementById("patent-indigenous-details")?.value ||
-      wizardData.indigenousKnowledgeDetails ||
-      "";
-    wizardData.privacyAgreement =
-      document.querySelector('input[name="privacyAgreement"]:checked')?.value ||
-      wizardData.privacyAgreement ||
-      "agree";
-    wizardData.name = [
-      wizardData.applicantFirstName,
-      wizardData.applicantMiddleName,
-      wizardData.applicantLastName,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
-    wizardData.email = wizardData.applicantEmail || currentUser.email || "";
-    wizardData.contact = wizardData.applicantContact || "";
-    wizardData.dept = wizardData.applicantCompany || currentUser.dept || "";
-    wizardData.description = wizardData.supportingNotes || wizardData.title || "";
-    wizardData.signaturePrintedName =
-      wizardData.signaturePrintedName || wizardData.name;
-    syncRequirementUploadsToFiles("patent");
-    return;
-  }
-
-  if (currentWizardStep === 1) {
-    wizardData.name =
-      document.getElementById("wiz-name")?.value || wizardData.name || "";
-    wizardData.email =
-      document.getElementById("wiz-email")?.value || wizardData.email || "";
-    wizardData.college =
-      document.getElementById("wiz-college")?.value || wizardData.college || "";
-    wizardData.dept =
-      wizardData.college || wizardData.dept || getCurrentUser().dept || "";
-    wizardData.contact =
-      document.getElementById("wiz-contact")?.value || wizardData.contact || "";
-    wizardData.applicantId =
-      document.getElementById("wiz-id")?.value || wizardData.applicantId || "";
-  }
-
-  if (currentWizardStep === 2) {
-    wizardData.title =
-      document.getElementById("wiz-title")?.value || wizardData.title || "";
-    wizardData.date =
-      document.getElementById("wiz-date")?.value || wizardData.date || "";
-    wizardData.desc =
-      document.getElementById("wiz-desc")?.value || wizardData.desc || "";
-    wizardData.field =
-      document.getElementById("wiz-field")?.value || wizardData.field || "";
-    wizardData.abstract =
-      document.getElementById("wiz-abstract")?.value ||
-      wizardData.abstract ||
-      "";
-    wizardData.claims =
-      document.getElementById("wiz-claims")?.value || wizardData.claims || "";
-    wizardData.marktype =
-      document.getElementById("wiz-marktype")?.value ||
-      wizardData.marktype ||
-      "";
-    wizardData.colorclaim =
-      document.getElementById("wiz-colorclaim")?.value ||
-      wizardData.colorclaim ||
-      "";
-    wizardData.worktype =
-      document.getElementById("wiz-worktype")?.value ||
-      wizardData.worktype ||
-      "";
-    wizardData.reglane =
-      document.getElementById("wiz-reglane")?.value ||
-      wizardData.reglane ||
-      "";
-    wizardData.prodcat =
-      document.getElementById("wiz-prodcat")?.value || wizardData.prodcat || "";
-    wizardData.designtype =
-      document.getElementById("wiz-designtype")?.value ||
-      wizardData.designtype ||
-      "";
-    wizardData.industrial =
-      document.getElementById("wiz-industrial")?.value ||
-      wizardData.industrial ||
-      "";
-    wizardData.novelty =
-      document.getElementById("wiz-novelty")?.value ||
-      wizardData.novelty ||
-      "";
-  }
-
-  syncRequirementUploadsToFiles(currentFormType, wizardData);
-}
-
-function handleRequirementUpload(requirementKey, input, formType = currentFormType) {
-  if (!input?.files?.length) return;
-  const file = input.files[0];
-  const requirement =
-    getRequiredDocumentsForType(formType).find((doc) => doc.key === requirementKey) ||
-    { name: requirementKey };
-
-  const uploads = ensureRequirementUploads(wizardData);
-  uploads[requirementKey] = {
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    requirementName: requirement.name,
-  };
-
-  syncRequirementUploadsToFiles(formType, wizardData);
-  showToast(`${requirement.name} uploaded.`);
-  refreshWizard();
-}
-
-function nextWizardStep() {
-  captureWizardData();
-  if (!validateWizardStep()) return;
-
-  if (currentWizardStep < 4) {
-    if (currentWizardStep === 1 && submissionMethod === "upload") {
-      currentWizardStep = 3;
-    } else {
-      currentWizardStep++;
-    }
-    refreshWizard();
-  }
-}
-
-function renderStep3() {
-  const uploadedCount = getUploadedRequiredCount(currentFormType, wizardData);
-  const totalRequired = getRequiredDocumentCount(currentFormType);
-  const remaining = Math.max(0, totalRequired - uploadedCount);
-  const visibleStatus = wizardData.paymentRequested ? "Payment Requested" : "Pending";
-
-  return `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-      <h3 style="margin:0;">Required Documents and Steps</h3>
-      <div style="background:var(--gray-50); padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; color:var(--gray-500); border:1px solid var(--gray-200);">
-        ${uploadedCount} of ${totalRequired} REQUIRED UPLOADED
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:24px;">
-      <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
-        <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Submission Progress</div>
-        <div style="font-size:1.7rem; font-weight:800; color:var(--navy);">${uploadedCount}/${totalRequired}</div>
-        <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Required documents uploaded</div>
-      </div>
-      <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
-        <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Applicant Status</div>
-        <div style="font-size:1rem; font-weight:800; color:var(--navy);">${visibleStatus}</div>
-        <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Visible to applicants throughout the review cycle</div>
-      </div>
-      <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
-        <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Payment Step</div>
-        <div style="font-size:1rem; font-weight:800; color:var(--navy);">${wizardData.paymentRequested ? "Requested" : "Not Requested"}</div>
-        <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Payment stays out of initial submission</div>
-      </div>
-    </div>
-
-    <div class="requirement-checklist" style="background:linear-gradient(to right, #f8fafc, #ffffff); border-radius:16px; padding:24px; margin-bottom:32px; border:1.5px solid var(--gray-100); box-shadow:0 4px 6px -1px rgba(0,0,0,0.02);">
-      <h4 style="font-size:.9rem; color:var(--navy); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i>
-        Required Documents Checklist
-      </h4>
-      <p style="font-size:0.82rem; color:var(--gray-500); margin-bottom:16px; line-height:1.6;">Each requirement is labeled individually below so applicants always know exactly which file they are attaching.</p>
-      ${renderRequirementChecklistPanel(currentFormType)}
-    </div>
-
-    <div style="border:1.5px solid var(--gray-100); background:white; border-radius:20px; padding:24px;">
-      <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap;">
-        <div>
-          <h4 style="color:var(--navy); margin-bottom:6px;">Dynamic Requirement Uploads</h4>
-          <p style="color:var(--gray-500); font-size:0.88rem; line-height:1.6; margin:0;">Payment is not part of initial submission. The Proof of Payment upload appears only when the evaluator later requests it.</p>
-        </div>
-        <span class="badge ${remaining === 0 ? "badge-approved" : "badge-pending"}" style="font-size:0.72rem;">
-          ${remaining === 0 ? "ALL REQUIRED FILES UPLOADED" : `${remaining} REQUIRED FILE${remaining > 1 ? "S" : ""} REMAINING`}
-        </span>
-      </div>
-      ${renderDynamicRequirementUploaders(currentFormType)}
-      <div id="uploadStatus" style="margin-top:24px;">
-        ${uploadedCount > 0 ? renderUploadedFiles() : ""}
-      </div>
-      <div style="margin-top:24px;">
-        ${renderConditionalPaymentUploadPanel(wizardData, { infoOnly: true })}
-      </div>
-    </div>
-  `;
-}
-
-function renderStep4Review() {
-  const val = (v) =>
-    v
-      ? `<span class="value">${v}</span>`
-      : `<span class="value" style="color:var(--gray-400);font-style:italic;">Not provided</span>`;
-
-  return `
-    <h3 style="margin-bottom:24px">Review Your Application</h3>
-    <div class="review-section">
-      <h4><i class="fa-solid fa-user" style="color:var(--gold);margin-right:6px"></i>Applicant Information</h4>
-      <div class="review-grid">
-        <div class="review-item"><span class="label">Name</span>${val(wizardData.name)}</div>
-        <div class="review-item"><span class="label">Email</span>${val(wizardData.email)}</div>
-        <div class="review-item"><span class="label">College</span>${val(wizardData.college)}</div>
-        ${wizardData.contact ? `<div class="review-item"><span class="label">Contact</span>${val(wizardData.contact)}</div>` : ""}
-      </div>
-    </div>
-
-    <div class="review-section">
-      <h4><i class="fa-solid fa-file-lines" style="color:var(--gold);margin-right:6px"></i>${getStep2Label()}</h4>
-      <div class="review-grid">
-        <div class="review-item"><span class="label">Title</span>${val(wizardData.title)}</div>
-        ${wizardData.date ? `<div class="review-item"><span class="label">Date</span>${val(wizardData.date)}</div>` : ""}
-        ${wizardData.field ? `<div class="review-item"><span class="label">Field</span>${val(wizardData.field)}</div>` : ""}
-        ${wizardData.marktype ? `<div class="review-item"><span class="label">Mark Type</span>${val(wizardData.marktype)}</div>` : ""}
-        ${wizardData.worktype ? `<div class="review-item"><span class="label">Work Type</span>${val(wizardData.worktype)}</div>` : ""}
-        ${wizardData.prodcat ? `<div class="review-item"><span class="label">Product Category</span>${val(wizardData.prodcat)}</div>` : ""}
-        ${wizardData.designtype ? `<div class="review-item"><span class="label">Design Type</span>${val(wizardData.designtype)}</div>` : ""}
-        ${wizardData.reglane ? `<div class="review-item"><span class="label">Registration Lane</span>${val(wizardData.reglane)}</div>` : ""}
-      </div>
-      ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "..." : ""}</span></div>` : ""}
-    </div>
-
-    <div class="review-section">
-      <h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents & Status</h4>
-      <div style="margin-top:16px; margin-bottom:16px;">${renderRequirementChecklistPanel(currentFormType, { compact: true })}</div>
-      <p style="color:var(--gray-500);font-size:.9rem; line-height:1.6;">Initial submission ends here. If the evaluator later requests payment, the Proof of Payment upload field will appear on the application detail page.</p>
-      <div style="margin-top:16px;">${renderApplicantStatusLegend("Pending")}</div>
-    </div>
-
-    <div style="padding:16px 20px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;margin-top:4px;font-size:.85rem;color:#92400e;display:flex;gap:10px;align-items:flex-start">
-      <i class="fa-solid fa-person-chalkboard" style="color:#d97706;margin-top:2px"></i>
-      <div><strong>Manual Review Policy:</strong> Your submission will be reviewed by PSU IP Office staff. No AI-driven assessment occurs. You will be notified at your registered email once review is complete.</div>
-    </div>
-  `;
-}
-
-function submitForm() {
-  captureWizardData();
-
-  if (
-    getUploadedRequiredCount(currentFormType, wizardData) <
-    getRequiredDocumentCount(currentFormType)
-  ) {
-    showToast("Upload all required documents before submitting.", "error");
-    return;
-  }
-
-  const typeMap = {
-    patent: "Patent",
-    trademark: "Trademark",
-    copyright: "Copyright",
-    utility: "Utility Model",
-    industrial: "Industrial Design",
-  };
-  const prefix = {
-    patent: "PAT",
-    trademark: "TM",
-    copyright: "COP",
-    utility: "UM",
-    industrial: "ID",
-  };
-  const refNum = `PSU-${prefix[currentFormType]}-2026-${String(submissions.length + 1).padStart(3, "0")}`;
-
-  if (isPatentGoogleFlow()) {
-    const currentUser = getCurrentUser();
-    const applicantName = [
-      wizardData.applicantFirstName,
-      wizardData.applicantMiddleName,
-      wizardData.applicantLastName,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
-
-    const newPatentSubmission = {
-      id: refNum,
-      type: "Patent",
-      formType: "patent",
-      title: wizardData.title || "Untitled Patent Application",
-      applicant: applicantName || "Unnamed Applicant",
-      department: wizardData.applicantCompany || currentUser.dept || "Patent Filing",
-      email: wizardData.applicantEmail || currentUser.email || "",
-      contact: wizardData.applicantContact || "",
-      status: "Pending",
-      date: new Date().toISOString().split("T")[0],
-      description:
-        wizardData.supportingNotes ||
-        "Patent request generated through the guided Form 100 workflow.",
-      requirementUploads: { ...ensureRequirementUploads(wizardData) },
-      files: [...(wizardData.files || [])],
-      paymentRequested: false,
-      paymentVerified: false,
-      paymentProofUploaded: false,
-      paymentProofFile: null,
-      frozen: false,
-      formStyle: "Form 100",
-      filingMethod: "Guided Online Form",
-      formData: { ...wizardData },
-    };
-
-    syncSubmissionWorkflowState(newPatentSubmission);
-    submissions.unshift(newPatentSubmission);
-    selectedSubmissionId = refNum;
-
-    const patentConfirmationTarget =
-      currentPage === "forms"
-        ? document.getElementById("formsPublicContent")
-        : document.getElementById("main-content");
-    if (!patentConfirmationTarget) return;
-
-    patentConfirmationTarget.innerHTML = `
-      <div class="patent-confirmation-shell">
-        <div class="confirmation-screen">
-          <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-          <h2>Patent request submitted</h2>
-          <p style="color:var(--gray-500)">The application was received and is now pending evaluator review. The final Form 100 preview is shown below.</p>
-          <div class="ref-number">${refNum}</div>
-          <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            ${
-              currentPage === "forms"
-                ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
-                : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`
-            }
-          </div>
-        </div>
-
-        <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
-          ${renderPatentFormSheetBundle()}
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isCopyrightGoogleFlow()) {
-    const currentUser = getCurrentUser();
-    const ownerName =
-      wizardData.copyrightOwnerMode === "institutional"
-        ? wizardData.copyrightOwnerInstitutionName
-        : [
-            wizardData.copyrightOwnerFirstName,
-            wizardData.copyrightOwnerMiddleName,
-            wizardData.copyrightOwnerSurname,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .trim();
-    const authorName = [
-      wizardData.copyrightAuthorFirstName,
-      wizardData.copyrightAuthorMiddleName,
-      wizardData.copyrightAuthorSurname,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
-    const applicantName = ownerName || authorName || currentUser.name;
-
-    const newCopyrightSubmission = {
-      id: refNum,
-      type: "Copyright",
-      formType: "copyright",
-      title: wizardData.copyrightWorkTitle || wizardData.title || "Untitled Copyright Work",
-      applicant: applicantName,
-      department:
-        wizardData.copyrightOwnerInstitutionName ||
-        currentUser.dept ||
-        "Copyright Filing",
-      email:
-        wizardData.copyrightOwnerEmail ||
-        wizardData.copyrightAuthorEmail ||
-        currentUser.email ||
-        "",
-      contact:
-        wizardData.copyrightOwnerContact ||
-        wizardData.copyrightAuthorContact ||
-        "",
-      status: "Pending",
-      date: new Date().toISOString().split("T")[0],
-      description:
-        wizardData.copyrightDerivativeType ||
-        wizardData.copyrightAiDetails ||
-        "Copyright registry enrollment generated through the guided BCRR workflow.",
-      requirementUploads: { ...ensureRequirementUploads(wizardData) },
-      files: [...(wizardData.files || [])],
-      paymentRequested: false,
-      paymentVerified: false,
-      paymentProofUploaded: false,
-      paymentProofFile: null,
-      frozen: false,
-      formStyle: "BCRR Form 2025-1",
-      filingMethod: "Guided Online Form",
-      workType: wizardData.copyrightWorkClassification || "",
-      formData: { ...wizardData },
-    };
-
-    syncSubmissionWorkflowState(newCopyrightSubmission);
-    submissions.unshift(newCopyrightSubmission);
-    selectedSubmissionId = refNum;
-
-    const copyrightConfirmationTarget =
-      currentPage === "forms"
-        ? document.getElementById("formsPublicContent")
-        : document.getElementById("main-content");
-    if (!copyrightConfirmationTarget) return;
-
-    copyrightConfirmationTarget.innerHTML = `
-      <div class="patent-confirmation-shell">
-        <div class="confirmation-screen">
-          <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-          <h2>Copyright form submitted</h2>
-          <p style="color:var(--gray-500)">The BCRR enrollment form was received and is now pending evaluator review. The final three-page preview is shown below.</p>
-          <div class="ref-number">${refNum}</div>
-          <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            ${
-              currentPage === "forms"
-                ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
-                : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`
-            }
-          </div>
-        </div>
-
-        <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
-          ${renderCopyrightFormSheetBundle()}
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isUtilityGoogleFlow()) {
-    const currentUser = getCurrentUser();
-    const applicantName =
-      getPartyPrintedName("utilityApplicant") || currentUser.name;
-
-    const newUtilitySubmission = {
-      id: refNum,
-      type: "Utility Model",
-      formType: "utility",
-      title: wizardData.title || "Untitled Utility Model",
-      applicant: applicantName,
-      department:
-        wizardData.utilityApplicantOrganization ||
-        currentUser.dept ||
-        "Utility Model Filing",
-      email: wizardData.utilityApplicantEmail || currentUser.email || "",
-      contact: wizardData.utilityApplicantContact || "",
-      status: "Pending",
-      date: new Date().toISOString().split("T")[0],
-      description:
-        wizardData.utilityNaturePurpose ||
-        wizardData.desc ||
-        "Utility model filing generated through the guided Form 200 workflow.",
-      requirementUploads: { ...ensureRequirementUploads(wizardData) },
-      files: [...(wizardData.files || [])],
-      paymentRequested: false,
-      paymentVerified: false,
-      paymentProofUploaded: false,
-      paymentProofFile: null,
-      frozen: false,
-      formStyle: "IPOPHL Form 200",
-      filingMethod: "Guided Online Form",
-      field: wizardData.field || "",
-      formData: { ...wizardData },
-    };
-
-    syncSubmissionWorkflowState(newUtilitySubmission);
-    submissions.unshift(newUtilitySubmission);
-    selectedSubmissionId = refNum;
-
-    const utilityConfirmationTarget =
-      currentPage === "forms"
-        ? document.getElementById("formsPublicContent")
-        : document.getElementById("main-content");
-    if (!utilityConfirmationTarget) return;
-
-    utilityConfirmationTarget.innerHTML = `
-      <div class="patent-confirmation-shell">
-        <div class="confirmation-screen">
-          <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-          <h2>Utility model form submitted</h2>
-          <p style="color:var(--gray-500)">The Form 200 filing packet was received and is now pending evaluator review. The final preview is shown below.</p>
-          <div class="ref-number">${refNum}</div>
-          <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            ${
-              currentPage === "forms"
-                ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
-                : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`
-            }
-          </div>
-        </div>
-
-        <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
-          ${renderUtilityFormSheetBundle()}
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isIndustrialGoogleFlow()) {
-    const currentUser = getCurrentUser();
-    const applicantName =
-      getPartyPrintedName("industrialApplicant") || currentUser.name;
-
-    const newIndustrialSubmission = {
-      id: refNum,
-      type: "Industrial Design",
-      formType: "industrial",
-      title: wizardData.title || "Untitled Industrial Design",
-      applicant: applicantName,
-      department:
-        wizardData.industrialApplicantOrganization ||
-        currentUser.dept ||
-        "Industrial Design Filing",
-      email: wizardData.industrialApplicantEmail || currentUser.email || "",
-      contact: wizardData.industrialApplicantContact || "",
-      status: "Pending",
-      date: new Date().toISOString().split("T")[0],
-      description:
-        wizardData.industrialViewsExplanation ||
-        wizardData.desc ||
-        "Industrial design filing generated through the guided Form 300 workflow.",
-      requirementUploads: { ...ensureRequirementUploads(wizardData) },
-      files: [...(wizardData.files || [])],
-      paymentRequested: false,
-      paymentVerified: false,
-      paymentProofUploaded: false,
-      paymentProofFile: null,
-      frozen: false,
-      formStyle: "IPOPHL Form 300",
-      filingMethod: "Guided Online Form",
-      workType: wizardData.designtype || "",
-      formData: { ...wizardData },
-    };
-
-    syncSubmissionWorkflowState(newIndustrialSubmission);
-    submissions.unshift(newIndustrialSubmission);
-    selectedSubmissionId = refNum;
-
-    const industrialConfirmationTarget =
-      currentPage === "forms"
-        ? document.getElementById("formsPublicContent")
-        : document.getElementById("main-content");
-    if (!industrialConfirmationTarget) return;
-
-    industrialConfirmationTarget.innerHTML = `
-      <div class="patent-confirmation-shell">
-        <div class="confirmation-screen">
-          <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-          <h2>Industrial design form submitted</h2>
-          <p style="color:var(--gray-500)">The Form 300 filing packet was received and is now pending evaluator review. The final preview is shown below.</p>
-          <div class="ref-number">${refNum}</div>
-          <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            ${
-              currentPage === "forms"
-                ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
-                : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`
-            }
-          </div>
-        </div>
-
-        <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
-          ${renderIndustrialFormSheetBundle()}
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  const user = getCurrentUser();
-  const requirementUploads = { ...ensureRequirementUploads(wizardData) };
-  const newSubmission = {
-    id: refNum,
-    type: typeMap[currentFormType],
-    formType: currentFormType,
-    title: wizardData.title || `${typeMap[currentFormType]} Submission`,
-    applicant: wizardData.name || user.name,
-    department: wizardData.college || user.dept || "",
-    email: wizardData.email || user.email || "",
-    contact: wizardData.contact || "",
-    status: "Pending",
-    date: new Date().toISOString().split("T")[0],
-    description:
-      wizardData.desc ||
-      wizardData.abstract ||
-      wizardData.colorclaim ||
-      "Newly submitted application.",
-    field: wizardData.field || "",
-    workType: wizardData.worktype || "",
-    markType: wizardData.marktype || "",
-    registrationLane: wizardData.reglane || "",
-    requirementUploads,
-    files: Object.values(requirementUploads),
-    paymentRequested: false,
-    paymentVerified: false,
-    paymentProofUploaded: false,
-    paymentProofFile: null,
-    frozen: false,
-    formData: { ...wizardData },
-  };
-
-  syncSubmissionWorkflowState(newSubmission);
-  submissions.unshift(newSubmission);
-  selectedSubmissionId = refNum;
-  wizardData = {};
-  currentWizardStep = 1;
-
-  document.getElementById("main-content").innerHTML = `
-    <div class="confirmation-screen">
-      <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-      <h2>Application Submitted Successfully</h2>
-      <p style="color:var(--gray-500)">Your ${typeMap[currentFormType]} submission is now pending evaluator review. Payment will only be requested later if needed.</p>
-      <div class="ref-number">${refNum}</div>
-      <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Keep this reference number for tracking and status updates.</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-        <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>
-      </div>
-    </div>
-  `;
-}
-
-function resolveSubmissionWorkflowStageKey(submission, initialKey, storedKey) {
-  if (submission.status === "Approved") return "certificate-released";
-  if (submission.status === "Awaiting Documents") return "technical-review";
-  if (submission.paymentExempt) return "mis-forwarding";
-  if (submission.status === "Payment Requested" || submission.paymentRequested) {
-    if (submission.paymentVerified) return "mis-forwarding";
-    if (submission.paymentProofFile) return "receipt-submitted";
-    return "payment-slip-issued";
-  }
-  if (submission.status === "Validated") return "mis-recording";
-  if (submission.status === "Under Review") return storedKey || "technical-review";
-  return storedKey || initialKey;
-}
-
-function getCopyrightStageKey(submission) {
-  return resolveSubmissionWorkflowStageKey(
-    submission,
-    "author-submission",
-    submission.copyrightStage,
-  );
-}
-
-function getIPOPHLStageKey(submission) {
-  return resolveSubmissionWorkflowStageKey(
-    submission,
-    "inventor-submission",
-    submission.ipophlStage,
-  );
-}
-
-function syncSubmissionWorkflowState(submission) {
-  if (IPOPHL_TYPES.has(submission.type)) {
-    submission.ipophlStage = resolveSubmissionWorkflowStageKey(
-      submission,
-      "inventor-submission",
-      null,
-    );
-    return;
-  }
-
-  if (submission.type === "Copyright") {
-    submission.copyrightStage = resolveSubmissionWorkflowStageKey(
-      submission,
-      "author-submission",
-      null,
-    );
-  }
-}
-
-function getSubmissionPaymentMeta(submission) {
-  if (submission.paymentExempt) {
-    return {
-      theme: "blue",
-      icon: "fa-file-signature",
-      title: "Payment waived",
-      detail: "This submission follows the approved fee-waived route.",
-    };
-  }
-
-  if (!submission.paymentRequested && submission.status !== "Payment Requested") {
-    return {
-      theme: "blue",
-      icon: "fa-circle-info",
-      title: "Payment not requested",
-      detail:
-        "This step stays hidden until the evaluator explicitly requests payment.",
-    };
-  }
-
-  if (submission.paymentVerified) {
-    return {
-      theme: "green",
-      icon: "fa-circle-check",
-      title: "Payment confirmed",
-      detail:
-        `${submission.officialReceiptNumber || "Proof of payment"} has been confirmed for this case.`,
-    };
-  }
-
-  if (submission.paymentProofFile) {
-    return {
-      theme: "blue",
-      icon: "fa-clock",
-      title: "Proof of payment uploaded",
-      detail: `${submission.paymentProofFile.name} is waiting for evaluator confirmation.`,
-    };
-  }
-
-  return {
-    theme: "red",
-    icon: "fa-receipt",
-    title: "Payment requested",
-    detail:
-      "The evaluator requested payment for this application. Upload Proof of Payment to continue.",
-  };
-}
-
-function requestPayment(id) {
-  const submission = submissions.find((entry) => entry.id === id);
-  if (!submission) return;
-  if (!canAdvanceSubmission(submission)) {
-    showToast(`${getRoleMeta().label} cannot request payment for this case.`);
-    return;
-  }
-  if (submission.paymentExempt) {
-    showToast("This submission uses the fee-waived route.");
-    return;
-  }
-
-  submission.paymentRequested = true;
-  submission.paymentVerified = false;
-  submission.paymentProofUploaded = false;
-  submission.paymentProofFile = null;
-  submission.status = "Payment Requested";
-  submission.officialReceiptNumber = "Awaiting proof of payment";
-  syncSubmissionWorkflowState(submission);
-  addAuditLog({
-    accountName: getCurrentUser().name,
-    action: "Requested Payment",
-    record: submission.id,
-    details: "Requested proof of payment from the applicant.",
-    module: submission.type,
-  });
-  showToast(`Payment requested for ${submission.id}.`);
-  navigateTo("submission-detail");
-}
-
-function togglePaymentStatus(id) {
-  const submission = submissions.find((entry) => entry.id === id);
-  if (!submission) return;
-  if (!canAdvanceSubmission(submission)) {
-    showToast(`${getRoleMeta().label} cannot update payment for this case.`);
-    return;
-  }
-  if (submission.paymentExempt) {
-    showToast("This submission uses the fee-waived route.");
-    return;
-  }
-  if (!submission.paymentRequested && !submission.paymentVerified) {
-    showToast("Payment has not been requested for this case.");
-    return;
-  }
-  if (!submission.paymentVerified && !submission.paymentProofFile) {
-    showToast("Proof of payment has not been uploaded yet.");
-    return;
-  }
-
-  submission.paymentVerified = !submission.paymentVerified;
-  if (submission.paymentVerified) {
-    submission.paymentRequested = false;
-    submission.status = "Validated";
-    submission.officialReceiptNumber =
-      submission.officialReceiptNumber &&
-      !submission.officialReceiptNumber.toLowerCase().includes("awaiting")
-        ? submission.officialReceiptNumber
-        : `Official Receipt #${new Date().getFullYear()}-${String(
-            Math.floor(Math.random() * 9000) + 1000,
-          )}`;
-  } else {
-    submission.paymentRequested = true;
-    submission.status = "Payment Requested";
-    submission.officialReceiptNumber = "Awaiting payment confirmation";
-  }
-
-  syncSubmissionWorkflowState(submission);
-  addAuditLog({
-    accountName: getCurrentUser().name,
-    action: submission.paymentVerified ? "Confirmed Payment" : "Reopened Payment",
-    record: submission.id,
-    details: submission.paymentVerified
-      ? `Confirmed payment using ${submission.officialReceiptNumber}.`
-      : "Reopened the payment step for additional verification.",
-    module: submission.type,
-  });
-  showToast(`${submission.id} payment status updated.`);
-  navigateTo("submission-detail");
-}
-
-function handleSubmissionPaymentProofUpload(id, input) {
-  const submission = submissions.find((entry) => entry.id === id);
-  if (!submission || !input?.files?.length) return;
-  if (!submission.paymentRequested) {
-    showToast("Payment has not been requested for this case.");
-    return;
-  }
-
-  const file = input.files[0];
-  submission.paymentProofFile = {
-    name: file.name,
-    size: file.size,
-    type: file.type,
-  };
-  submission.paymentProofUploaded = true;
-  submission.paymentVerified = false;
-  submission.officialReceiptNumber = "Awaiting payment confirmation";
-  syncSubmissionWorkflowState(submission);
-  addAuditLog({
-    accountName: getCurrentUser().name,
-    action: "Uploaded Payment Proof",
-    record: submission.id,
-    details: `Uploaded ${file.name} for payment verification.`,
-    module: submission.type,
-  });
-  showToast(`Proof of payment uploaded for ${submission.id}.`);
-  navigateTo("submission-detail");
-}
-
-function renderSubmissionDetail() {
-  const s = submissions.find((sub) => sub.id === selectedSubmissionId);
-  if (!s) return "<p>Submission not found.</p>";
-  if (!getVisibleSubmissions(currentRole).some((sub) => sub.id === s.id)) {
-    return '<div class="detail-panel"><h3>Access Restricted</h3><p>This role cannot open the requested case.</p></div>';
-  }
-
-  const normalizedRole = normalizeRole(currentRole);
-  const formType = getFormTypeKeyFromSubmissionType(s.type);
-  const paymentMeta = getSubmissionPaymentMeta(s);
-  const paymentStyles =
-    paymentMeta.theme === "green"
-      ? {
-          bg: "rgba(22,163,74,0.06)",
-          border: "rgba(22,163,74,0.2)",
-          color: "var(--green)",
-        }
-      : paymentMeta.theme === "blue"
-        ? {
-            bg: "rgba(59,130,246,0.06)",
-            border: "rgba(59,130,246,0.2)",
-            color: "var(--navy)",
-          }
-        : {
-            bg: "rgba(239,68,68,0.06)",
-            border: "rgba(239,68,68,0.2)",
-            color: "var(--red)",
-          };
-  const stageObj =
-    s.type === "Copyright"
-      ? COPYRIGHT_OPERATION_FLOW.find((step) => step.key === getCopyrightStageKey(s))
-      : IPOPHL_TYPES.has(s.type)
-        ? IPOPHL_OPERATION_FLOW.find((step) => step.key === getIPOPHLStageKey(s))
-        : null;
-  const showPaymentUpload =
-    normalizedRole === "applicant" &&
-    s.paymentRequested &&
-    !s.paymentExempt &&
-    !s.paymentVerified;
-  const canRequestPayment =
-    canAdvanceSubmission(s) &&
-    !s.paymentExempt &&
-    !s.paymentRequested &&
-    !["Approved", "Rejected", "Archived", "Cancelled"].includes(s.status);
-  const canConfirmPayment =
-    canAdvanceSubmission(s) &&
-    !s.paymentExempt &&
-    s.paymentRequested &&
-    (s.paymentProofFile || s.paymentVerified);
-  const assignedSpecialist = getAssignedReviewer(s);
-  const canAssignSpecialist =
-    normalizedRole === "superadmin" || normalizedRole === "admin";
-  const specialistOptions = getReviewerUsers()
-    .map(
-      (reviewer) =>
-        `<option value="${reviewer.id}" ${assignedSpecialist?.id === reviewer.id ? "selected" : ""}>${reviewer.name}</option>`,
-    )
-    .join("");
-  const statusOptions = [
-    "Pending",
-    "Under Review",
-    "Validated",
-    "Payment Requested",
-    "Awaiting Documents",
-    "Approved",
-    "Rejected",
-  ];
-
-  return `
-    ${renderBackNav()}
-    <div class="page-header">
-      <h1 style="margin:0">${s.title}</h1>
-      <p style="margin-top:8px">Submission Detail - ${s.id} • Filed ${s.date}</p>
-    </div>
-
-    <div class="detail-layout">
-      <div>
-        <div class="detail-panel">
-          <h3><i class="fa-solid fa-user"></i> Applicant Information</h3>
-          <div class="detail-row"><span class="label">Name</span><span class="value">${s.applicant}</span></div>
-          <div class="detail-row"><span class="label">Email</span><span class="value">${s.email || "N/A"}</span></div>
-          <div class="detail-row"><span class="label">Contact</span><span class="value">${s.contact || "N/A"}</span></div>
-          <div class="detail-row"><span class="label">College / Unit</span><span class="value">${s.department || "N/A"}</span></div>
-        </div>
-
-        <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-file-lines"></i> IP Details</h3>
-          <div class="detail-row"><span class="label">Type</span><span class="value">${typeBadge(s.type)}</span></div>
-          <div class="detail-row"><span class="label">Title</span><span class="value">${s.title}</span></div>
-          <div class="detail-row"><span class="label">Description</span><span class="value">${s.description || "N/A"}</span></div>
-          <div class="detail-row"><span class="label">Date Filed</span><span class="value">${s.date}</span></div>
-        </div>
-
-        <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-clipboard-check"></i> Required Documents Checklist</h3>
-          <p style="font-size:0.85rem; color:var(--gray-500); margin-bottom:16px;">Applicants can always see the required document checklist and which uploaded files are already on record.</p>
-          ${renderRequirementChecklistPanel(formType, { data: s, compact: true })}
-        </div>
-
-        <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-wallet"></i> Documents & Payment</h3>
-          <div style="padding:14px;background:${paymentStyles.bg};border:1px solid ${paymentStyles.border};border-radius:10px;display:flex;align-items:flex-start;gap:12px;">
-            <i class="fa-solid ${paymentMeta.icon}" style="color:${paymentStyles.color};font-size:1.2rem;margin-top:2px"></i>
-            <div>
-              <div style="font-weight:700;font-size:.92rem;color:${paymentStyles.color}">${paymentMeta.title}</div>
-              <div style="font-size:.82rem;color:var(--gray-500);margin-top:4px;line-height:1.5;">${paymentMeta.detail}</div>
-            </div>
-          </div>
-
-          ${
-            showPaymentUpload
-              ? `
-            <div style="margin-top:18px; border:1.5px dashed var(--gold); border-radius:14px; padding:20px; background:rgba(255,127,80,0.04);">
-              <h4 style="font-size:.95rem; color:var(--navy); margin-bottom:6px;">Upload Proof of Payment</h4>
-              <p style="font-size:.82rem; color:var(--gray-500); margin-bottom:14px; line-height:1.6;">This upload field is visible because the evaluator requested payment for this application.</p>
-              <div class="upload-area" onclick="document.getElementById('submissionPaymentInput').click()" style="border-color:var(--gold); background:rgba(255,127,80,0.03); min-height:120px; padding:24px;">
-                <i class="fa-solid fa-file-invoice-dollar" style="color:var(--gold); font-size:1.5rem; margin-bottom:10px;"></i>
-                <p style="font-size:0.9rem; font-weight:600;">${s.paymentProofFile ? "Replace Proof of Payment" : "Upload Proof of Payment"}</p>
-                <p style="font-size:.8rem;margin-top:8px;color:var(--gray-400)">JPG, PNG, or PDF (max 5MB)</p>
-                <input type="file" id="submissionPaymentInput" style="display:none" onchange="handleSubmissionPaymentProofUpload('${s.id}', this)" accept=".jpg,.jpeg,.png,.pdf" />
-              </div>
-              ${
-                s.paymentProofFile
-                  ? `<div style="margin-top:12px; font-size:.82rem; color:var(--gray-600);">${escapeHtml(s.paymentProofFile.name)} - ${(
-                      s.paymentProofFile.size / 1024
-                    ).toFixed(1)} KB</div>`
-                  : ""
-              }
-            </div>
-          `
-              : ""
-          }
-
-          ${
-            normalizedRole !== "applicant" && canConfirmPayment
-              ? `<div class="detail-actions" style="margin-top:16px;">
-                  <button class="btn btn-success btn-sm" onclick="togglePaymentStatus('${s.id}')">
-                    <i class="fa-solid fa-${s.paymentVerified ? "rotate-left" : "check"}"></i> ${s.paymentVerified ? "Reopen Payment" : "Confirm Payment"}
-                  </button>
-                </div>`
-              : ""
-          }
-        </div>
-      </div>
-
-      <div>
-        <div class="detail-panel">
-          <h3><i class="fa-solid fa-user-doctor"></i> Specialist Assignment</h3>
-          <div class="detail-row"><span class="label">Current Specialist</span><span class="value">${assignedSpecialist ? assignedSpecialist.name : "Unassigned"}</span></div>
-          <div class="detail-row"><span class="label">Notification Status</span><span class="value">${assignedSpecialist ? "Ready for specialist queue" : "No specialist assigned"}</span></div>
-          ${
-            canAssignSpecialist
-              ? specialistOptions
-                ? `<div class="form-group" style="margin-top:16px;">
-                    <label>Assign Specialist</label>
-                    <select id="specialistAssignmentSelect">${specialistOptions}</select>
-                  </div>
-                  <div class="detail-actions">
-                    <button class="btn btn-primary btn-sm" onclick="assignEvaluator('${s.id}', document.getElementById('specialistAssignmentSelect').value)">
-                      <i class="fa-solid fa-user-check"></i> Save Assignment
-                    </button>
-                    ${
-                      assignedSpecialist
-                        ? `<button class="btn btn-outline-danger btn-sm" onclick="assignEvaluator('${s.id}', '')">
-                            <i class="fa-solid fa-user-minus"></i> Remove
-                          </button>`
-                        : ""
-                    }
-                  </div>`
-                : `<p style="font-size:.85rem;color:var(--gray-500);margin-top:12px;">No active specialists are currently available for assignment.</p>`
-              : `<p style="font-size:.85rem;color:var(--gray-500);margin-top:12px;">Once assigned by Admin, this case appears in the specialist's notification panel and assigned-case queue.</p>`
-          }
-        </div>
-
-        <div class="detail-panel">
-          <h3><i class="fa-solid fa-circle-info"></i> Status</h3>
-          <div style="margin-bottom:16px">${statusBadge(s.status)}</div>
-          <div style="padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:12px; margin-bottom:16px;">
-            <div style="font-size:.78rem; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">Submission Progress</div>
-            ${renderApplicantStatusLegend(s.status)}
-          </div>
-          ${
-            stageObj
-              ? `<div style="padding:12px 14px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.18); border-radius:10px; margin-bottom:16px;">
-                  <div style="font-size:.78rem; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:.08em;">Current Workflow Step</div>
-                  <div style="font-size:.95rem; font-weight:700; color:var(--navy); margin-top:4px;">Step ${stageObj.step}: ${stageObj.title}</div>
-                  <div style="font-size:.8rem; color:var(--gray-500); margin-top:4px;">${stageObj.owner} - ${stageObj.lane}</div>
-                </div>`
-              : ""
-          }
-
-          ${
-            canAdvanceSubmission(s)
-              ? `<label class="form-group" style="margin-bottom:12px">
-                  <span style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Update Status</span>
-                  <select onchange="changeStatus('${s.id}', this.value)" style="width:100%">
-                    ${statusOptions
-                      .map(
-                        (status) =>
-                          `<option value="${status}" ${s.status === status ? "selected" : ""}>${status}</option>`,
-                      )
-                      .join("")}
-                    ${canArchiveSubmission() ? `<option value="Archived" ${s.status === "Archived" ? "selected" : ""}>Archived</option>` : ""}
-                  </select>
-                </label>`
-              : ""
-          }
-
-          ${
-            canAdvanceSubmission(s)
-              ? `<div class="detail-actions">
-                  <button class="btn btn-secondary btn-sm" onclick="changeStatus('${s.id}','Under Review')"><i class="fa-solid fa-magnifying-glass"></i> Start Review</button>
-                  <button class="btn btn-success btn-sm" onclick="changeStatus('${s.id}','Validated')"><i class="fa-solid fa-check"></i> Validate</button>
-                  ${canRequestPayment ? `<button class="btn btn-primary btn-sm" onclick="requestPayment('${s.id}')"><i class="fa-solid fa-receipt"></i> Request Payment</button>` : ""}
-                  <button class="btn btn-secondary btn-sm" onclick="requestDocs('${s.id}')"><i class="fa-solid fa-file-circle-plus"></i> Request Docs</button>
-                  <button class="btn btn-danger btn-sm" onclick="changeStatus('${s.id}','Rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
-                </div>`
-              : ""
-          }
-        </div>
-
-        <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-timeline"></i> Activity Timeline</h3>
-          ${
-            s.type === "Copyright"
-              ? renderCopyrightOperationTimeline(s)
-              : IPOPHL_TYPES.has(s.type)
-                ? renderIPOPHLOperationTimeline(s)
-                : "<p style='color:var(--gray-500)'>No workflow timeline available.</p>"
-          }
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function getStatusCounts() {
-  const visible = getVisibleSubmissions("applicant");
-  const counts = {
-    All: visible.length,
-    Pending: 0,
-    "Under Review": 0,
-    Validated: 0,
-    "Payment Requested": 0,
-    Approved: 0,
-    Rejected: 0,
-    "Awaiting Documents": 0,
-    Draft: 0,
-    ActionRequired: 0,
-  };
-
-  visible.forEach((s) => {
-    if (counts[s.status] !== undefined) counts[s.status]++;
-    if (s.status === "Awaiting Documents" || s.status === "Payment Requested") {
-      counts.ActionRequired++;
-    }
-  });
-
-  return counts;
-}
-
-function renderUserSubmissions() {
-  const counts = getStatusCounts();
-  const statuses = [
-    { id: "All", label: "All" },
-    { id: "Pending", label: "Pending" },
-    { id: "Under Review", label: "Reviewing" },
-    { id: "Validated", label: "Validated" },
-    { id: "Payment Requested", label: "Payment Requested" },
-    { id: "Approved", label: "Approved" },
-    { id: "Rejected", label: "Rejected" },
-    { id: "ActionRequired", label: "Action Needed" },
-    { id: "Draft", label: "Saved Draft" },
-  ];
-
-  return `
-    ${renderBackNav()}
-    <div class="page-header">
-      <h1>My IP Applications</h1>
-      <p>Manage and track your innovations through the university's filing pipeline.</p>
-    </div>
-
-    <div class="user-controls-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:20px; flex-wrap:wrap; background:white; padding:16px 20px; border-radius:12px; border:1px solid var(--gray-100);">
-      <div style="display:flex; gap:12px; align-items:center; flex:1; flex-wrap:wrap;">
-        <div class="search-box" style="max-width:300px; width:100%; position:relative;">
-          <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--gray-400);"></i>
-          <input type="text" id="userSearchInput" placeholder="Search title or ID..." value="${userSearchQuery}" oninput="userSearchQuery=this.value; renderUserSubmissionsTable()" style="padding-left:42px; width:100%; height:42px; border-radius:10px; border:1.5px solid var(--gray-200); outline:none;">
-        </div>
-
-        <div style="display:flex; align-items:center; gap:8px;">
-          <select id="userPeriodSelect" onchange="userPeriod=this.value; renderUserSubmissionsTable()" style="height:42px; border-radius:10px; border:1.5px solid var(--gray-200); padding:0 12px; font-weight:600; color:var(--navy); outline:none; background:var(--gray-50);">
-            <option value="All" ${userPeriod === "All" ? "selected" : ""}>All Time</option>
-            <option value="Recent" ${userPeriod === "Recent" ? "selected" : ""}>Recent (30 Days)</option>
-            <option value="ThisYear" ${userPeriod === "ThisYear" ? "selected" : ""}>This Year</option>
-            <option value="Custom" ${userPeriod === "Custom" ? "selected" : ""}>Custom Range...</option>
-          </select>
-
-          <div id="customDateRange" style="display:${userPeriod === "Custom" ? "flex" : "none"}; align-items:center; gap:8px; background:white; padding:0 12px; border:1.5px solid var(--gold-light); border-radius:10px; height:42px;">
-            <span style="font-size:0.7rem; font-weight:700; color:var(--gray-400); text-transform:uppercase;">From:</span>
-            <input type="date" id="dateFrom" style="border:none; background:none; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none;" onchange="renderUserSubmissionsTable()">
-            <span style="font-size:0.7rem; font-weight:700; color:var(--gray-400); text-transform:uppercase;">To:</span>
-            <input type="date" id="dateTo" style="border:none; background:none; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none;" onchange="renderUserSubmissionsTable()">
-          </div>
-        </div>
-      </div>
-
-      <div style="display:flex; gap:12px;">
-        <select class="filter-select" onchange="userFilterType=this.value; renderUserSubmissionsTable()" style="height:42px; border-radius:10px; border:1.5px solid var(--gray-200); padding:0 12px; font-weight:600; color:var(--navy); outline:none;">
-          <option value="All" ${userFilterType === "All" ? "selected" : ""}>All IP Types</option>
-          <option value="Patent" ${userFilterType === "Patent" ? "selected" : ""}>Patent</option>
-          <option value="Trademark" ${userFilterType === "Trademark" ? "selected" : ""}>Trademark</option>
-          <option value="Copyright" ${userFilterType === "Copyright" ? "selected" : ""}>Copyright</option>
-          <option value="Utility Model" ${userFilterType === "Utility Model" ? "selected" : ""}>Utility Model</option>
-          <option value="Industrial Design" ${userFilterType === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="status-hub-container">
-      <div class="status-hub-bar">
-        ${statuses
-          .map(
-            (st) => `
-              <div class="status-tab ${userFilterStatus === st.id ? "active" : ""}" onclick="filterUserStatus('${st.id}')">
-                ${st.label} <span class="tab-count">${counts[st.id] || 0}</span>
-              </div>
-            `,
-          )
-          .join("")}
-      </div>
-    </div>
-
-    <div id="userSubmissionsList">
-      ${renderUserSubmissionsTable()}
-    </div>
-  `;
-}
-
 // ===== INIT =====
 document.addEventListener("DOMContentLoaded", () => {
   if (currentRole === "applicant" && isLoggedIn) {
@@ -15949,3 +14374,72 @@ window.showPaymentGuideModal = function() {
 
   overlay.classList.add('active');
 };
+
+function getTrademarkFormSteps() {
+  return ["Mark Details", "Owner Info", "Nice Classification", "Review & Preview"];
+}
+
+function renderTrademarkGoogleForm(backTarget = "filing-hub", backLabel = "Filing Hub") {
+  const steps = getTrademarkFormSteps();
+  const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
+
+  return `
+    ${renderBackNav(backTarget, backLabel)}
+    <div class="patent-gform-shell">
+      <div class="patent-gform-header">
+        <div class="patent-gform-header-bar" style="background: var(--warning);"></div>
+        <div class="patent-gform-card patent-gform-card--hero">
+          <span class="patent-gform-kicker">Official Form TM-01</span>
+          <h1>Fillable Trademark Form</h1>
+          <p>Complete your trademark application using this interactive form. A professional preview will be generated for your review.</p>
+          <div class="patent-gform-meta">
+            <span><i class="fa-solid fa-file-lines"></i> 4 sections</span>
+            <span><i class="fa-solid fa-table-cells-large"></i> Official TM-01 layout</span>
+            <span><i class="fa-solid fa-building-shield"></i> Verified IP standards</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="patent-gform-layout">
+        <div class="patent-gform-main">
+          <div class="patent-step-strip">
+            ${steps.map((step, index) => `
+              <div class="patent-step-chip ${index + 1 === currentWizardStep ? "active" : ""} ${index + 1 < currentWizardStep ? "done" : ""}">
+                <span class="patent-step-chip__num">${index + 1}</span>
+                <span class="patent-step-chip__label">${step}</span>
+              </div>
+            `).join("")}
+          </div>
+
+          ${renderTrademarkGoogleStep()}
+
+          <div class="patent-gform-actions">
+            <div class="patent-gform-actions__left">
+              ${currentWizardStep > 1 ? `<button class="btn btn-secondary" onclick="prevWizardStep()"><i class="fa-solid fa-arrow-left"></i> Previous</button>` : ""}
+            </div>
+            <div class="patent-gform-actions__right">
+              ${currentWizardStep < steps.length 
+                ? `<button class="btn btn-primary" onclick="nextWizardStep()">Continue <i class="fa-solid fa-arrow-right"></i></button>`
+                : `<button class="btn btn-success" onclick="submitForm()"><i class="fa-solid fa-check-double"></i> Submit Application</button>`}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTrademarkGoogleStep() {
+    return `
+        <div class="patent-gform-card">
+            <h2>${getTrademarkFormSteps()[currentWizardStep - 1]}</h2>
+            <p style="color: var(--gray-500); margin-bottom: 24px;">Please complete the details for this section of the TM-01 form.</p>
+            <div style="padding: 40px; text-align: center; background: var(--gray-50); border-radius: 12px; border: 2px dashed var(--gray-200);">
+                <i class="fa-solid fa-screwdriver-wrench" style="font-size: 2rem; color: var(--gray-300); margin-bottom: 12px;"></i>
+                <p style="color: var(--gray-400);">Form fields for this section are being initialized...</p>
+                <button class="btn btn-secondary btn-sm" style="margin-top: 15px;" onclick="nextWizardStep()">Skip to next step</button>
+            </div>
+        </div>
+    `;
+}
+
