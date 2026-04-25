@@ -7265,3 +7265,135 @@ body.compact-layout .sidebar-toggle {
   font-size: 0.95rem;
 }
 
+
+/* =============== PASSWORD RECOVERY & MOCK EMAIL =============== */
+.mock-email {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 320px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  display: flex;
+  padding: 16px;
+  gap: 16px;
+  cursor: pointer;
+  z-index: 9999;
+  border: 1px solid var(--gray-200);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.mock-email:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+}
+.mock-email .email-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--gold-light);
+  color: var(--gold);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.mock-email .email-content {
+  flex: 1;
+}
+.mock-email .email-sender {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.mock-email .email-subject {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+.mock-email .email-preview {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+.mock-email .email-close {
+  background: transparent;
+  border: none;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 4px;
+  align-self: flex-start;
+  transition: color 0.2s;
+}
+.mock-email .email-close:hover {
+  color: var(--red);
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(120%); opacity: 0; }
+}
+
+.mock-email.slide-in {
+  animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.mock-email.slide-out {
+  animation: slideOutRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Strength Meter */
+.password-strength {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.strength-meter {
+  flex: 1;
+  height: 6px;
+  background: var(--gray-100);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.strength-bar {
+  height: 100%;
+  width: 0;
+  background: var(--red);
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.strength-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  min-width: 45px;
+  text-align: right;
+}
+
+.email-modal {
+  max-width: 500px !important;
+  border-top: 6px solid var(--gold);
+}
+.email-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.email-modal-title {
+  font-weight: 800;
+  color: var(--navy);
+  font-size: 1.1rem;
+}

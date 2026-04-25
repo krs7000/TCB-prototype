@@ -374,19 +374,19 @@
             <div class="footer-col">
               <h4>Quick Links</h4>
               <ul>
-                <li><a href="#" onclick="navigateTo('landing')">Home</a></li>
-                <li><a href="#" onclick="navigateTo('marketplace')">Marketplace</a></li>
-                <li><a href="#" onclick="navigateTo('login')">Login</a></li>
+                <li><a href="javascript:void(0)" onclick="navigateTo('landing')">Home</a></li>
+                <li><a href="javascript:void(0)" onclick="navigateTo('marketplace')">Marketplace</a></li>
+                <li><a href="javascript:void(0)" onclick="navigateTo('login')">Login</a></li>
               </ul>
             </div>
             <div class="footer-col">
               <h4>Services</h4>
               <ul>
-                <li><a href="#">Patent Filing</a></li>
-                <li><a href="#">Trademark Registration</a></li>
-                <li><a href="#">Copyright Protection</a></li>
-                <li><a href="#">Utility Model Registration</a></li>
-                <li><a href="#">Industrial Design Registration</a></li>
+                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('patent-form', 'upload')">Patent Filing</a></li>
+                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('trademark-form', 'upload')">Trademark Registration</a></li>
+                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'upload')">Copyright Protection</a></li>
+                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('utility-form', 'upload')">Utility Model Registration</a></li>
+                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('industrial-form', 'upload')">Industrial Design Registration</a></li>
               </ul>
             </div>
             <div class="footer-col">
@@ -433,7 +433,7 @@
               <label class="checkbox-label">
                 <input type="checkbox" /> Remember me
               </label>
-              <a href="#" class="forgot-link">Forgot Password?</a>
+              <a href="javascript:void(0)" class="forgot-link" onclick="navigateTo('forgot-password')">Forgot Password?</a>
             </div>
 
 
@@ -455,6 +455,107 @@
         </div>
       </div>
     </section>
+
+    <!-- ====== FORGOT PASSWORD PAGE ====== -->
+    <section id="page-forgot-password" class="page">
+      <div class="login-wrapper">
+        <div class="login-card">
+          <div class="login-header">
+            <div class="brand-icon"><i class="fa-solid fa-key"></i></div>
+            <h2>Reset Your Password</h2>
+            <p>Please enter your email address to receive a recovery link.</p>
+          </div>
+          <div id="forgotPasswordFormContainer">
+            <form id="forgotPasswordForm" onsubmit="handleForgotPasswordSubmit(event)">
+              <div class="form-group">
+                <label for="forgotEmail">Email Address</label>
+                <div class="input-icon">
+                  <i class="fa-solid fa-envelope"></i>
+                  <input type="email" id="forgotEmail" placeholder="Enter your registered email" required />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-paper-plane"></i> Send Reset Link
+              </button>
+            </form>
+          </div>
+          <div class="login-footer">
+            <a href="javascript:void(0)" onclick="navigateTo('login')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Login</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== RESET PASSWORD PAGE ====== -->
+    <section id="page-reset-password" class="page">
+      <div class="login-wrapper">
+        <div class="login-card">
+          <div class="login-header">
+            <div class="brand-icon"><i class="fa-solid fa-shield-heart"></i></div>
+            <h2>Create New Password</h2>
+            <p>Set a strong password to secure your account.</p>
+          </div>
+          <form id="resetPasswordForm" onsubmit="handleResetPasswordSubmit(event)">
+            <div class="form-group">
+              <label for="newPassword">New Password</label>
+              <div class="input-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="newPassword" placeholder="Minimum 8 characters" oninput="checkPasswordStrength()" required />
+              </div>
+              <div class="password-strength">
+                <div class="strength-meter"><div id="strengthBar" class="strength-bar"></div></div>
+                <span id="strengthLabel" class="strength-label">Weak</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirm Password</label>
+              <div class="input-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="confirmPassword" placeholder="Repeat your new password" oninput="checkPasswordMatch()" required />
+              </div>
+              <span class="error-msg" id="confirmPasswordError"></span>
+            </div>
+            <button type="submit" id="resetBtn" class="btn btn-primary btn-block" disabled>
+              <i class="fa-solid fa-check"></i> Reset Password
+            </button>
+          </form>
+          <div class="login-footer">
+            <a href="javascript:void(0)" onclick="navigateTo('login')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Login</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== MOCK EMAIL COMPONENTS ====== -->
+    <!-- Mock Email Notification Bubble -->
+    <div id="mock-email-notification" class="mock-email" style="display:none;" onclick="openMockEmail()">
+      <div class="email-icon"><i class="fa-solid fa-envelope"></i></div>
+      <div class="email-content">
+        <div class="email-sender">System Administration</div>
+        <div class="email-subject">Reset Your Password</div>
+        <div class="email-preview">Click here to reset your account password...</div>
+      </div>
+      <button class="email-close" onclick="event.stopPropagation(); hideMockEmail()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Mock Email Full Modal -->
+    <div class="modal-overlay" id="emailModalOverlay" onclick="closeEmailModal()">
+      <div class="modal-card email-modal" onclick="event.stopPropagation()">
+        <div class="email-modal-header">
+          <div class="email-modal-title">Reset Your Password</div>
+          <button class="modal-close" onclick="closeEmailModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="email-modal-body" style="padding: 32px; color: var(--navy);">
+          <p>Hi there,</p>
+          <p style="margin: 16px 0;">We received a request to reset your password for your <strong>Creator's Bulwark</strong> account. If you didn't make this request, you can safely ignore this email.</p>
+          <div style="text-align:center; margin: 32px 0;">
+            <button class="btn btn-primary" onclick="closeEmailModal(); navigateTo('reset-password')" style="padding: 12px 32px;">Reset Password</button>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--gray-500);">This link will expire in 30 minutes for your security.</p>
+          <p style="margin-top: 24px;">Regards,<br><strong>PSU IP Management Team</strong></p>
+        </div>
+      </div>
+    </div>
 
 
     <!-- ====== SIGN-UP PAGE ====== -->

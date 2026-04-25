@@ -1952,10 +1952,18 @@ function navigateTo(page, isBack = false, params = null) {
     document.getElementById("page-forms").classList.add("active");
     document.getElementById("formsPublicContent").innerHTML = renderFormsPublicContent();
   } else if (page === "login") {
+    if (publicNav) publicNav.classList.add("active");
     document.getElementById("page-login").classList.add("active");
   } else if (page === "signup") {
+    if (publicNav) publicNav.classList.add("active");
     initSignupWizard();
     document.getElementById("page-signup").classList.add("active");
+  } else if (page === "forgot-password") {
+    if (publicNav) publicNav.classList.add("active");
+    document.getElementById("page-forgot-password").classList.add("active");
+  } else if (page === "reset-password") {
+    if (publicNav) publicNav.classList.add("active");
+    document.getElementById("page-reset-password").classList.add("active");
   } else if (dashboardPages.includes(page)) {
     if (!isLoggedIn) {
       navigateTo("login");
@@ -2648,12 +2656,157 @@ function handleMarketplaceAccess() {
 
 function showError(id, msg) {
   const el = document.getElementById(id);
-  el.textContent = msg;
-  el.classList.add("show");
-  el.previousElementSibling
-    ?.querySelector("input")
-    ?.classList.add("input-error");
+  if (el) {
+    el.innerText = msg;
+    el.style.display = 'block';
+  }
 }
+
+// ====== PASSWORD RECOVERY LOGIC ======
+
+window.handleForgotPasswordSubmit = function(e) {
+  if (e) e.preventDefault();
+  const email = document.getElementById('forgotEmail').value;
+  const container = document.getElementById('forgotPasswordFormContainer');
+  
+  // Security First: Generic success message
+  container.innerHTML = `
+    <div style="text-align:center; padding: 24px 0;">
+      <div style="width:64px; height:64px; background:rgba(34,197,94,0.1); color:#22c55e; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
+        <i class="fa-solid fa-circle-check" style="font-size:1.8rem;"></i>
+      </div>
+      <h3 style="color:var(--navy); margin-bottom:12px;">Link Sent!</h3>
+      <p style="color:var(--gray-600); font-size:0.9rem; line-height:1.6;">
+        If an account with <strong>${email}</strong> exists, we’ve sent a password reset link to that address.
+      </p>
+      <p style="color:var(--gray-500); font-size:0.8rem; margin-top:16px;">
+        Please check your inbox (and spam folder) for further instructions.
+      </p>
+    </div>
+  `;
+  
+  showToast("Recovery link processed.");
+  
+  // Trigger Mock Email after 2 seconds
+  setTimeout(showMockEmail, 2000);
+};
+
+window.showMockEmail = function() {
+  const mockEmail = document.getElementById('mock-email-notification');
+  if (mockEmail) {
+    mockEmail.style.display = 'flex';
+    mockEmail.classList.add('slide-in');
+    // Auto hide after 10 seconds
+    setTimeout(hideMockEmail, 10000);
+  }
+};
+
+window.hideMockEmail = function() {
+  const mockEmail = document.getElementById('mock-email-notification');
+  if (mockEmail) {
+    mockEmail.classList.remove('slide-in');
+    mockEmail.classList.add('slide-out');
+    setTimeout(() => {
+      mockEmail.style.display = 'none';
+      mockEmail.classList.remove('slide-out');
+    }, 500);
+  }
+};
+
+window.openMockEmail = function() {
+  document.getElementById('emailModalOverlay').classList.add('active');
+  hideMockEmail();
+};
+
+window.closeEmailModal = function() {
+  document.getElementById('emailModalOverlay').classList.remove('active');
+};
+
+window.handleResetPasswordSubmit = function(e) {
+  if (e) e.preventDefault();
+  
+  const newPass = document.getElementById('newPassword').value;
+  const confirmPass = document.getElementById('confirmPassword').value;
+  
+  if (newPass !== confirmPass) {
+    showError('confirmPasswordError', 'Passwords do not match.');
+    return;
+  }
+  
+  // Show final success modal
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  const overlay = document.getElementById("modalOverlay");
+  
+  modalTitle.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#22c55e; margin-right:10px;"></i> Success';
+  modalBody.innerHTML = `
+    <div style="text-align:center; padding: 20px 0;">
+      <h3 style="color:var(--navy); margin-bottom:12px;">Password Reset Successfully</h3>
+      <p style="color:var(--gray-600); font-size:0.9rem; line-height:1.6; margin-bottom:24px;">
+        Your password has been updated. You can now use your new password to sign in to your account.
+      </p>
+      <button class="btn btn-primary btn-block" onclick="closeModal(); navigateTo('login')" style="width:100%;">
+        Go to Login
+      </button>
+    </div>
+  `;
+  
+  overlay.classList.add("active");
+  showToast("Password successfully reset!");
+};
+
+window.checkPasswordStrength = function() {
+  const pass = document.getElementById('newPassword').value;
+  const bar = document.getElementById('strengthBar');
+  const label = document.getElementById('strengthLabel');
+  
+  if (!pass) {
+    bar.style.width = '0%';
+    label.innerText = 'Weak';
+    return;
+  }
+  
+  let strength = 0;
+  if (pass.length >= 8) strength += 25;
+  if (/[A-Z]/.test(pass)) strength += 25;
+  if (/[0-9]/.test(pass)) strength += 25;
+  if (/[^A-Za-z0-9]/.test(pass)) strength += 25;
+  
+  bar.style.width = strength + '%';
+  if (strength <= 25) {
+    bar.style.background = '#ef4444';
+    label.innerText = 'Weak';
+  } else if (strength <= 50) {
+    bar.style.background = '#f59e0b';
+    label.innerText = 'Fair';
+  } else if (strength <= 75) {
+    bar.style.background = '#3b82f6';
+    label.innerText = 'Good';
+  } else {
+    bar.style.background = '#22c55e';
+    label.innerText = 'Strong';
+  }
+  
+  checkPasswordMatch();
+};
+
+window.checkPasswordMatch = function() {
+  const pass = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const btn = document.getElementById('resetBtn');
+  const error = document.getElementById('confirmPasswordError');
+  
+  if (confirm && pass !== confirm) {
+    error.innerText = 'Passwords do not match.';
+    error.style.display = 'block';
+    btn.disabled = true;
+  } else {
+    error.innerText = '';
+    error.style.display = 'none';
+    btn.disabled = pass.length < 8;
+  }
+};
+
 function hideError(id) {
   const el = document.getElementById(id);
   el.classList.remove("show");
