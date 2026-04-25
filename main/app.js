@@ -6983,17 +6983,12 @@ function renderCopyrightEditorHeader(title, subtitle) {
 }
 
 function getCopyrightFormSteps() {
-  if (wizardData.applicantTypeGroup === 'Institution') {
-    return [
-      "Institutional Registration (BCRR 2025-2)",
-      "Final BCRR Preview",
-    ];
-  }
   return [
-    "Submission & Owner",
-    "Author & Work",
-    "Declarations & Uploads",
-    "Final BCRR Preview",
+    "Prepare Documents",
+    "Fill Out Form",
+    "Payment of Fees",
+    "Verification & Upload",
+    "Preview & Submit",
   ];
 }
 
@@ -7088,18 +7083,268 @@ function renderCopyrightGoogleForm(
 }
 
 function renderCopyrightGoogleStep() {
-  if (wizardData.applicantTypeGroup === 'Institution') {
-    if (currentWizardStep === 1) return renderCopyrightSupplementalStep();
-    return renderCopyrightPreviewStep();
-  } else {
-    if (currentWizardStep === 1) return renderCopyrightSubmissionOwnerStep();
-    if (currentWizardStep === 2) return renderCopyrightAuthorWorkStep();
-    if (currentWizardStep === 3) return renderCopyrightDeclarationsUploadsStep();
-    return renderCopyrightPreviewStep();
+  if (currentWizardStep === 1) return renderCopyrightPrepareDocumentsStep();
+  if (currentWizardStep === 2) {
+    if (wizardData.applicantTypeGroup === 'Institution') return renderCopyrightSupplementalStep();
+    return renderCopyrightFillFormStep();
   }
+  if (currentWizardStep === 3) return renderCopyrightPaymentStep();
+  if (currentWizardStep === 4) return renderCopyrightVerificationUploadStep();
+  return renderCopyrightPreviewStep();
+}
+
+
+// ===== NEW COPYRIGHT STEPS =====
+
+function renderCopyrightPrepareDocumentsStep() {
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 1</span>
+      <h2>Prepare Required Documents</h2>
+      <p>Before proceeding, ensure you have all the following documents ready. This is the standard checklist for copyright registration with IPOPHL.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title" style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-circle-check" style="color:var(--green);"></i>
+            Mandatory Documents
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:12px;">
+            ${[
+              { icon: "fa-file-contract", label: "Complete BCRR Form", sub: "Copyright Registration Form (BCRR FORM 2025-1 for Individual / BCRR FORM 2025-2 for Institution)", required: true },
+              { icon: "fa-id-card", label: "Proof of Identity", sub: "Any valid government-issued ID — required if the author is different from the applicant", required: true },
+              { icon: "fa-file-pdf", label: "Copy of the Work Being Registered", sub: "Scanned or digital copy of your copyright work (PDF preferred)", required: true },
+              { icon: "fa-scroll", label: "Affidavit of Ownership", sub: "Executed by the owner/author/creator. This is a mandatory requirement.", required: true },
+            ].map(doc => `
+              <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; border-radius:14px; background:var(--gray-50); border:1px solid var(--gray-100);">
+                <div style="width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,#10b981,#0f766e); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff; font-size:1rem;">
+                  <i class="fa-solid ${doc.icon}"></i>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-weight:700; color:var(--navy); font-size:0.92rem; display:flex; align-items:center; gap:8px;">
+                    ${doc.label}
+                    ${doc.required ? '<span style="font-size:0.68rem; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:999px; padding:2px 8px; font-weight:700;">REQUIRED</span>' : ''}
+                  </div>
+                  <div style="font-size:0.82rem; color:var(--gray-500); margin-top:4px; line-height:1.5;">${doc.sub}</div>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title" style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-circle-info" style="color:var(--gold);"></i>
+            Supporting Documents (If Applicable)
+          </div>
+          <div style="display:flex; flex-direction:column; gap:14px; margin-top:12px;">
+            ${[
+              { icon: "fa-file-signature", label: "Deed of Assignment", sub: "Required if applicant is a company or organization and the work was assigned to them by the creator." },
+              { icon: "fa-handshake", label: "License Agreement", sub: "If copyright is being registered under a licensing arrangement." },
+              { icon: "fa-building", label: "SEC / DTI Registration", sub: "For institutional applicants — proof of business or organization registration." },
+            ].map(doc => `
+              <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; border-radius:14px; background:var(--gray-50); border:1px dashed var(--gray-200);">
+                <div style="width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,#f59e0b,#d97706); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff; font-size:1rem;">
+                  <i class="fa-solid ${doc.icon}"></i>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-weight:700; color:var(--navy); font-size:0.92rem;">${doc.label}</div>
+                  <div style="font-size:0.82rem; color:var(--gray-500); margin-top:4px; line-height:1.5;">${doc.sub}</div>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div style="padding:16px; border-radius:14px; background:linear-gradient(135deg, rgba(16,185,129,0.06), rgba(15,118,110,0.08)); border:1px solid rgba(16,185,129,0.2);">
+            <div style="font-weight:800; color:#0f766e; font-size:0.9rem; margin-bottom:8px;"><i class="fa-solid fa-lightbulb"></i> Before You Continue</div>
+            <ul style="font-size:0.82rem; color:var(--gray-600); line-height:1.8; margin:0; padding-left:16px;">
+              <li>Scan all documents clearly and save them in <strong>PDF format</strong>.</li>
+              <li>Each file should be <strong>under 10 MB</strong>.</li>
+              <li>The Affidavit of Ownership must be <strong>notarized</strong> before uploading.</li>
+              <li>Click <strong>Next Section</strong> when all documents are ready.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+function renderCopyrightFillFormStep() {
+  // Combines all form sections into one scrollable step
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 2 — Fill Out Online Form</span>
+      <h2>Complete Your Copyright Application</h2>
+      <p>Fill in all fields below. These map directly to the BCRR Form sections and will populate the final preview.</p>
+    </div>
+    ${renderCopyrightSubmissionOwnerBody()}
+    ${renderCopyrightAuthorWorkBody()}
+    ${renderCopyrightDeclarationsUploadsBody()}
+  `;
+}
+
+function renderCopyrightPaymentStep() {
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 3</span>
+      <h2>Payment of Filing Fees</h2>
+      <p>After IPOPHL receives your application, they will send an Electronic Statement of Account (eSOA) to your email. Use the details below to complete payment.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title"><i class="fa-solid fa-receipt" style="margin-right:6px; color:var(--green);"></i> Filing Fee Schedule</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
+            <div style="padding:20px; border-radius:14px; background:var(--gray-50); border:1px solid var(--gray-100); text-align:center;">
+              <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:8px;">Small Entity</div>
+              <div style="font-size:2rem; font-weight:900; color:var(--navy);">₱450</div>
+              <div style="font-size:0.8rem; color:var(--gray-500); margin-top:4px;">Individuals, Micro/Small businesses, Non-profits</div>
+            </div>
+            <div style="padding:20px; border-radius:14px; background:var(--gray-50); border:1px solid var(--gray-100); text-align:center;">
+              <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:8px;">Big Entity</div>
+              <div style="font-size:2rem; font-weight:900; color:var(--navy);">₱625</div>
+              <div style="font-size:0.8rem; color:var(--gray-500); margin-top:4px;">Corporations, large institutions, multinational companies</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title"><i class="fa-solid fa-credit-card" style="margin-right:6px; color:var(--gold);"></i> Payment Methods</div>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
+            ${[
+              { icon: "fa-globe", label: "Online Payment Gateway", sub: "Pay via the official IPOPHL online portal (COPS)." },
+              { icon: "fa-credit-card", label: "Credit / Debit Card", sub: "Visa, Mastercard accepted through IPOPHL's secure payment page." },
+              { icon: "fa-mobile-screen-button", label: "GCash / Maya", sub: "Available via the IPOPHL payment gateway." },
+              { icon: "fa-building-columns", label: "Over-the-Counter (Partner Banks)", sub: "Land Bank of the Philippines and other accredited banks." },
+            ].map(pm => `
+              <div style="display:flex; gap:14px; align-items:center; padding:14px 16px; border-radius:12px; background:var(--gray-50); border:1px solid var(--gray-100);">
+                <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,#6366f1,#4f46e5); display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.9rem; flex-shrink:0;">
+                  <i class="fa-solid ${pm.icon}"></i>
+                </div>
+                <div>
+                  <div style="font-weight:700; color:var(--navy); font-size:0.88rem;">${pm.label}</div>
+                  <div style="font-size:0.78rem; color:var(--gray-500); margin-top:2px;">${pm.sub}</div>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div style="padding:16px; border-radius:14px; background:linear-gradient(135deg, rgba(99,102,241,0.06), rgba(79,70,229,0.08)); border:1px solid rgba(99,102,241,0.2);">
+            <div style="font-weight:800; color:#4f46e5; font-size:0.9rem; margin-bottom:8px;"><i class="fa-solid fa-envelope"></i> What Happens Next?</div>
+            <p style="font-size:0.82rem; color:var(--gray-600); line-height:1.7; margin:0;">
+              IPOPHL will send an <strong>Electronic Statement of Account (eSOA)</strong> to your registered email address after reviewing your submitted documents. 
+              Use the details in the eSOA to complete your payment, then proceed to the next step to upload your proof of payment.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+function renderCopyrightVerificationUploadStep() {
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 4</span>
+      <h2>Verification & Proof of Payment</h2>
+      <p>Upload your Official Receipt or Electronic Official Receipt (EOR) after completing payment. The Bureau will then review your complete submission.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title"><i class="fa-solid fa-upload" style="margin-right:6px; color:var(--green);"></i> Upload Proof of Payment</div>
+          <div style="margin-top:12px;">
+            ${renderConditionalPaymentUploadPanel(wizardData, {
+              inputId: "copyright-deposit-input",
+              onChange: "handleDepositUpload(this)",
+            })}
+          </div>
+          ${!wizardData.paymentProofUploaded ? `
+            <div style="margin-top:16px; padding:14px 16px; border-radius:12px; background:#fffbeb; border:1px solid #fde68a;">
+              <p style="font-size:0.82rem; color:#92400e; margin:0; line-height:1.6;">
+                <i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>
+                Upload your <strong>Official Receipt (OR)</strong> or <strong>Electronic Official Receipt (EOR)</strong> from IPOPHL after payment. 
+                Your application will not be processed until proof of payment is received.
+              </p>
+            </div>
+          ` : `
+            <div style="margin-top:16px; padding:14px 16px; border-radius:12px; background:#f0fdf4; border:1px solid #bbf7d0;">
+              <p style="font-size:0.82rem; color:#15803d; margin:0; line-height:1.6;">
+                <i class="fa-solid fa-circle-check" style="margin-right:6px;"></i>
+                Proof of payment uploaded. Your application will be reviewed by the Bureau.
+              </p>
+            </div>
+          `}
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title"><i class="fa-solid fa-magnifying-glass" style="margin-right:6px; color:var(--gold);"></i> What the Bureau Reviews</div>
+          <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+            ${[
+              "Completeness of submitted documents",
+              "Validity and authenticity of the Affidavit of Ownership",
+              "Clarity and eligibility of the work for copyright protection",
+              "Legal requirements (authorship, originality, fixation)",
+              "Technical requirements specific to the type of work",
+            ].map((item, i) => `
+              <div style="display:flex; gap:10px; align-items:flex-start; padding:10px 14px; background:var(--gray-50); border-radius:10px; border:1px solid var(--gray-100);">
+                <span style="font-size:0.75rem; font-weight:800; color:var(--green); margin-top:2px;">${i + 1}.</span>
+                <span style="font-size:0.84rem; color:var(--gray-700); line-height:1.5;">${item}</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div style="padding:16px; border-radius:14px; background:linear-gradient(135deg, rgba(16,185,129,0.06), rgba(15,118,110,0.08)); border:1px solid rgba(16,185,129,0.2);">
+            <div style="font-weight:800; color:#0f766e; font-size:0.9rem; margin-bottom:8px;"><i class="fa-solid fa-certificate"></i> After Approval</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+              <div style="padding:12px; background:white; border-radius:10px; border:1px solid rgba(16,185,129,0.15);">
+                <div style="font-size:1rem; margin-bottom:6px;">📧</div>
+                <div style="font-weight:700; color:var(--navy); font-size:0.85rem;">Digital Certificate</div>
+                <div style="font-size:0.78rem; color:var(--gray-500); margin-top:4px;">Sent via email — free of charge</div>
+              </div>
+              <div style="padding:12px; background:white; border-radius:10px; border:1px solid rgba(16,185,129,0.15);">
+                <div style="font-size:1rem; margin-bottom:6px;">📄</div>
+                <div style="font-weight:700; color:var(--navy); font-size:0.85rem;">Hard Copy Certificate</div>
+                <div style="font-size:0.78rem; color:var(--gray-500); margin-top:4px;">Optional — additional fee, pick up at IPOPHL office</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+// Body helpers used by renderCopyrightFillFormStep (call full step minus intro card)
+function renderCopyrightSubmissionOwnerBody() {
+  return renderCopyrightSubmissionOwnerStep().replace(/<div class="patent-gform-card">[\s\S]*?<\/div>\s*(?=<div class="patent-gform-card patent-gform-card--sheet">)/, '');
+}
+function renderCopyrightAuthorWorkBody() {
+  return renderCopyrightAuthorWorkStep().replace(/<div class="patent-gform-card">[\s\S]*?<\/div>\s*(?=<div class="patent-gform-card patent-gform-card--sheet">)/, '');
+}
+function renderCopyrightDeclarationsUploadsBody() {
+  return renderCopyrightDeclarationsUploadsStep().replace(/<div class="patent-gform-card">[\s\S]*?<\/div>\s*(?=<div class="patent-gform-card patent-gform-card--sheet">)/, '');
 }
 
 function renderCopyrightSubmissionOwnerStep() {
+
   return `
     <div class="patent-gform-card">
       <span class="patent-gform-kicker">Section 1</span>
@@ -12240,7 +12485,7 @@ window.showSubmissionMethodModal = function(typeId) {
       <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 24px; text-align: center;">Pick the most convenient way for you to register your ${title}.</p>
       
       <div class="method-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
-        <div class="method-card" onclick="${typeId === 'copyright-form' ? `showApplicantTypeModal('${typeId}', 'upload')` : `startSubmissionFlow('${typeId}', 'upload')`}" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
+        <div class="method-card" onclick="startSubmissionFlow('${typeId}', 'upload')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
           <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
             <i class="fa-solid fa-file-export"></i>
           </div>
