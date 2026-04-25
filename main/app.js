@@ -1951,6 +1951,10 @@ function navigateTo(page, isBack = false, params = null) {
     document.getElementById("public-nav").classList.add("active");
     document.getElementById("page-forms").classList.add("active");
     document.getElementById("formsPublicContent").innerHTML = renderFormsPublicContent();
+  } else if (page === "terms") {
+    document.getElementById("public-nav").classList.add("active");
+    document.getElementById("page-terms").classList.add("active");
+    document.getElementById("termsPublicContent").innerHTML = renderTermsAndConditions();
   } else if (page === "login") {
     if (publicNav) publicNav.classList.add("active");
     document.getElementById("page-login").classList.add("active");
@@ -3680,8 +3684,279 @@ window.toggleFaq = function (btn) {
     }
   }
 };
+window.showTermsModal = function() {
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  const modalFooter = document.getElementById("modalFooter");
+  
+  if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-file-contract"></i> Terms & Conditions`;
+  if (modalBody) {
+    modalBody.innerHTML = renderTermsAndConditions(true);
+  }
+  if (modalFooter) {
+    modalFooter.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">Close</button>`;
+  }
+  if (modalOverlay) {
+    modalOverlay.classList.add("active");
+  }
+};
+
+window.toggleSubmitButton = function() {
+  const checkbox = document.getElementById("reviewTermsConfirm");
+  const btn = document.getElementById("finalSubmitBtn");
+  if (checkbox && btn) {
+    btn.disabled = !checkbox.checked;
+  }
+};
+
+function renderTermsAndConditions(isModal = false) {
+  const sections = [
+    {
+      id: "ip-rights",
+      icon: "fa-shield-halved",
+      color: "#1e40af",
+      gradient: "linear-gradient(135deg, #1e40af, #3b82f6)",
+      badge: "Core Policy",
+      title: "Intellectual Property Rights",
+      content: `
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
+          This platform is designed to assist users in preparing and managing intellectual property applications 
+          in accordance with Philippine laws, specifically <strong>Republic Act No. 8293</strong> — the Intellectual Property Code of the Philippines.
+        </p>
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
+          All submissions — including Patents, Trademarks, Copyrights, Utility Models, and Industrial Designs — 
+          are covered under a unified IP policy aligned with RA 8293.
+        </p>
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8;">
+          By using this platform, users agree that all submissions are <strong>original or properly authorized</strong>. 
+          Users are solely responsible for ensuring that their submissions do not infringe on existing intellectual property rights.
+        </p>
+        <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
+          ${["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"].map(ip => `
+            <span style="padding:4px 12px; border-radius:999px; font-size:0.75rem; font-weight:700; background:rgba(30,64,175,0.08); color:#1e40af; border:1px solid rgba(30,64,175,0.15);">${ip}</span>
+          `).join("")}
+        </div>
+      `
+    },
+    {
+      id: "user-responsibility",
+      icon: "fa-user-shield",
+      color: "#0f766e",
+      gradient: "linear-gradient(135deg, #0f766e, #10b981)",
+      badge: "User Obligation",
+      title: "User Responsibility",
+      content: `
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
+          By submitting any application through this platform, the user confirms and represents the following:
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${[
+            { icon: "fa-user-check", text: "They are the <strong>rightful owner</strong> or an <strong>authorized representative</strong> of the intellectual property being submitted." },
+            { icon: "fa-circle-check", text: "All information provided is <strong>accurate, truthful, and complete</strong>." },
+            { icon: "fa-scale-balanced", text: "Submitted materials do <strong>not violate</strong> any existing laws, regulations, or third-party intellectual property rights." },
+            { icon: "fa-file-shield", text: "They understand and accept that false or misleading submissions may result in account suspension and legal liability." },
+          ].map(item => `
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:rgba(15,118,110,0.04); border:1px solid rgba(15,118,110,0.12); border-radius:10px;">
+              <i class="fa-solid ${item.icon}" style="color:#0f766e; margin-top:2px; font-size:0.9rem; flex-shrink:0;"></i>
+              <span style="font-size:0.87rem; color:var(--gray-700); line-height:1.6;">${item.text}</span>
+            </div>
+          `).join("")}
+        </div>
+      `
+    },
+    {
+      id: "platform-role",
+      icon: "fa-building-columns",
+      color: "#7c3aed",
+      gradient: "linear-gradient(135deg, #7c3aed, #a855f7)",
+      badge: "Important Notice",
+      title: "Platform Role & Limitations",
+      content: `
+        <div style="padding:14px 16px; border-radius:10px; background:#fffbeb; border:1px solid #fde68a; margin-bottom:16px;">
+          <p style="font-size:0.88rem; color:#92400e; margin:0; line-height:1.7;">
+            <i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>
+            <strong>This system serves as a submission and tracking platform for intellectual property applications. 
+            It does not guarantee approval, registration, or legal protection of any submission.</strong>
+          </p>
+        </div>
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:12px;">
+          All applications submitted through this platform are subject to review and evaluation by the appropriate authorities, 
+          including the <strong>Intellectual Property Office of the Philippines (IPOPHL)</strong> and relevant university bodies.
+        </p>
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8;">
+          The platform facilitates the preparation and organization of application documents but does not act as a legal representative or guarantor of any outcome.
+        </p>
+      `
+    },
+    {
+      id: "prohibited-use",
+      icon: "fa-ban",
+      color: "#dc2626",
+      gradient: "linear-gradient(135deg, #dc2626, #f87171)",
+      badge: "Prohibited",
+      title: "Prohibited Actions",
+      content: `
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
+          The following actions are strictly prohibited on this platform. Violations may result in immediate account termination and appropriate legal action.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${[
+            "Submitting <strong>false, fabricated, or misleading</strong> information in any application.",
+            "Uploading content that is <strong>unauthorized, infringing, or violates third-party rights</strong>.",
+            "<strong>Misrepresenting ownership</strong> or authorization for any intellectual property submission.",
+            "Attempting to <strong>circumvent or manipulate</strong> the review and evaluation process.",
+            "Using the platform for any purpose <strong>outside of legitimate IP registration</strong> and management.",
+          ].map((item, i) => `
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:rgba(220,38,38,0.04); border:1px solid rgba(220,38,38,0.12); border-radius:10px;">
+              <span style="font-size:0.75rem; font-weight:900; color:#dc2626; background:rgba(220,38,38,0.1); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">${i + 1}</span>
+              <span style="font-size:0.87rem; color:var(--gray-700); line-height:1.6;">${item}</span>
+            </div>
+          `).join("")}
+        </div>
+      `
+    },
+    {
+      id: "data-privacy",
+      icon: "fa-lock",
+      color: "#d97706",
+      gradient: "linear-gradient(135deg, #d97706, #f59e0b)",
+      badge: "Data Protection",
+      title: "Data & Privacy",
+      content: `
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
+          This platform is committed to protecting the privacy and confidentiality of all user data in accordance with the 
+          <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${[
+            { icon: "fa-database", text: "User data and submitted documents are stored securely and accessed only by authorized personnel." },
+            { icon: "fa-bullseye", text: "Data collected is used exclusively for <strong>processing and managing IP applications</strong> within the system." },
+            { icon: "fa-share-nodes", text: "Personal information will not be shared with third parties without the user's explicit consent, except as required by law." },
+            { icon: "fa-trash-can", text: "Users may request deletion or correction of their personal data by contacting the platform administrator." },
+          ].map(item => `
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:rgba(217,119,6,0.04); border:1px solid rgba(217,119,6,0.12); border-radius:10px;">
+              <i class="fa-solid ${item.icon}" style="color:#d97706; margin-top:2px; font-size:0.9rem; flex-shrink:0;"></i>
+              <span style="font-size:0.87rem; color:var(--gray-700); line-height:1.6;">${item.text}</span>
+            </div>
+          `).join("")}
+        </div>
+      `
+    },
+    {
+      id: "account-actions",
+      icon: "fa-user-slash",
+      color: "#374151",
+      gradient: "linear-gradient(135deg, #374151, #6b7280)",
+      badge: "Enforcement",
+      title: "Account Actions",
+      content: `
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
+          The platform administrators reserve the right to take the following actions to maintain the integrity of the system:
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${[
+            { icon: "fa-circle-pause", label: "Account Suspension", text: "Temporary suspension of accounts under investigation for policy violations." },
+            { icon: "fa-circle-xmark", label: "Account Termination", text: "Permanent termination of accounts confirmed to have violated these terms." },
+            { icon: "fa-file-circle-xmark", label: "Submission Rejection", text: "Rejection of any application found to contain false or infringing content." },
+            { icon: "fa-gavel", label: "Legal Referral", text: "Referral to appropriate legal authorities in cases of serious violations." },
+          ].map(item => `
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:10px;">
+              <i class="fa-solid ${item.icon}" style="color:#374151; margin-top:2px; font-size:0.9rem; flex-shrink:0;"></i>
+              <div>
+                <div style="font-weight:700; color:var(--navy); font-size:0.85rem; margin-bottom:2px;">${item.label}</div>
+                <span style="font-size:0.83rem; color:var(--gray-600); line-height:1.5;">${item.text}</span>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `
+    },
+  ];
+
+  return `
+    <div style="max-width:860px; margin:0 auto; padding: 16px 0 60px;">
+
+      <!-- Hero Header -->
+      <div style="text-align:center; margin-bottom:48px;">
+        <div style="width:64px; height:64px; border-radius:18px; background:linear-gradient(135deg,#1e40af,#3b82f6); display:flex; align-items:center; justify-content:center; margin:0 auto 20px; box-shadow:0 8px 24px rgba(30,64,175,0.25);">
+          <i class="fa-solid fa-file-contract" style="color:white; font-size:1.6rem;"></i>
+        </div>
+        <h1 style="font-size:2rem; font-weight:900; color:var(--navy); margin-bottom:12px; letter-spacing:-0.02em;">Terms &amp; Conditions</h1>
+        <p style="font-size:0.95rem; color:var(--gray-500); max-width:560px; margin:0 auto; line-height:1.7;">
+          Please read these terms carefully before using The Creator's Bulwark IP Management System. 
+          By accessing or submitting any application, you agree to be bound by these terms.
+        </p>
+        <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:20px; flex-wrap:wrap;">
+          <span style="font-size:0.78rem; color:var(--gray-400); font-weight:600;"><i class="fa-solid fa-calendar" style="margin-right:4px;"></i> Effective: January 1, 2026</span>
+          <span style="font-size:0.78rem; color:var(--gray-400); font-weight:600;"><i class="fa-solid fa-scale-balanced" style="margin-right:4px;"></i> Governed by Republic Act No. 8293</span>
+          <span style="font-size:0.78rem; color:var(--gray-400); font-weight:600;"><i class="fa-solid fa-location-dot" style="margin-right:4px;"></i> Philippines</span>
+        </div>
+      </div>
+
+      <!-- Quick Nav -->
+      <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:36px; padding:20px; background:white; border-radius:16px; border:1px solid var(--gray-100); box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+        <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); width:100%; margin-bottom:4px;">Jump to section</span>
+        ${sections.map(s => `
+          <a href="#terms-${s.id}" style="padding:6px 14px; border-radius:999px; font-size:0.78rem; font-weight:700; background:var(--gray-50); color:var(--navy); border:1px solid var(--gray-100); text-decoration:none; transition:all 0.2s ease;" 
+             onmouseover="this.style.background='${s.gradient}'; this.style.color='white'; this.style.borderColor='transparent';"
+             onmouseout="this.style.background='var(--gray-50)'; this.style.color='var(--navy)'; this.style.borderColor='var(--gray-100)';">
+            <i class="fa-solid ${s.icon}" style="margin-right:5px; font-size:0.75rem;"></i>${s.title}
+          </a>
+        `).join("")}
+      </div>
+
+      <!-- Sections -->
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        ${sections.map((s, idx) => `
+          <div id="terms-${s.id}" style="background:white; border-radius:20px; border:1px solid var(--gray-100); overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+            <div style="padding:20px 24px; border-bottom:1px solid var(--gray-100); display:flex; align-items:center; gap:14px;">
+              <div style="width:44px; height:44px; border-radius:12px; background:${s.gradient}; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(0,0,0,0.12);">
+                <i class="fa-solid ${s.icon}" style="color:white; font-size:1rem;"></i>
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:${s.color}; background:rgba(0,0,0,0.04); padding:2px 8px; border-radius:999px;">${s.badge}</span>
+                  <span style="font-size:0.7rem; font-weight:700; color:var(--gray-400);">Section ${idx + 1}</span>
+                </div>
+                <h2 style="font-size:1rem; font-weight:800; color:var(--navy); margin:4px 0 0;">${s.title}</h2>
+              </div>
+            </div>
+            <div style="padding:20px 24px;">
+              ${s.content}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+
+      <!-- Agreement Banner -->
+      <div style="margin-top:36px; padding:28px; border-radius:20px; background:linear-gradient(135deg, #1e3a5f, #1e40af); color:white; text-align:center; box-shadow:0 8px 32px rgba(30,64,175,0.3);">
+        <i class="fa-solid fa-handshake" style="font-size:2rem; margin-bottom:14px; opacity:0.9;"></i>
+        <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:10px;">Agreement</h3>
+        <p style="font-size:0.88rem; line-height:1.7; opacity:0.85; max-width:520px; margin:0 auto 20px;">
+          By continuing to use this platform, you acknowledge that you have read, understood, and agree to be bound by these Terms &amp; Conditions.
+        </p>
+
+        <div style="margin-top:20px;">
+          ${isModal 
+            ? `<a href="javascript:void(0)" onclick="closeModal()" style="display:inline-block; padding:12px 32px; background:white; color:#1e40af; font-weight:800; font-size:0.9rem; border-radius:10px; text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,0.15);">Close Terms &amp; Conditions</a>`
+            : `<a href="javascript:void(0)" onclick="navigateTo('landing')" style="display:inline-block; padding:12px 32px; background:white; color:#1e40af; font-weight:800; font-size:0.9rem; border-radius:10px; text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,0.15);"><i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Return to Homepage</a>`
+          }
+        </div>
+      </div>
+
+      <!-- Legal Footer Note -->
+      <p style="text-align:center; font-size:0.78rem; color:var(--gray-400); margin-top:24px; line-height:1.6;">
+        This platform is operated by Palawan State University — Intellectual Property &amp; Technology Transfer Office (IPTTO). 
+        For questions or concerns, contact <strong>ipo@psu.palawan.edu.ph</strong>
+      </p>
+
+    </div>
+  `;
+}
 
 function renderFaq() {
+
   const faqData = {
     patent: [
       {
@@ -11384,11 +11659,11 @@ function renderFormWizard(title) {
         </div>
         
         <div style="display:flex; gap:16px; align-items:center;">
-          <span style="font-size:0.8rem; color:var(--gray-400); font-weight:600; text-transform:uppercase;">Step ${currentWizardStep} of 4</span>
+          <span style="font-size:0.8rem; color:var(--gray-400); font-weight:600; text-transform:uppercase;">Step ${currentWizardStep} of ${getMaxWizardSteps()}</span>
           ${
-            currentWizardStep < 4
+            currentWizardStep < getMaxWizardSteps()
               ? `<button class="btn btn-primary" onclick="nextWizardStep()" style="padding:12px 32px; font-weight:700;">Next Step <i class="fa-solid fa-arrow-right"></i></button>`
-              : `<button class="btn btn-success" onclick="submitForm()" style="padding:12px 32px; font-weight:800;">Finalize & Submit Application <i class="fa-solid fa-paper-plane"></i></button>`
+              : `<button class="btn btn-success" id="finalSubmitBtn" onclick="submitForm()" style="padding:12px 32px; font-weight:800;" disabled>Finalize & Submit Application <i class="fa-solid fa-paper-plane"></i></button>`
           }
         </div>
       </div>
@@ -11787,6 +12062,14 @@ function renderStep4Review() {
     <div style="padding:16px 20px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;margin-top:4px;font-size:.85rem;color:#92400e;display:flex;gap:10px;align-items:flex-start">
       <i class="fa-solid fa-person-chalkboard" style="color:#d97706;margin-top:2px"></i>
       <div><strong>Manual Review Policy:</strong> Your submission will be reviewed by PSU IP Office staff. No AI-driven assessment occurs. You will be notified at your registered email once review is complete.</div>
+    </div>
+    <div style="margin-top: 24px; padding: 20px; background: white; border: 1px solid var(--gray-200); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+      <label style="display: flex; gap: 14px; align-items: flex-start; cursor: pointer; margin: 0; text-align: left;">
+        <input type="checkbox" id="reviewTermsConfirm" onchange="toggleSubmitButton()" style="margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0;">
+        <span style="font-size: 0.9rem; color: var(--gray-700); line-height: 1.6;">
+          I confirm that all submitted information is accurate and complies with the <a href="javascript:void(0)" onclick="event.stopPropagation(); showTermsModal();" style="color: var(--navy); font-weight: 800; text-decoration: underline;">Terms &amp; Conditions</a>
+        </span>
+      </label>
     </div>`;
 }
 

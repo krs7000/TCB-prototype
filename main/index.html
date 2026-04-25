@@ -377,6 +377,7 @@
                 <li><a href="javascript:void(0)" onclick="navigateTo('landing')">Home</a></li>
                 <li><a href="javascript:void(0)" onclick="navigateTo('marketplace')">Marketplace</a></li>
                 <li><a href="javascript:void(0)" onclick="navigateTo('login')">Login</a></li>
+                <li><a href="javascript:void(0)" onclick="navigateTo('terms')">Terms &amp; Conditions</a></li>
               </ul>
             </div>
             <div class="footer-col">
@@ -445,6 +446,9 @@
           <div class="login-footer">
             <p>Don't have an account? <a href="#" onclick="navigateTo('signup')">Sign up now</a></p>
             <a href="#" onclick="navigateTo('landing')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Return to Homepage</a>
+            <div style="margin-top: 15px; font-size: 0.75rem; color: var(--gray-400);">
+              <a href="javascript:void(0)" onclick="navigateTo('terms')" style="color: var(--gray-500); text-decoration: none;">Terms &amp; Conditions</a> | <a href="javascript:void(0)" style="color: var(--gray-500); text-decoration: none;">Privacy Policy</a>
+            </div>
           </div>
         </div>
         <!-- Bottom Decorative Shapes -->
@@ -633,6 +637,15 @@
                 <span class="error-msg" id="regPasswordError"></span>
               </div>
 
+              <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; text-align: left;">
+                  <input type="checkbox" id="regTerms" required style="margin-top: 4px; width: 16px; height: 16px; flex-shrink: 0;" />
+                  <span style="font-size: 0.85rem; color: var(--gray-600); line-height: 1.5;">
+                    I agree to the <a href="javascript:void(0)" onclick="event.stopPropagation(); showTermsModal()" style="color: var(--navy); font-weight: 800; text-decoration: underline;">Terms & Conditions</a>
+                  </span>
+                </label>
+              </div>
+
               <button type="submit" class="btn btn-primary btn-block">
                 <i class="fa-solid fa-user-check"></i> Sign Up
               </button>
@@ -715,6 +728,12 @@
       </div>
     </section>
 
+    <!-- ====== TERMS & CONDITIONS PAGE (PUBLIC) ====== -->
+    <section id="page-terms" class="page container" style="padding-top: 100px !important;">
+      <div id="termsPublicContent">
+        <!-- Terms & Conditions content injected by JS -->
+      </div>
+    </section>
 
 
     <!-- ====== MODALS ====== -->
