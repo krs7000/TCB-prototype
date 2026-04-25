@@ -6983,6 +6983,12 @@ function renderCopyrightEditorHeader(title, subtitle) {
 }
 
 function getCopyrightFormSteps() {
+  if (wizardData.applicantTypeGroup === 'Institution') {
+    return [
+      "Institutional Registration (BCRR 2025-2)",
+      "Final BCRR Preview",
+    ];
+  }
   return [
     "Submission & Owner",
     "Author & Work",
@@ -6992,7 +6998,9 @@ function getCopyrightFormSteps() {
 }
 
 function getCopyrightProgressPercent() {
-  return Math.max(25, Math.min(100, currentWizardStep * 25));
+  const stepsCount = getCopyrightFormSteps().length;
+  const stepSize = 100 / stepsCount;
+  return Math.max(stepSize, Math.min(100, currentWizardStep * stepSize));
 }
 
 function renderCopyrightGoogleForm(
@@ -7008,11 +7016,11 @@ function renderCopyrightGoogleForm(
       <div class="patent-gform-header">
         <div class="patent-gform-header-bar" style="background:linear-gradient(135deg, #10b981, #0f766e);"></div>
         <div class="patent-gform-card patent-gform-card--hero">
-          <span class="patent-gform-kicker">BCRR FORM 2025-1</span>
-          <h1>Fillable Copyright Form</h1>
+          <span class="patent-gform-kicker">${wizardData.applicantTypeGroup === 'Institution' ? 'BCRR FORM 2025-2' : 'BCRR FORM 2025-1'}</span>
+          <h1>${wizardData.applicantTypeGroup === 'Institution' ? 'Institutional Copyright Registration' : 'Fillable Copyright Form'}</h1>
           <p>Complete the Copyright Registry Enrollment Form online, then review a three-page BCRR-style preview based on your sample before submission.</p>
           <div class="patent-gform-meta">
-            <span><i class="fa-solid fa-copyright"></i> 4 guided sections</span>
+            <span><i class="fa-solid fa-copyright"></i> ${steps.length} guided sections</span>
             <span><i class="fa-solid fa-file-lines"></i> 3-page registry preview</span>
             <span><i class="fa-solid fa-building-shield"></i> BCRR enrollment layout</span>
           </div>
@@ -7047,7 +7055,7 @@ function renderCopyrightGoogleForm(
             <div class="patent-gform-actions__right">
               <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
               ${
-                currentWizardStep < 4
+                currentWizardStep < steps.length
                   ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next Section <i class="fa-solid fa-arrow-right"></i></button>`
                   : `<button class="btn btn-success" onclick="submitForm()">Submit Copyright Form <i class="fa-solid fa-paper-plane"></i></button>`
               }
@@ -7062,7 +7070,7 @@ function renderCopyrightGoogleForm(
             <div class="patent-progress-bar">
               <span style="width:${getCopyrightProgressPercent()}%; background:linear-gradient(135deg, #10b981, #0f766e);"></span>
             </div>
-            <p>Step ${currentWizardStep} of 4. The final step shows your completed three-page copyright registry form.</p>
+            <p>Step ${currentWizardStep} of ${steps.length}. The final step shows your completed three-page copyright registry form.</p>
           </div>
 
           <div class="patent-gform-card">
@@ -7080,10 +7088,15 @@ function renderCopyrightGoogleForm(
 }
 
 function renderCopyrightGoogleStep() {
-  if (currentWizardStep === 1) return renderCopyrightSubmissionOwnerStep();
-  if (currentWizardStep === 2) return renderCopyrightAuthorWorkStep();
-  if (currentWizardStep === 3) return renderCopyrightDeclarationsUploadsStep();
-  return renderCopyrightPreviewStep();
+  if (wizardData.applicantTypeGroup === 'Institution') {
+    if (currentWizardStep === 1) return renderCopyrightSupplementalStep();
+    return renderCopyrightPreviewStep();
+  } else {
+    if (currentWizardStep === 1) return renderCopyrightSubmissionOwnerStep();
+    if (currentWizardStep === 2) return renderCopyrightAuthorWorkStep();
+    if (currentWizardStep === 3) return renderCopyrightDeclarationsUploadsStep();
+    return renderCopyrightPreviewStep();
+  }
 }
 
 function renderCopyrightSubmissionOwnerStep() {
@@ -7229,16 +7242,6 @@ function renderCopyrightSubmissionOwnerStep() {
                 ${renderCopyrightChoice("copyrightOwnerAlsoAuthor", "no", "No")}
               </div>
             </div>
-          </div>
-        </div>
-
-        <div class="patent-editor-section">
-          <div class="patent-paper__section-title">4. Institutional Copyright Owner</div>
-
-          <div class="patent-editor-grid patent-editor-grid--three">
-            ${renderPatentEditorInput("Institution / Organization Name", "copyright-owner-institution-name", wizardData.copyrightOwnerInstitutionName, { placeholder: "For institutional owner use" })}
-            ${renderPatentEditorInput("Institution ISNI", "copyright-owner-institution-isni", wizardData.copyrightOwnerInstitutionIsni, { placeholder: "Optional" })}
-            ${renderPatentEditorInput("Business Registration", "copyright-owner-business-registration", wizardData.copyrightOwnerBusinessRegistration, { placeholder: "DTI / SEC / Other" })}
           </div>
         </div>
       </div>
@@ -7591,12 +7594,233 @@ function renderCopyrightDeclarationsUploadsStep() {
   `;
 }
 
+function captureCopyrightSupplementalData() {
+  if (!wizardData.copyrightSupplementalEntries) {
+    wizardData.copyrightSupplementalEntries = [];
+  }
+  const entries = document.querySelectorAll('.copyright-supplemental-entry');
+  if (entries.length > 0) {
+    wizardData.copyrightSupplementalEntries = Array.from(entries).map((entry, index) => {
+      const getVal = (idBase) => document.getElementById(`${idBase}-${index}`)?.value || "";
+      const getRadio = (namePrefix) => document.querySelector(`input[name="${namePrefix}-${index}"]:checked`)?.value || "";
+      const getChecks = (namePrefix) => Array.from(document.querySelectorAll(`input[name="${namePrefix}-${index}"]:checked`)).map(el => el.value);
+
+      return {
+        roles: getChecks("supp-role"),
+        // Individual
+        firstName: getVal("supp-first-name"),
+        middleName: getVal("supp-middle-name"),
+        surname: getVal("supp-surname"),
+        suffix: getVal("supp-suffix"),
+        isni: getVal("supp-isni"),
+        pseudonym: getVal("supp-pseudonym"),
+        pseudonymIsni: getVal("supp-pseudonym-isni"),
+        nameType: getRadio("supp-name-type"),
+        nationality: getVal("supp-nationality"),
+        alienCert: getVal("supp-alien-cert"),
+        birthDate: getVal("supp-birthdate"),
+        sex: getRadio("supp-sex"),
+        civilStatus: getVal("supp-civil-status"),
+        deceased: getRadio("supp-deceased"),
+        deathDate: getVal("supp-death-date"),
+        // Institutional
+        institutionName: getVal("supp-institution-name"),
+        institutionIsni: getVal("supp-institution-isni"),
+        businessReg: getChecks("supp-business-reg"),
+        businessRegOther: getVal("supp-business-reg-other"),
+        // Contact
+        address: getVal("supp-address"),
+        city: getVal("supp-city"),
+        province: getVal("supp-province"),
+        region: getVal("supp-region"),
+        country: getVal("supp-country"),
+        zip: getVal("supp-zip"),
+        email: getVal("supp-email"),
+        contactNumber: getVal("supp-contact")
+      };
+    });
+  }
+}
+
+window.addCopyrightSupplementalEntry = function() {
+  captureWizardData();
+  if (!wizardData.copyrightSupplementalEntries) {
+    wizardData.copyrightSupplementalEntries = [];
+  }
+  wizardData.copyrightSupplementalEntries.push({});
+  refreshWizard();
+};
+
+window.removeCopyrightSupplementalEntry = function(index) {
+  captureWizardData();
+  if (wizardData.copyrightSupplementalEntries && wizardData.copyrightSupplementalEntries.length > index) {
+    wizardData.copyrightSupplementalEntries.splice(index, 1);
+  }
+  refreshWizard();
+};
+
+function renderCopyrightSupplementalStep() {
+  if (!wizardData.copyrightSupplementalEntries || wizardData.copyrightSupplementalEntries.length === 0) {
+    wizardData.copyrightSupplementalEntries = [{}];
+  }
+
+  const entriesHtml = wizardData.copyrightSupplementalEntries.map((entry, index) => {
+    // helper for radio/checkbox
+    const renderChoice = (type, name, val, label, checkedState) => {
+      const isChecked = Array.isArray(checkedState) ? checkedState.includes(val) : checkedState === val;
+      return `<label class="patent-choice">
+        <input type="${type}" name="${name}-${index}" value="${val}" ${isChecked ? "checked" : ""} />
+        <span>${label}</span>
+      </label>`;
+    };
+
+    return `
+      <div class="patent-editor-section copyright-supplemental-entry" style="margin-top: 24px; padding: 20px; border: 2px dashed var(--gray-200); border-radius: 12px; background: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div class="patent-paper__section-title" style="margin-bottom: 0;">${index === 0 ? 'Primary Institutional Owner' : `Supplemental Entry #${index + 1}`}</div>
+          ${index > 0 ? `<button class="btn btn-sm btn-danger" onclick="removeCopyrightSupplementalEntry(${index})"><i class="fa-solid fa-trash"></i> Remove</button>` : ""}
+        </div>
+
+        <div class="patent-editor-inline-group">
+          <span class="patent-editor-inline-group__label">The following information is for (Tick one box only)</span>
+          <div class="patent-choice-grid">
+            ${renderChoice("radio", "supp-role", "coauthor", "Co-author(s)", entry.roles || [])}
+            ${renderChoice("radio", "supp-role", "copyright_owner", "Additional Copyright owner(s)", entry.roles || [])}
+            ${renderChoice("radio", "supp-role", "licensee", "Additional Licensee", entry.roles || [])}
+            ${renderChoice("radio", "supp-role", "mortgagee", "Additional Mortgagee", entry.roles || [])}
+          </div>
+        </div>
+
+        <div class="patent-paper__section-title" style="font-size: 0.9rem; background: var(--gray-100); padding: 8px; border-radius: 6px; margin-top: 24px;">FOR INDIVIDUAL INFORMATION USE ONLY</div>
+
+        <div class="patent-editor-grid patent-editor-grid--four">
+          ${renderPatentEditorInput("First Name", `supp-first-name-${index}`, entry.firstName)}
+          ${renderPatentEditorInput("Middle Name", `supp-middle-name-${index}`, entry.middleName)}
+          ${renderPatentEditorInput("Surname", `supp-surname-${index}`, entry.surname)}
+          ${renderPatentEditorInput("Suffix", `supp-suffix-${index}`, entry.suffix, { placeholder: "Put N/A if not applicable" })}
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--two">
+          ${renderPatentEditorInput("ISNI", `supp-isni-${index}`, entry.isni)}
+          ${renderPatentEditorInput("Nationality", `supp-nationality-${index}`, entry.nationality)}
+        </div>
+        <div class="patent-editor-inline-group">
+          <span class="patent-editor-inline-group__label">Name appearing in IPOPHL'S Copyright Search</span>
+          <div class="patent-choice-grid">
+            ${renderChoice("radio", "supp-name-type", "orig", "Original Name", entry.nameType)}
+            ${renderChoice("radio", "supp-name-type", "anon", "Anonymous", entry.nameType)}
+            ${renderChoice("radio", "supp-name-type", "pseudo", "Pseudonym", entry.nameType)}
+          </div>
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--two">
+          ${renderPatentEditorInput("Pseudonym", `supp-pseudonym-${index}`, entry.pseudonym)}
+          ${renderPatentEditorInput("Pseudonym's ISNI Number", `supp-pseudonym-isni-${index}`, entry.pseudonymIsni)}
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--two">
+          ${renderPatentEditorInput("Alien Certificate of Reg. No.", `supp-alien-cert-${index}`, entry.alienCert)}
+          ${renderPatentEditorInput("Date of Birth", `supp-birthdate-${index}`, entry.birthDate, { type: "date" })}
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--two">
+          <div class="patent-editor-inline-group">
+            <span class="patent-editor-inline-group__label">Sex</span>
+            <div class="patent-choice-grid">
+              ${renderChoice("radio", "supp-sex", "m", "Male", entry.sex)}
+              ${renderChoice("radio", "supp-sex", "f", "Female", entry.sex)}
+            </div>
+          </div>
+          <div class="patent-editor-inline-group">
+            <span class="patent-editor-inline-group__label">Civil Status</span>
+            <div class="patent-choice-grid">
+              ${renderChoice("radio", "supp-civil-status", "single", "Single", entry.civilStatus)}
+              ${renderChoice("radio", "supp-civil-status", "married", "Married", entry.civilStatus)}
+              ${renderChoice("radio", "supp-civil-status", "widow", "Widow", entry.civilStatus)}
+              ${renderChoice("radio", "supp-civil-status", "sep", "Separated/Divorced", entry.civilStatus)}
+            </div>
+          </div>
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--two">
+          <div class="patent-editor-inline-group">
+            <span class="patent-editor-inline-group__label">Is the author/creator/performer deceased?</span>
+            <div class="patent-choice-grid">
+              ${renderChoice("radio", "supp-deceased", "no", "No", entry.deceased)}
+              ${renderChoice("radio", "supp-deceased", "yes", "Yes", entry.deceased)}
+            </div>
+          </div>
+          ${renderPatentEditorInput("Date of Death", `supp-death-date-${index}`, entry.deathDate, { type: "date" })}
+        </div>
+
+        <div class="patent-paper__section-title" style="font-size: 0.9rem; background: var(--gray-100); padding: 8px; border-radius: 6px; margin-top: 24px;">INSTITUTIONAL INFORMATION</div>
+
+        <div class="patent-editor-grid patent-editor-grid--two">
+          ${renderPatentEditorInput("Institution / Organization Name", `supp-institution-name-${index}`, entry.institutionName)}
+          ${renderPatentEditorInput("Institution ISNI", `supp-institution-isni-${index}`, entry.institutionIsni)}
+        </div>
+        <div class="patent-editor-inline-group">
+          <span class="patent-editor-inline-group__label">Business Registration</span>
+          <div class="patent-choice-grid">
+            ${renderChoice("checkbox", "supp-business-reg", "dti", "Registered with DTI", entry.businessReg)}
+            ${renderChoice("checkbox", "supp-business-reg", "sec", "Registered with SEC", entry.businessReg)}
+            ${renderChoice("checkbox", "supp-business-reg", "not-applicable", "Not applicable", entry.businessReg)}
+            ${renderChoice("checkbox", "supp-business-reg", "other", "Other", entry.businessReg)}
+          </div>
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--one">
+          ${renderPatentEditorInput("Other Business Registration Details", `supp-business-reg-other-${index}`, entry.businessRegOther)}
+        </div>
+
+        <div class="patent-paper__section-title" style="font-size: 0.9rem; background: var(--gray-100); padding: 8px; border-radius: 6px; margin-top: 24px;">CONTACT INFORMATION</div>
+
+        <div class="patent-editor-grid patent-editor-grid--one">
+          ${renderPatentEditorInput("Address", `supp-address-${index}`, entry.address, { placeholder: "Street, Village, Subdivision, Barangay", fullWidth: true })}
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--four">
+          ${renderPatentEditorInput("Municipality / City", `supp-city-${index}`, entry.city)}
+          ${renderPatentEditorInput("Province / State", `supp-province-${index}`, entry.province)}
+          ${renderPatentEditorInput("Region", `supp-region-${index}`, entry.region)}
+          ${renderPatentEditorSelect("Country", `supp-country-${index}`, entry.country || "Philippines", [
+            { value: "", label: "Select country" },
+            { value: "Philippines", label: "Philippines" },
+            { value: "United States", label: "United States" },
+            { value: "Japan", label: "Japan" },
+            { value: "Singapore", label: "Singapore" },
+            { value: "Australia", label: "Australia" },
+          ])}
+        </div>
+        <div class="patent-editor-grid patent-editor-grid--three">
+          ${renderPatentEditorInput("ZIP Code", `supp-zip-${index}`, entry.zip)}
+          ${renderPatentEditorInput("Email Address", `supp-email-${index}`, entry.email, { type: "email" })}
+          ${renderPatentEditorInput("Contact Number", `supp-contact-${index}`, entry.contactNumber)}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Section 1</span>
+      <h2>Institutional Registration (BCRR FORM 2025-2)</h2>
+      <p>Use this form to register an institutional copyright owner. You can also add additional authors, creators, licensees, or mortgagees.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+        ${entriesHtml}
+        
+        <div style="margin-top: 24px; text-align: center;">
+          <button class="btn btn-secondary" onclick="addCopyrightSupplementalEntry()">
+            <i class="fa-solid fa-plus"></i> Add Another Entry
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderCopyrightPreviewStep() {
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Section 4</span>
+      <span class="patent-gform-kicker">Section ${currentWizardStep}</span>
       <h2>Final BCRR Preview</h2>
-      <p>This is the three-page BCRR-style output based on your sample. Go back to any section if you want to revise the final form before submitting.</p>
+      <p>This is the BCRR-style output based on your sample. Go back to any section if you want to revise the final form before submitting.</p>
     </div>
 
     <div class="patent-gform-card patent-gform-card--sheet">
@@ -7611,6 +7835,21 @@ function renderCopyrightPreviewStep() {
 }
 
 function renderCopyrightSubmissionList() {
+  if (wizardData.applicantTypeGroup === 'Institution') {
+    const mainEntry = wizardData.copyrightSupplementalEntries?.[0];
+    const summary = [
+      `Main Institution: ${mainEntry?.institutionName || "Unknown"}`,
+      `Entries Count: ${wizardData.copyrightSupplementalEntries?.length || 0}`,
+      `Submission type: ${wizardData.copyrightSubmissionType || "electronic"}`,
+      `Required uploads: ${getUploadedRequiredCount("copyright", wizardData)}/${getRequiredDocumentCount("copyright")}`,
+    ];
+    return `
+      <ul class="patent-preview-list">
+        ${summary.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+    `;
+  }
+
   const summary = [
     `Work title: ${wizardData.copyrightWorkTitle || wizardData.title || "Untitled work"}`,
     `Owner mode: ${wizardData.copyrightOwnerMode || "individual"}`,
@@ -7692,11 +7931,204 @@ function renderCopyrightOwnerPrintedName() {
 }
 
 function renderCopyrightFormSheetBundle() {
+  if (wizardData.applicantTypeGroup === 'Institution') {
+    return renderCopyrightSupplementalSheetBundle();
+  }
+
   return `
     <div class="copyright-paper-stack">
       ${renderCopyrightFormSheetPage1()}
       ${renderCopyrightFormSheetPage2()}
       ${renderCopyrightReferencePage3()}
+    </div>
+  `;
+}
+
+function renderCopyrightSupplementalSheetBundle() {
+  const entries = wizardData.copyrightSupplementalEntries || [];
+  
+  if (entries.length === 0) {
+    return `<div class="copyright-paper-stack"><div class="copyright-paper"><div style="padding: 40px; text-align: center;">No entries found.</div></div></div>`;
+  }
+
+  const chunks = [];
+  for (let i = 0; i < entries.length; i += 2) {
+    chunks.push(entries.slice(i, i + 2));
+  }
+
+  const pages = chunks.map((chunk, index) => {
+    const renderLocalMarks = (valueArray, options, round = false) => {
+      return `
+        <div class="patent-official-choice-row">
+          ${options.map(([optVal, label]) => 
+            renderPatentOfficialMark(label, Array.isArray(valueArray) ? valueArray.includes(optVal) : valueArray === optVal, { round })
+          ).join("")}
+        </div>
+      `;
+    };
+
+    const renderBlock = (entry) => {
+      if (!entry) {
+        entry = { institutionName: "", institutionIsni: "", businessReg: "", businessRegOther: "", address: "", city: "", province: "", region: "", country: "", zip: "", email: "", contactNumber: "" };
+      }
+      return `
+          <div style="background: #000; color: #fff; display: flex; align-items: center; padding: 4px 8px; font-size: 0.7rem; margin-top: 8px; border: 1px solid #000;">
+            <div style="display: flex; align-items: center; margin-right: 15px;">
+              <span style="font-weight: 800; margin-right: 6px;">Number</span>
+              <div style="background: #fff; width: 40px; height: 16px;"></div>
+            </div>
+            <div style="font-weight: 600; margin-right: 15px;">The following information is for (Tick one box only)</div>
+            <div style="display: flex; gap: 12px; align-items: center; margin-left: 20px;">
+              ${renderLocalMarks(entry.roles || [], [
+                ["coauthor", "Co-author(s)"],
+                ["copyright_owner", "Additional Copyright owner(s)"],
+                ["licensee", "Additional Licensee"],
+                ["mortgagee", "Additional Mortgagee"]
+              ])}
+            </div>
+          </div>
+          
+          <div style="background: #d1d5db; border: 1px solid #000; border-top: 0; padding: 4px; font-size: 0.75rem; font-weight: 800; text-align: center;">FOR INDIVIDUAL INFORMATION USE ONLY</div>
+          ${renderCopyrightOfficialRow(
+            renderCopyrightOfficialField("First Name", entry.firstName) +
+            renderCopyrightOfficialField("Middle Name (Put N/A if not applicable)", entry.middleName) +
+            renderCopyrightOfficialField("Surname", entry.surname) +
+            renderCopyrightOfficialField("Suffix (Put N/A if not applicable)", entry.suffix),
+            "copyright-grid--4"
+          )}
+          ${renderCopyrightOfficialRow(
+            renderCopyrightOfficialField("International Standard Name Identifier Number (ISNI)", entry.isni, { span: 1 }) +
+            `<div class="copyright-cell copyright-cell--span-3">
+              <div class="copyright-cell__label">Name appearing in IPOPHL'S Copyright Search</div>
+              <div class="copyright-cell__value copyright-cell__value--choices" style="display: flex; width: 100%;">
+                ${renderLocalMarks(entry.nameType || "", [["orig", "Original Name"], ["anon", "Anonymous"], ["pseudo", "Pseudonym (Please indicate):"]], false)}
+                <div style="flex: 1; border-bottom: 1px solid #000; margin: 0 10px; height: 14px; font-weight: normal; overflow: hidden;">${entry.pseudonym || ''}</div>
+                <div style="display: flex; align-items: center; white-space: nowrap;">Pseudonym's ISNI Number: <div style="border-bottom: 1px solid #000; width: 120px; margin-left: 5px; height: 14px; font-weight: normal; overflow: hidden;">${entry.pseudonymIsni || ''}</div></div>
+              </div>
+            </div>`,
+            "copyright-grid--4"
+          )}
+          <div class="copyright-grid" style="grid-template-columns: 1fr 1fr 1fr 1.5fr;">
+            <div class="copyright-cell">
+              <div class="copyright-cell__label">Nationality</div>
+              <div class="copyright-cell__value">${escapeHtml(entry.nationality || '')}</div>
+            </div>
+            <div class="copyright-cell">
+              <div class="copyright-cell__label" style="line-height: 1.1;">Alien Certificate of Reg. No.<br><i style="font-weight:normal">(Put N/A if not applicable)</i></div>
+              <div class="copyright-cell__value">${escapeHtml(entry.alienCert || '')}</div>
+            </div>
+            <div class="copyright-cell">
+              <div class="copyright-cell__label" style="line-height: 1.1;">Date of Birth<br><i style="font-weight:normal">(YYYY/MM/DD)</i></div>
+              <div class="copyright-cell__value">${escapeHtml(entry.birthDate || '')}</div>
+            </div>
+            <div class="copyright-cell" style="padding: 0; display: flex; flex-direction: row;">
+              <div style="display: flex; flex-direction: column; flex: 1; padding: 4px 6px;">
+                <div class="copyright-cell__label">Sex</div>
+                <div class="copyright-cell__value copyright-cell__value--choices" style="border: none; background: transparent; padding: 0;">${renderLocalMarks(entry.sex || "", [["m", "Male"], ["f", "Female"]])}</div>
+              </div>
+              <div style="display: flex; flex-direction: column; flex: 2; padding: 4px 6px; border-left: 1px solid #000;">
+                <div class="copyright-cell__label">Civil Status</div>
+                <div class="copyright-cell__value copyright-cell__value--choices" style="border: none; background: transparent; padding: 0;">${renderLocalMarks(entry.civilStatus || "", [["single", "Single"], ["married", "Married"], ["widow", "Widow"], ["sep", "Separated/Divorced"]])}</div>
+              </div>
+            </div>
+          </div>
+          ${renderCopyrightOfficialRow(
+            `<div style="padding: 6px 10px; display: flex; align-items: center; gap: 12px; font-size: 0.67rem; font-weight: 700; width: 100%;">
+              Is the author/creator/performer deceased? 
+              ${renderLocalMarks(entry.deceased || "", [["no", "No"], ["yes", "Yes"]])}
+              <span style="margin-left: 10px;">Date of Death <i style="font-weight:normal">(YYYY/MM/DD)</i>:</span> 
+              <div style="border-bottom: 1px solid #000; width: 120px; height: 14px; font-weight: normal; overflow: hidden;">${escapeHtml(entry.deathDate || '')}</div>
+            </div>`,
+            "copyright-grid"
+          )}
+
+          <div style="background: #d1d5db; border: 1px solid #000; border-top: 0; padding: 4px; font-size: 0.75rem; font-weight: 800; text-align: center;">FOR INSTITUTIONAL INFORMATION USE ONLY</div>
+          ${renderCopyrightOfficialRow(
+            renderCopyrightOfficialField("Name Of School/Company/Organization/Broadcaster", entry.institutionName) +
+            renderCopyrightOfficialField("International Standard Name Identifier Number (ISNI)", entry.institutionIsni),
+            "copyright-grid--2"
+          )}
+          ${renderCopyrightOfficialRow(
+            `<div class="copyright-cell copyright-cell--span-2">
+              <div class="copyright-cell__label">Business Registration</div>
+              <div class="copyright-cell__value copyright-cell__value--choices" style="display: flex; align-items: center;">
+                ${renderLocalMarks(entry.businessReg || "", [
+                  ["dti", "Registered with DTI"],
+                  ["sec", "Registered with SEC"],
+                  ["not-applicable", "Not applicable"]
+                ])}
+                <div style="display: flex; align-items: center; margin-left: 10px;">
+                  ${renderLocalMarks(entry.businessReg || "", [["other", "Other:"]])}
+                  <div style="border-bottom: 1px solid #000; width: 100px; margin-left: 4px; font-weight: normal;">${entry.businessRegOther || ''}</div>
+                </div>
+              </div>
+            </div>`,
+            "copyright-grid"
+          )}
+
+          <div style="background: #d1d5db; border: 1px solid #000; border-top: 0; padding: 4px; font-size: 0.75rem; font-weight: 800; text-align: center;">CONTACT INFORMATION AND ADDRESS OF INDIVIDUAL OR INSTITUTION</div>
+          ${renderCopyrightOfficialRow(
+            renderCopyrightOfficialField("Address (Street, Village, Subdivision, Barangay)", entry.address, { span: 2 }) +
+            renderCopyrightOfficialField("Municipality/City", entry.city) +
+            renderCopyrightOfficialField("Province/State", entry.province),
+            "copyright-grid--4"
+          )}
+          <div class="copyright-grid" style="grid-template-columns: 1fr 1fr 1fr 1.5fr 1.5fr;">
+            ${renderCopyrightOfficialField("Region", entry.region)}
+            ${renderCopyrightOfficialField("Country", entry.country)}
+            ${renderCopyrightOfficialField("ZIP Code", entry.zip)}
+            ${renderCopyrightOfficialField("Email Address", entry.email)}
+            ${renderCopyrightOfficialField("Contact Number", entry.contactNumber)}
+          </div>
+      `;
+    };
+
+    return `
+      <div class="copyright-paper-wrap">
+        <div class="copyright-paper">
+          <div class="copyright-paper__header">
+            <div class="copyright-paper__brand">
+              <img src="images/ipophl_logo.png" alt="IPOPHL logo" class="copyright-paper__logo" />
+              <div>
+                <div class="copyright-paper__meta">Republic of the Philippines</div>
+                <div class="copyright-paper__agency">Intellectual Property Office of the Philippines</div>
+                <div class="copyright-paper__bureau">Bureau of Copyright and Related Rights</div>
+              </div>
+            </div>
+            <div class="copyright-paper__office">
+              <div class="copyright-paper__office-copy">Intellectual Property Center<br>#28 Upper McKinley Rd., Fort Bonifacio<br>Taguig City 1634 PH<br>+63 (2) 7238-6300<br>copyright_registration@ipophil.gov.ph</div>
+              <div class="copyright-paper__tag" style="margin-top: 6px;">BCRR FORM 2025-2</div>
+            </div>
+          </div>
+          
+          <div class="copyright-paper__title" style="margin-top: 15px; font-weight: 800; font-size: 1.2rem; text-align: center; line-height: 1.2;">
+            Supplemental Form<br>for Additional Author/Creator/Copyright Owner/Licensee/Mortgagee
+          </div>
+          
+          <div style="background: #000; color: #fff; font-weight: 800; padding: 4px 8px; font-size: 0.75rem; margin-top: 15px;">INSTRUCTIONS:</div>
+          <div style="border: 1px solid #000; border-top: 0; padding: 6px 8px; font-size: 0.7rem; line-height: 1.4;">
+            1. This form must be used for a single copyright work only with more than one author, copyright owner, licensee, or mortgagee.<br>
+            2. Put (N/A) in the fields which are not applicable. For fields with boxes, use a checkmark (✓) to choose the applicable box.<br>
+            3. Use additional BCRR FORM 2025-2 as needed.
+          </div>
+
+          ${renderBlock(chunk[0])}
+          
+          <div style="height: 12px;"></div>
+
+          ${renderBlock(chunk[1])}
+          
+          <div class="copyright-paper__footer" style="margin-top: 40px; border-top: 1px solid #000; padding-top: 4px; text-align: center; font-size: 0.8rem;">
+            <span>Page ${index + 1} of ${chunks.length}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="copyright-paper-stack">
+      ${pages}
     </div>
   `;
 }
@@ -8191,7 +8623,6 @@ function captureCopyrightGoogleData() {
     ["copyright-owner-birthdate", "copyrightOwnerBirthDate"],
     ["copyright-owner-institution-name", "copyrightOwnerInstitutionName"],
     ["copyright-owner-institution-isni", "copyrightOwnerInstitutionIsni"],
-    ["copyright-owner-business-registration", "copyrightOwnerBusinessRegistration"],
     ["copyright-owner-address", "copyrightOwnerAddress"],
     ["copyright-owner-city", "copyrightOwnerCity"],
     ["copyright-owner-province", "copyrightOwnerProvince"],
@@ -8315,6 +8746,19 @@ function captureCopyrightGoogleData() {
   if (!countries.includes(wizardData.copyrightAuthorCountry)) {
     wizardData.copyrightAuthorCountry = wizardData.copyrightAuthorCountry || "Philippines";
   }
+
+  wizardData.copyrightOwnerBusinessRegistration = getCheckedValuesByName("copyrightOwnerBusinessRegistration");
+  wizardData.copyrightOwnerBusinessRegistrationOther = document.getElementById("copyright-owner-business-registration-other")?.value || wizardData.copyrightOwnerBusinessRegistrationOther || "";
+  wizardData.copyrightOwnerInstitutionAddress = document.getElementById("copyright-owner-institution-address")?.value || wizardData.copyrightOwnerInstitutionAddress || "";
+  wizardData.copyrightOwnerInstitutionCity = document.getElementById("copyright-owner-institution-city")?.value || wizardData.copyrightOwnerInstitutionCity || "";
+  wizardData.copyrightOwnerInstitutionProvince = document.getElementById("copyright-owner-institution-province")?.value || wizardData.copyrightOwnerInstitutionProvince || "";
+  wizardData.copyrightOwnerInstitutionRegion = document.getElementById("copyright-owner-institution-region")?.value || wizardData.copyrightOwnerInstitutionRegion || "";
+  wizardData.copyrightOwnerInstitutionCountry = document.getElementById("copyright-owner-institution-country")?.value || wizardData.copyrightOwnerInstitutionCountry || "";
+  wizardData.copyrightOwnerInstitutionZip = document.getElementById("copyright-owner-institution-zip")?.value || wizardData.copyrightOwnerInstitutionZip || "";
+  wizardData.copyrightOwnerInstitutionEmail = document.getElementById("copyright-owner-institution-email")?.value || wizardData.copyrightOwnerInstitutionEmail || "";
+  wizardData.copyrightOwnerInstitutionContact = document.getElementById("copyright-owner-institution-contact")?.value || wizardData.copyrightOwnerInstitutionContact || "";
+
+  captureCopyrightSupplementalData();
 
   const ownerName =
     wizardData.copyrightOwnerMode === "institutional"
@@ -11484,11 +11928,20 @@ function captureWizardData() {
   }
 }
 
+function getMaxWizardSteps() {
+  if (isCopyrightGoogleFlow()) return getCopyrightFormSteps().length;
+  if (isPatentGoogleFlow()) return 4;
+  if (isUtilityGoogleFlow()) return 4;
+  if (isIndustrialGoogleFlow()) return 4;
+  return 4;
+}
+
 function nextWizardStep() {
   captureWizardData();
-  if (currentWizardStep < 4) {
+  const maxSteps = getMaxWizardSteps();
+  if (currentWizardStep < maxSteps) {
     if (currentWizardStep === 1 && submissionMethod === "upload") {
-      currentWizardStep = 3; // Fast-track to upload step
+      currentWizardStep = maxSteps - 1; // Fast-track to upload step
     } else {
       currentWizardStep++;
     }
@@ -11839,10 +12292,7 @@ window.showApplicantTypeModal = function(typeId, method) {
 };
 
 window.setApplicantTypeAndStart = function(typeId, method, applicantType) {
-  startSubmissionFlow(typeId, method);
-  if (typeof wizardData !== 'undefined') {
-    wizardData.applicantTypeGroup = applicantType;
-  }
+  startSubmissionFlow(typeId, method, applicantType);
 };
 
 window.initiateDirectRegistration = function(typeId, method) {
@@ -11982,8 +12432,11 @@ function renderFormsPublicContent() {
   return renderForms();
 }
 
-window.startSubmissionFlow = function(typeId, method) {
+window.startSubmissionFlow = function(typeId, method, applicantType = null) {
   wizardData = createSubmissionWizardSeed();
+  if (applicantType) {
+    wizardData.applicantTypeGroup = applicantType;
+  }
   selectedSubmissionId = null;
   currentWizardStep = 1;
   submissionMethod = method;
