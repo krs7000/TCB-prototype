@@ -175,335 +175,181 @@ let announcements = [
 
 // ===== MOCK DATA =====
 let submissions = [
+  // PATENTS
   {
     id: "PSU-PAT-2026-001",
     type: "Patent",
-    title: "Bamboo-Based Water Filtration Device",
+    title: "High-Efficiency Solar Distiller",
     applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09171234567",
-    status: "Approved",
-    date: "2026-01-15",
-    description:
-      "An innovative water filtration system using locally-sourced bamboo charcoal and natural minerals from Palawan.",
-    field: "Environmental Engineering",
-    dateConceived: "2025-08-10",
-  },
-  {
-    id: "PSU-COP-2026-002",
-    type: "Copyright",
-    title: "PSU EcoLearn App",
-    applicant: "Juan dela Cruz",
-    department: "College of Sciences",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09181234567",
     status: "Pending",
-    date: "2026-02-20",
-    description:
-      "A mobile learning application focused on environmental science education for Palawan communities.",
-    workType: "Software Application",
-    dateCreated: "2025-11-05",
+    date: "2026-04-01",
+    department: "College of Engineering",
+    description: "A solar-powered distiller optimized for brackish water."
   },
   {
-    id: "PSU-TM-2026-003",
-    type: "Trademark",
-    title: "AquaGuard Brand Mark",
+    id: "PSU-PAT-2026-002",
+    type: "Patent",
+    title: "Automated Crop Pest Detector",
     applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09191234567",
     status: "Under Review",
-    date: "2026-02-28",
-    description:
-      "Brand identity for PSU's marine conservation research initiative.",
-    markType: "Logo & Word",
-    goods: "Research and educational services",
+    date: "2026-03-15",
+    department: "College of Agriculture",
+    description: "IoT-based system for detecting common pests in rice fields."
+  },
+  {
+    id: "PSU-PAT-2026-003",
+    type: "Patent",
+    title: "Low-Cost Wind Turbine Blade",
+    applicant: "Juan dela Cruz",
+    status: "Validated",
+    date: "2026-03-01",
+    department: "College of Engineering",
+    description: "Optimized blade design using composite local materials."
   },
   {
     id: "PSU-PAT-2026-004",
     type: "Patent",
-    title: "Solar-Powered Rice Dryer",
+    title: "Portable Soil Analyzer",
     applicant: "Juan dela Cruz",
+    status: "Payment Requested",
+    date: "2026-02-10",
+    department: "College of Sciences",
+    description: "Handheld device for real-time soil nutrient analysis."
+  },
+  {
+    id: "PSU-PAT-2026-005",
+    type: "Patent",
+    title: "Bamboo-Based Water Filter",
+    applicant: "Juan dela Cruz",
+    status: "Approved",
+    date: "2026-01-20",
     department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09201234567",
+    description: "Natural filtration system using bamboo charcoal."
+  },
+  {
+    id: "PSU-PAT-2026-006",
+    type: "Patent",
+    title: "Plastic-to-Fuel Converter",
+    applicant: "Juan dela Cruz",
     status: "Rejected",
-    date: "2026-03-01",
-    description:
-      "A solar-powered mechanical dryer designed for small-scale rice farmers in Palawan.",
-    field: "Agricultural Engineering",
-    dateConceived: "2025-06-15",
+    date: "2025-12-05",
+    department: "College of Engineering",
+    description: "Small-scale pyrolysis reactor for non-recyclable plastics."
+  },
+  {
+    id: "PSU-PAT-2026-007",
+    type: "Patent",
+    title: "Smart Irrigation Valve",
+    applicant: "Juan dela Cruz",
+    status: "Awaiting Documents",
+    date: "2026-04-20",
+    department: "College of Engineering",
+    description: "Electronically controlled valve for precision farming."
+  },
+  {
+    id: "PSU-DFT-PAT-001",
+    type: "Patent",
+    title: "Thermal Energy Harvester",
+    applicant: "Juan dela Cruz",
+    status: "Draft",
+    date: "2026-04-25",
+    department: "College of Sciences",
+    description: "Drafting phase for thermoelectric generator modules."
+  },
+
+  // COPYRIGHTS
+  {
+    id: "PSU-COP-2026-001",
+    type: "Copyright",
+    title: "Palawan Ecosystem Documentary",
+    applicant: "Juan dela Cruz",
+    status: "Pending",
+    date: "2026-04-05",
+    department: "College of Arts",
+    description: "Visual documentation of Palawan's flora and fauna."
+  },
+  {
+    id: "PSU-COP-2026-002",
+    type: "Copyright",
+    title: "PSU Campus Map App",
+    applicant: "Juan dela Cruz",
+    status: "Under Review",
+    date: "2026-03-20",
+    department: "College of Sciences",
+    description: "Mobile application for campus navigation and info."
+  },
+  {
+    id: "PSU-COP-2026-003",
+    type: "Copyright",
+    title: "Sustainable Living Handbook",
+    applicant: "Juan dela Cruz",
+    status: "Validated",
+    date: "2026-03-05",
+    department: "College of Arts",
+    description: "Illustrated guide for eco-friendly urban living."
+  },
+  {
+    id: "PSU-COP-2026-004",
+    type: "Copyright",
+    title: "Local Legends Anthology",
+    applicant: "Juan dela Cruz",
+    status: "Payment Requested",
+    date: "2026-02-15",
+    department: "College of Arts",
+    description: "Compilation of oral traditions from northern Palawan."
   },
   {
     id: "PSU-COP-2026-005",
     type: "Copyright",
-    title: "Heritage Palawan Cookbook",
-    applicant: "Liza Manalo",
-    department: "College of Arts",
-    email: "liza.manalo@psu.edu.ph",
-    contact: "09211234567",
+    title: "EcoLearn Mobile Game",
+    applicant: "Juan dela Cruz",
     status: "Approved",
-    date: "2026-01-10",
-    description:
-      "A comprehensive cookbook documenting traditional Palawan recipes and culinary heritage.",
-    workType: "Literary Work",
-    dateCreated: "2025-09-20",
+    date: "2026-01-25",
+    department: "College of Sciences",
+    description: "Educational game teaching environmental stewardship."
   },
   {
-    id: "PSU-TM-2026-006",
-    type: "Trademark",
-    title: "Palawan Honey Brand",
-    applicant: "Dr. Elena Flores",
-    department: "College of Agriculture",
-    email: "elena.flores@psu.edu.ph",
-    contact: "09221234567",
-    status: "Pending",
-    date: "2026-03-10",
-    description:
-      "Brand registration for organic honey products from PSU apiaries.",
-    markType: "Word",
-    goods: "Food products and agricultural goods",
-  },
-  {
-    id: "PSU-DFT-2026-007",
-    type: "Patent",
-    title: "Low-Cost Hydroponic Monitoring System",
+    id: "PSU-COP-2026-006",
+    type: "Copyright",
+    title: "Palawan Culinary History",
     applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    status: "Draft",
-    date: "2026-04-15",
-    description: "Initial draft for a sensors-based monitoring system for urban gardening.",
-  },
-  {
-    id: "PSU-DFT-2026-008",
-    type: "Trademark",
-    title: "Palawan Pearl Brand Identity",
-    applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    status: "ActionRequired",
-    date: "2026-04-18",
-    description: "Branding materials draft for the local pearl export initiative.",
+    status: "Rejected",
+    date: "2025-12-15",
+    department: "College of Arts",
+    description: "Research paper on traditional cooking methods."
   },
   {
     id: "PSU-COP-2026-007",
     type: "Copyright",
-    title: "MarineTrack Research Software",
-    applicant: "Dr. Ricardo Aquino",
-    department: "College of Sciences",
-    email: "ricardo.aquino@psu.edu.ph",
-    contact: "09231234567",
-    status: "Under Review",
-    date: "2026-03-15",
-    description:
-      "Marine biodiversity tracking and data analysis software for underwater research.",
-    workType: "Software Application",
-    dateCreated: "2025-12-01",
-  },
-  {
-    id: "PSU-PAT-2026-008",
-    type: "Patent",
-    title: "Coconut Shell Activated Carbon Filter",
-    applicant: "Prof. Carlos Reyes",
-    department: "College of Engineering",
-    email: "carlos.reyes@psu.edu.ph",
-    contact: "09241234567",
-    status: "Pending",
-    date: "2026-03-20",
-    description:
-      "Advanced activated carbon filter using coconut shell waste for industrial water purification.",
-    field: "Chemical Engineering",
-    dateConceived: "2025-10-25",
-  },
-  {
-    id: "PSU-UM-2026-009",
-    type: "Utility Model",
-    title: "Compact Folding Hand Tractor",
+    title: "Visual Art Collection 2025",
     applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09251234567",
-    status: "Validated",
-    date: "2026-03-25",
-    description: "A foldable hand tractor designed for easier transport in small-scale Palawan farms.",
-    field: "Agricultural Engineering",
-  },
-  {
-    id: "PSU-ID-2026-010",
-    type: "Industrial Design",
-    title: "Tectonic Modular Furniture",
-    applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09261234567",
-    status: "Payment Requested",
-    date: "2026-03-30",
-    description: "A modular furniture system inspired by tectonic formations and traditional Palawan weaving patterns.",
-    field: "Product Design",
-  },
-  {
-    id: "EXT-PAT-2026-011",
-    type: "Patent",
-    title: "Zero-Emission Seaweed Processor",
-    applicant: "Dr. Elena Vance",
-    department: "External Research Partner",
-    email: "elena.vance@globalresearch.org",
-    contact: "09995551234",
-    status: "Under Review",
-    date: "2026-04-05",
-    description:
-      "A specialized mechanical processor for extracting agar from seaweed with zero waste discharge, developed in collaboration with PSU marine labs.",
-    field: "Marine Tech",
-    dateConceived: "2026-01-12",
-  },
-  {
-    id: "EXT-PAT-2026-012",
-    type: "Patent",
-    title: "Hybrid Solar-Wind Micro-Grid",
-    applicant: "Dr. Elena Vance",
-    department: "External Research Partner",
-    email: "elena.vance@globalresearch.org",
-    contact: "09995551234",
-    status: "Pending",
-    date: "2026-04-10",
-    description: "A small-scale energy solution for remote island communities in Palawan.",
-    field: "Energy",
-  },
-  {
-    id: "EXT-TM-2026-013",
-    type: "Trademark",
-    title: "Global Eco-Marine Logo",
-    applicant: "Dr. Elena Vance",
-    department: "External Research Partner",
-    email: "elena.vance@globalresearch.org",
-    contact: "09995551234",
-    status: "Approved",
-    date: "2026-03-25",
-    description: "Certification mark for seaweed-based bioplastics.",
-  },
-  {
-    id: "EXT-COP-2026-014",
-    type: "Copyright",
-    title: "Indigenous Palawan Knowledge Systems",
-    applicant: "Dr. Elena Vance",
-    department: "External Research Partner",
-    email: "elena.vance@globalresearch.org",
-    contact: "09995551234",
-    status: "Rejected",
-    date: "2026-03-15",
-    description: "A collaborative paper on preserving indigenous agricultural practices.",
-  },
-  {
-    id: "EXT-PAT-2026-015",
-    type: "Patent",
-    title: "Portable Mangrove Desalination Kit",
-    applicant: "Dr. Elena Vance",
-    department: "External Research Partner",
-    email: "elena.vance@globalresearch.org",
-    contact: "09995551234",
     status: "Awaiting Documents",
-    date: "2026-04-12",
-    description: "A bio-mimetic kit for purifying water using mangrove properties.",
-    field: "Bio-Tech",
-  },
-  {
-    id: "PSU-ID-2026-010",
-    type: "Industrial Design",
-    title: "Tectonic Wave Furniture",
-    applicant: "Alice Torres",
-    department: "College of Arts",
-    email: "alice.torres@psu.edu.ph",
-    contact: "09261234567",
-    status: "Awaiting Documents",
-    date: "2026-03-28",
-    description:
-      "Modern modular furniture inspired by Palawan coastline structures.",
-    designType: "Furniture Design",
-  },
-  {
-    id: "PSU-PAT-2026-011",
-    type: "Patent",
-    title: "Solar-Powered Hydroponic System",
-    applicant: "Juan dela Cruz",
-    department: "College of Sciences",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09181234567",
-    status: "Under Review",
-    date: "2026-04-05",
-    description:
-      "An automated hydroponic system optimized for urban farming in tropical climates using renewable energy.",
-    field: "Agriculture Technology",
-  },
-  {
-    id: "PSU-UM-2026-012",
-    type: "Utility Model",
-    title: "Modular Eco-Stove",
-    applicant: "Juan dela Cruz",
-    department: "College of Sciences",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09181234567",
-    status: "Pending",
-    date: "2026-04-10",
-    description:
-      "A high-efficiency biomass stove with modular parts for easy maintenance and cleaner combustion.",
-    field: "Renewable Energy",
-  },
-  {
-    id: "PSU-TM-2026-013",
-    type: "Trademark",
-    title: "GreenGrowth Organic Fertilizer",
-    applicant: "Juan dela Cruz",
-    department: "College of Sciences",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09181234567",
-    status: "Approved",
-    date: "2026-03-25",
-    description:
-      "Commercial brand for a sustainable organic fertilizer derived from local market waste.",
-    markType: "Logo & Word",
-  },
-  {
-    id: "PSU-COP-2026-014",
-    type: "Copyright",
-    title: "Palawan Biodiversity Database",
-    applicant: "Juan dela Cruz",
-    department: "College of Sciences",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09181234567",
-    status: "Awaiting Documents",
-    date: "2026-04-12",
-    description:
-      "A comprehensive digital catalog of flora and fauna endemic to the Palawan region.",
-    workType: "Database/Software",
-  },
-  {
-    id: "PSU-PAT-2026-016",
-    type: "Patent",
-    title: "Advanced Algae Photobioreactor",
-    applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09181234567",
-    status: "Payment Requested",
-    date: "2026-04-20",
-    description: "High-efficiency photobioreactor for cultivation of microalgae for biofuel production.",
-    field: "Biotechnology",
-  },
-  {
-    id: "PSU-COP-2026-017",
-    type: "Copyright",
-    title: "Sustainable Architecture Guidelines",
-    applicant: "Juan dela Cruz",
-    department: "College of Engineering",
-    email: "juan.delacruz@psu.edu.ph",
-    contact: "09181234567",
-    status: "Payment Requested",
     date: "2026-04-22",
-    description: "A digital manual outlining sustainable architectural practices for tropical climates.",
-    workType: "Literary Work",
+    department: "College of Arts",
+    description: "Digital gallery of student art contributions."
   },
+  {
+    id: "PSU-DFT-COP-001",
+    type: "Copyright",
+    title: "IP Management Software",
+    applicant: "Juan dela Cruz",
+    status: "Draft",
+    date: "2026-04-26",
+    department: "College of Sciences",
+    description: "Internal codebase for submission tracking."
+  },
+
+  // ADDING SOME OTHER TYPES FOR VARIETY
+  {
+    id: "PSU-UM-2026-001",
+    type: "Utility Model",
+    title: "Foldable Solar Oven",
+    applicant: "Juan dela Cruz",
+    status: "Approved",
+    date: "2026-01-10",
+    department: "College of Engineering",
+    description: "Portable cooking device for field researchers."
+  }
 ];
 
 const marketplaceItems = [
@@ -3103,6 +2949,12 @@ function getRequiredDocumentsForType(formType = currentFormType) {
   if (formType === "copyright") {
     // Deep copy to allow modifying objects inside the array safely
     let copyDocs = docs.map(doc => ({ ...doc }));
+    
+    // If online method, remove the manual registration form upload requirement
+    if (typeof submissionMethod !== 'undefined' && submissionMethod === 'online') {
+      copyDocs = copyDocs.filter(d => d.key !== "registration-form");
+    }
+
     if (typeof wizardData !== 'undefined' && wizardData) {
       const regFormIndex = copyDocs.findIndex(d => d.key === "registration-form");
       if (wizardData.applicantTypeGroup === "Individual") {
@@ -3226,7 +3078,7 @@ function renderConditionalPaymentUploadPanel(
             </div>
           </div>
           <button type="button" class="btn btn-outline btn-sm" onclick="showPaymentGuideModal()" style="white-space:nowrap;">
-            <i class="fa-solid fa-map-location-dot"></i> View Payment Guide & Map
+            <i class="fa-solid fa-map-location-dot"></i> View PSU Campus Map
           </button>
         </div>
         ${statusMarkup}
@@ -3571,7 +3423,7 @@ function renderUserDashboard() {
       <div class="action-card" onclick="showPaymentGuideModal()">
         <div class="action-card-icon"><i class="fa-solid fa-map-location-dot"></i></div>
         <div class="action-card-content">
-          <h3>Payment Guide</h3>
+          <h3>PSU Campus Map</h3>
           <p>View the campus map and instructions on where to pay.</p>
         </div>
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
@@ -5979,7 +5831,7 @@ function renderIpGuidelines(filterId = null) {
         <li><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Review is performed <strong>manually</strong> by PSU IP Office specialists.</li>
       </ul>
       <button class="btn btn-primary" onclick="showPaymentGuideModal()" style="background:white; color:var(--navy); font-size:0.85rem; padding:10px 20px; border-radius:50px;">
-        <i class="fa-solid fa-map-location-dot" style="color:var(--gold-dark)"></i> View Payment Guide & Campus Map
+        <i class="fa-solid fa-map-location-dot" style="color:var(--gold-dark)"></i> View PSU Campus Map
       </button>
     </div>
 
@@ -7302,10 +7154,8 @@ function renderCopyrightEditorHeader(title, subtitle) {
 
 function getCopyrightFormSteps() {
   return [
-    "Prepare Documents",
     "Fill Out Form",
-    "Payment of Fees",
-    "Verification & Upload",
+    "Upload Requirements",
     "Preview & Submit",
   ];
 }
@@ -7401,13 +7251,11 @@ function renderCopyrightGoogleForm(
 }
 
 function renderCopyrightGoogleStep() {
-  if (currentWizardStep === 1) return renderCopyrightPrepareDocumentsStep();
-  if (currentWizardStep === 2) {
+  if (currentWizardStep === 1) {
     if (wizardData.applicantTypeGroup === 'Institution') return renderCopyrightSupplementalStep();
     return renderCopyrightFillFormStep();
   }
-  if (currentWizardStep === 3) return renderCopyrightPaymentStep();
-  if (currentWizardStep === 4) return renderCopyrightVerificationUploadStep();
+  if (currentWizardStep === 2) return renderCopyrightVerificationUploadStep();
   return renderCopyrightPreviewStep();
 }
 
@@ -7498,7 +7346,7 @@ function renderCopyrightFillFormStep() {
   // Combines all form sections into one scrollable step
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step 2 — Fill Out Online Form</span>
+      <span class="patent-gform-kicker">Step 1 — Fill Out Online Form</span>
       <h2>Complete Your Copyright Application</h2>
       <p>Fill in all fields below. These map directly to the BCRR Form sections and will populate the final preview.</p>
     </div>
@@ -7573,81 +7421,7 @@ function renderCopyrightPaymentStep() {
 }
 
 function renderCopyrightVerificationUploadStep() {
-  return `
-    <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step 4</span>
-      <h2>Verification & Proof of Payment</h2>
-      <p>Upload your Official Receipt or Electronic Official Receipt (EOR) after completing payment. The Bureau will then review your complete submission.</p>
-    </div>
-
-    <div class="patent-gform-card patent-gform-card--sheet">
-      <div class="patent-editor-sheet">
-
-        <div class="patent-editor-section">
-          <div class="patent-paper__section-title"><i class="fa-solid fa-upload" style="margin-right:6px; color:var(--green);"></i> Upload Proof of Payment</div>
-          <div style="margin-top:12px;">
-            ${renderConditionalPaymentUploadPanel(wizardData, {
-              inputId: "copyright-deposit-input",
-              onChange: "handleDepositUpload(this)",
-            })}
-          </div>
-          ${!wizardData.paymentProofUploaded ? `
-            <div style="margin-top:16px; padding:14px 16px; border-radius:12px; background:#fffbeb; border:1px solid #fde68a;">
-              <p style="font-size:0.82rem; color:#92400e; margin:0; line-height:1.6;">
-                <i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>
-                Upload your <strong>Official Receipt (OR)</strong> or <strong>Electronic Official Receipt (EOR)</strong> from IPOPHL after payment. 
-                Your application will not be processed until proof of payment is received.
-              </p>
-            </div>
-          ` : `
-            <div style="margin-top:16px; padding:14px 16px; border-radius:12px; background:#f0fdf4; border:1px solid #bbf7d0;">
-              <p style="font-size:0.82rem; color:#15803d; margin:0; line-height:1.6;">
-                <i class="fa-solid fa-circle-check" style="margin-right:6px;"></i>
-                Proof of payment uploaded. Your application will be reviewed by the Bureau.
-              </p>
-            </div>
-          `}
-        </div>
-
-        <div class="patent-editor-section">
-          <div class="patent-paper__section-title"><i class="fa-solid fa-magnifying-glass" style="margin-right:6px; color:var(--gold);"></i> What the Bureau Reviews</div>
-          <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
-            ${[
-              "Completeness of submitted documents",
-              "Validity and authenticity of the Affidavit of Ownership",
-              "Clarity and eligibility of the work for copyright protection",
-              "Legal requirements (authorship, originality, fixation)",
-              "Technical requirements specific to the type of work",
-            ].map((item, i) => `
-              <div style="display:flex; gap:10px; align-items:flex-start; padding:10px 14px; background:var(--gray-50); border-radius:10px; border:1px solid var(--gray-100);">
-                <span style="font-size:0.75rem; font-weight:800; color:var(--green); margin-top:2px;">${i + 1}.</span>
-                <span style="font-size:0.84rem; color:var(--gray-700); line-height:1.5;">${item}</span>
-              </div>
-            `).join("")}
-          </div>
-        </div>
-
-        <div class="patent-editor-section">
-          <div style="padding:16px; border-radius:14px; background:linear-gradient(135deg, rgba(16,185,129,0.06), rgba(15,118,110,0.08)); border:1px solid rgba(16,185,129,0.2);">
-            <div style="font-weight:800; color:#0f766e; font-size:0.9rem; margin-bottom:8px;"><i class="fa-solid fa-certificate"></i> After Approval</div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
-              <div style="padding:12px; background:white; border-radius:10px; border:1px solid rgba(16,185,129,0.15);">
-                <div style="font-size:1rem; margin-bottom:6px;">📧</div>
-                <div style="font-weight:700; color:var(--navy); font-size:0.85rem;">Digital Certificate</div>
-                <div style="font-size:0.78rem; color:var(--gray-500); margin-top:4px;">Sent via email — free of charge</div>
-              </div>
-              <div style="padding:12px; background:white; border-radius:10px; border:1px solid rgba(16,185,129,0.15);">
-                <div style="font-size:1rem; margin-bottom:6px;">📄</div>
-                <div style="font-weight:700; color:var(--navy); font-size:0.85rem;">Hard Copy Certificate</div>
-                <div style="font-size:0.78rem; color:var(--gray-500); margin-top:4px;">Optional — additional fee, pick up at IPOPHL office</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  `;
+  return renderStep3();
 }
 
 // Body helpers used by renderCopyrightFillFormStep (call full step minus intro card)
@@ -7978,8 +7752,6 @@ function renderCopyrightAuthorWorkStep() {
 }
 
 function renderCopyrightDeclarationsUploadsStep() {
-  const uploadedCount = getUploadedRequiredCount("copyright");
-  const requiredCount = getRequiredDocumentCount("copyright");
 
   return `
     <div class="patent-gform-card">
@@ -8115,41 +7887,6 @@ function renderCopyrightDeclarationsUploadsStep() {
           <div class="patent-editor-grid patent-editor-grid--two">
             ${renderPatentEditorInput("Applicant's Signature Over Printed Name", "copyright-signature-name", wizardData.copyrightSignatureName || wizardData.name, { placeholder: "Printed name for signature block", required: true })}
             ${renderPatentEditorInput("Signature Date", "copyright-signature-date", wizardData.copyrightSignatureDate || new Date().toISOString().split("T")[0], { type: "date", required: true })}
-          </div>
-        </div>
-
-        <div class="patent-editor-section">
-          <div class="patent-paper__section-title">10. Required Uploads</div>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:20px;">
-            <div style="padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:14px;">
-              <div style="font-size:0.74rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:8px;">Required Uploads</div>
-              <div style="font-size:1.7rem; font-weight:800; color:var(--navy);">${uploadedCount}/${requiredCount}</div>
-              <div style="font-size:0.8rem; color:var(--gray-500); margin-top:6px;">Copyright requirement files uploaded</div>
-            </div>
-            <div style="padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:14px;">
-              <div style="font-size:0.74rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:8px;">Payment Status</div>
-              <div style="font-size:1rem; font-weight:800; color:var(--navy);">${wizardData.paymentRequested ? "Payment Requested" : "Not Requested"}</div>
-              <div style="font-size:0.8rem; color:var(--gray-500); margin-top:6px;">Shown only after evaluator review</div>
-            </div>
-          </div>
-
-          <div style="margin-bottom:20px;">
-            ${renderRequirementChecklistPanel("copyright")}
-          </div>
-
-          <div style="margin-bottom:20px;">
-            ${renderDynamicRequirementUploaders("copyright")}
-          </div>
-
-          <div id="uploadStatus" style="margin-top:20px;">
-            ${renderUploadedFiles()}
-          </div>
-
-          <div style="margin-top:20px;">
-            ${renderConditionalPaymentUploadPanel(wizardData, {
-              inputId: "copyright-deposit-input",
-              onChange: "handleDepositUpload(this)",
-            })}
           </div>
         </div>
       </div>
@@ -11650,7 +11387,7 @@ function renderFormWizard(title) {
     "Review & Submit",
   ];
   
-  if (currentFormType === "copyright" && submissionMethod === "upload") {
+  if ((currentFormType === "copyright" || currentFormType === "patent") && submissionMethod === "upload") {
     steps = [
       "Applicant Information",
       "Upload Requirements",
@@ -11749,7 +11486,7 @@ function getStep2Label() {
 
 function renderWizardStep() {
   const content = (() => {
-    if (currentFormType === "copyright" && submissionMethod === "upload") {
+    if ((currentFormType === "copyright" || currentFormType === "patent") && submissionMethod === "upload") {
       if (currentWizardStep === 1) return renderStep1();
       if (currentWizardStep === 2) return renderStep3();
       if (currentWizardStep === 3) return renderStep4Review();
@@ -12525,7 +12262,7 @@ function captureWizardData() {
 
 function getMaxWizardSteps() {
   if (isCopyrightGoogleFlow()) return getCopyrightFormSteps().length;
-  if (currentFormType === "copyright" && submissionMethod === "upload") return 3;
+  if ((currentFormType === "copyright" || currentFormType === "patent") && submissionMethod === "upload") return 3;
   if (isPatentGoogleFlow()) return 4;
   if (isUtilityGoogleFlow()) return 4;
   if (isIndustrialGoogleFlow()) return 4;
@@ -12595,9 +12332,9 @@ function refreshWizard() {
       </button>
     </div>
     ${
-      currentWizardStep < 4
+      currentWizardStep < getMaxWizardSteps()
         ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next <i class="fa-solid fa-arrow-right"></i></button>`
-        : `<button class="btn btn-success" onclick="submitForm()"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>`
+        : `<button class="btn btn-success" id="finalSubmitBtn" onclick="submitForm()" ${currentFormType === 'copyright' && submissionMethod === 'upload' ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i> Submit Application</button>`
     }
   `;
 }
@@ -13229,7 +12966,14 @@ function submitForm() {
   };
   submissions.unshift(newSub);
 
-  document.getElementById("main-content").innerHTML = `
+  const confirmationTarget =
+    currentPage === "forms"
+      ? document.getElementById("formsPublicContent")
+      : document.getElementById("main-content");
+
+  if (!confirmationTarget) return;
+
+  confirmationTarget.innerHTML = `
     <div class="confirmation-screen">
       <div class="check-circle"><i class="fa-solid fa-check"></i></div>
       <h2>Application Submitted Successfully!</h2>
@@ -15565,7 +15309,7 @@ window.showPaymentGuideModal = function() {
   const modalBody = document.getElementById('modalBody');
   const modalTitle = document.getElementById('modalTitle');
 
-  modalTitle.innerText = "Payment Guide & Campus Map";
+  modalTitle.innerText = "PSU Campus Map";
   modalTitle.style.display = "block";
 
   modalBody.innerHTML = `
