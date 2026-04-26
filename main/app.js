@@ -935,6 +935,7 @@ let systemUsers = [
     dept: "Specialist Pool",
     status: "Active",
     dateCreated: "2025-08-01",
+    allowedCaseTypes: ["Patent", "Utility Model"],
   },
   {
     id: 4,
@@ -944,6 +945,7 @@ let systemUsers = [
     dept: "Specialist Pool",
     status: "Active",
     dateCreated: "2025-08-14",
+    allowedCaseTypes: ["Trademark", "Industrial Design"],
   },
   {
     id: 5,
@@ -953,6 +955,7 @@ let systemUsers = [
     dept: "Specialist Pool",
     status: "Active",
     dateCreated: "2025-09-02",
+    allowedCaseTypes: ["Copyright"],
   },
   {
     id: 9,
@@ -1093,6 +1096,7 @@ const DASHBOARD_ACCESS = {
   reviewer: [
     "admin-dashboard",
     "admin-submissions",
+    "reviewer-my-cases",
     "submission-detail",
     "user-profile",
     "project-blueprint",
@@ -1251,6 +1255,11 @@ systemUsers = systemUsers.map((user) => ({
   role: normalizeRole(user.role),
 }));
 
+submissions.forEach((submission) => {
+  normalizeUnassignedSubmissionStatus(submission);
+  syncSubmissionWorkflowState(submission);
+});
+
 const ACTIVE_ROLE_USER_IDS = {
   superadmin: 2,
   reviewer: 3,
@@ -1291,6 +1300,19 @@ function maskSensitiveValue(value) {
   return `${"*".repeat(Math.max(0, value.length - 2))}${visible}`;
 }
 
+function getSystemSecurityKeys() {
+  return {
+    primary: "KMS-PSU-2026-ACTIVE",
+    backup: "KMS-PSU-2026-STANDBY",
+  };
+}
+
+function getDisplaySecurityKey(type) {
+  const keys = getSystemSecurityKeys();
+  const value = keys[type];
+  return securityKeyVisibility[type] ? value : maskSensitiveValue(value);
+}
+
 function setActiveUserForRole(role, userId) {
   const normalizedRole = normalizeRole(role);
   const target = systemUsers.find(
@@ -1311,6 +1333,23 @@ function getAssignedReviewerId(submission) {
   return submission.assignedReviewerId || submission.assignedEvaluatorId || null;
 }
 
+function shouldDefaultToPending(submission) {
+  if (!submission) return false;
+  if (getAssignedReviewerId(submission)) return false;
+  return !["Draft", "Archived", "Cancelled"].includes(submission.status);
+}
+
+function normalizeUnassignedSubmissionStatus(submission) {
+  if (!shouldDefaultToPending(submission)) return;
+  submission.status = "Pending";
+}
+
+function canLeavePendingStatus(submission) {
+  if (!submission) return false;
+  if (submission.status !== "Pending") return true;
+  return Boolean(getAssignedReviewerId(submission));
+}
+
 function getAssignedReviewer(submission) {
   const assignedId = getAssignedReviewerId(submission);
   return systemUsers.find((user) => user.id === assignedId) || null;
@@ -1318,6 +1357,36 @@ function getAssignedReviewer(submission) {
 
 function getAssignedReviewerName(submission) {
   return getAssignedReviewer(submission)?.name || "Unassigned";
+}
+
+function isSubmissionArchived(submission) {
+  return submission?.status === "Archived";
+}
+
+function reviewerCanAccessSubmissionType(submission, role = currentRole) {
+  const user = getCurrentUser(role);
+  return (
+    !user.allowedCaseTypes || user.allowedCaseTypes.includes(submission.type)
+  );
+}
+
+function canTakeSubmission(submission, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole !== "reviewer" || !submission) return false;
+  if (isSubmissionArchived(submission)) return false;
+  if (getAssignedReviewerId(submission)) return false;
+  if (submission.status !== "Pending") return false;
+  return reviewerCanAccessSubmissionType(submission, role);
+}
+
+function isSubmissionReadOnly(submission, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  if (!submission) return true;
+  if (isSubmissionArchived(submission)) return true;
+  if (normalizedRole === "reviewer") {
+    return !isAssignedReviewerSubmission(submission, role);
+  }
+  return normalizedRole !== "superadmin" && normalizedRole !== "admin";
 }
 
 function getCurrentRoleNotifications(role = currentRole) {
@@ -1379,32 +1448,52 @@ function isAssignedReviewerSubmission(submission, role = currentRole) {
 
 function getVisibleSubmissions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === "superadmin" || normalizedRole === "admin")
-    return submissions;
-  if (normalizedRole === "reviewer")
-    return submissions.filter((submission) =>
-      isAssignedReviewerSubmission(submission, role),
+  if (normalizedRole === "superadmin" || normalizedRole === "admin") {
+    return submissions.filter(
+      (submission) =>
+        submission.status !== "Draft" && !getAssignedReviewerId(submission),
     );
+  }
+  if (normalizedRole === "reviewer") {
+    return submissions.filter((submission) => {
+      if (submission.status === "Draft") return false;
+      const isUnassigned = !getAssignedReviewerId(submission);
+      const isMine = isAssignedReviewerSubmission(submission, role);
+      const canAccessType = reviewerCanAccessSubmissionType(submission, role);
+      return (isUnassigned || isMine) && canAccessType;
+    });
+  }
   return submissions.filter((submission) => isOwnSubmission(submission, role));
 }
 
 function canEditSubmission(submission, role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  return (
-    normalizedRole === "superadmin" ||
-    normalizedRole === "admin" ||
-    (normalizedRole === "reviewer" &&
-      isAssignedReviewerSubmission(submission, role))
-  );
+  if (isSubmissionArchived(submission)) return false;
+
+  // Specialists can only edit if assigned
+  if (normalizedRole === "reviewer") {
+    return isAssignedReviewerSubmission(submission, role);
+  }
+
+  // Admins and Superadmins can no longer edit/update status, they only view and archive.
+  return false;
 }
 
 function canAdvanceSubmission(submission, role = currentRole) {
-  return canEditSubmission(submission, role);
+  const normalizedRole = normalizeRole(role);
+  // Only the assigned specialist can advance/update status.
+  if (normalizedRole === "reviewer") {
+    return isAssignedReviewerSubmission(submission, role);
+  }
+  return false;
 }
 
-function canArchiveSubmission(role = currentRole) {
+function canArchiveSubmission(submission = null, role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  return normalizedRole === "superadmin" || normalizedRole === "admin";
+  if (!(normalizedRole === "superadmin" || normalizedRole === "admin"))
+    return false;
+  if (submission && isSubmissionArchived(submission)) return false;
+  return true;
 }
 
 function canUploadDocuments(submission, role = currentRole) {
@@ -1797,6 +1886,7 @@ function navigateTo(page, isBack = false, params = null) {
     "user-dashboard",
     "admin-dashboard",
     "admin-submissions",
+    "reviewer-my-cases",
     "patent-form",
     "trademark-form",
     "copyright-form",
@@ -1954,7 +2044,7 @@ function initFeaturedMarketplace() {
   const grid = document.getElementById("featuredInnovationGrid");
   if (grid) {
     // Show only the first 3 items as "Featured"
-    const featured = marketplaceItems.slice(0, 3);
+    const featured = marketplaceItems.filter((item) => !item.archived).slice(0, 3);
     grid.innerHTML = renderInnovationCards(featured);
   }
 }
@@ -1994,6 +2084,7 @@ function filterFullMarketplace() {
   const search = document.getElementById("marketSearch")?.value.toLowerCase() || "";
   const college = document.getElementById("marketCollege")?.value || "All";
   let filtered = marketplaceItems.filter((item) => {
+    if (item.archived) return false;
     if (activeMarketType !== "All" && item.type !== activeMarketType) return false;
     if (college !== "All" && item.college !== college) return false;
     if (
@@ -2321,6 +2412,7 @@ function filterLandingMarketplace() {
     document.getElementById("landingSearch")?.value.toLowerCase() || "";
 
   let filtered = marketplaceItems.filter((item) => {
+    if (item.archived) return false;
     if (type !== "All" && item.type !== type) return false;
     if (college !== "All" && item.college !== college) return false;
     if (
@@ -2806,18 +2898,14 @@ function renderSidebar() {
       { page: "admin-users", icon: "fa-users", text: "User Manager" },
       { page: "create-account", icon: "fa-user-plus", text: "Create Account" },
       { page: "audit-log", icon: "fa-clipboard-list", text: "Audit Log" },
-      {
-        page: "role-permissions",
-        icon: "fa-shield-halved",
-        text: "Permissions",
-      },
       { page: "admin-settings", icon: "fa-gear", text: "System Config" },
       { page: "admin-announcements", icon: "fa-bullhorn", text: "Announcements" },
     ],
 
     reviewer: [
-      { page: "admin-dashboard", icon: "fa-microscope", text: "Specialist Hub" },
-      { page: "admin-submissions", icon: "fa-inbox", text: "Assigned Cases" },
+      { page: "admin-dashboard", icon: "fa-microscope", text: "Dashboard" },
+      { page: "admin-submissions", icon: "fa-inbox", text: "Cases" },
+      { page: "reviewer-my-cases", icon: "fa-briefcase", text: "My Cases" },
     ],
     applicant: [
       { page: "user-dashboard", icon: "fa-house", text: "Home" },
@@ -3295,6 +3383,9 @@ function renderDashboardContent(page) {
         break;
     case "admin-submissions":
       mc.innerHTML = renderAdminSubmissionsPage();
+      break;
+    case "reviewer-my-cases":
+      mc.innerHTML = renderReviewerMyCasesPage();
       break;
     case "admin-search":
       mc.innerHTML = renderAdminSubmissionsPage();
@@ -4425,10 +4516,10 @@ function getRoleSpecificStats(role) {
     },
     reviewer: {
       title: "Specialist Workspace",
-      subtitle: "Manage assigned cases and complete specialist evaluations.",
+      subtitle: "Manage cases and complete specialist evaluations.",
       cards: [
         {
-          label: "Assigned Cases",
+          label: "Cases",
           value: total,
           icon: "fa-briefcase",
           color: "blue",
@@ -4510,12 +4601,63 @@ function getRoleSpecificPanels(role) {
   const side = `
     <div class="dashboard-panel" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-radius:16px; padding:24px; border: 1px solid rgba(255,255,255,0.8); box-shadow:0 8px 30px rgba(0,0,0,0.03);">
       <h3 style="font-size:1.15rem; color:var(--navy); margin-bottom: 16px; font-weight:800;"><i class="fa-solid fa-bolt" style="color:var(--yellow); margin-right:6px;"></i> Quick Launch</h3>
-      ${normalizedRole !== "reviewer" ? `<button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; margin-bottom: 12px; font-weight:600;" onclick="showToast('Starting report generation...')"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> Download Status</button>` : ""}
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('${normalizedRole === "reviewer" ? "admin-submissions" : "ip-guidelines"}')"><i class="fa-solid fa-${normalizedRole === "reviewer" ? "clipboard-check" : "book"}" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Open Assigned Cases" : "Operations Manual"}</button>
+      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; margin-bottom: 12px; font-weight:600;" onclick="${normalizedRole === "reviewer" ? "generateEvaluatorReport()" : "showToast('Starting report generation...')"}"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Download Cases Report" : "Download Status"}</button>
+      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('ip-guidelines')"><i class="fa-solid fa-book" style="margin-right:8px; width:16px;"></i> Operations Manual</button>
     </div>`;
-
   return { main, side };
 }
+
+window.generateEvaluatorReport = function() {
+  const role = "reviewer";
+  const visibleSubmissions = getVisibleSubmissions(role);
+  
+  if (visibleSubmissions.length === 0) {
+    showToast("No cases available to generate a report.");
+    return;
+  }
+
+  showToast("Generating cases report...");
+
+  // CSV Header
+  let csvContent = "Reference No.,Type,Title,Applicant,Date,Status,Assigned Specialist\n";
+
+  // CSV Rows
+  visibleSubmissions.forEach(s => {
+    const specialist = getAssignedReviewerName(s);
+    const row = [
+      s.id,
+      s.type,
+      `"${s.title.replace(/"/g, '""')}"`,
+      `"${s.applicant.replace(/"/g, '""')}"`,
+      s.date,
+      s.status,
+      `"${specialist.replace(/"/g, '""')}"`
+    ].join(",");
+    csvContent += row + "\n";
+  });
+
+  // Download Trigger
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const timestamp = new Date().toISOString().split('T')[0];
+  const userName = getCurrentUser(role).name.replace(/\s+/g, '_').toLowerCase();
+  
+  link.setAttribute("href", url);
+  link.setAttribute("download", `evaluator_report_${userName}_${timestamp}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Generated Report",
+    record: "Cases CSV",
+    details: `Evaluator ${getCurrentUser().name} downloaded a report of their visible cases.`,
+    module: "Dashboard",
+  });
+};
 
 function initCharts() {
   const lineCtx = document.getElementById("submissionsChart");
@@ -4619,28 +4761,69 @@ function switchRole(role) {
   navigateTo(getDefaultDashboardPage(currentRole));
 }
 
+function getScopedReviewerSubmissions(scope = adminCaseScope, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  let visible = [...getVisibleSubmissions(role)];
+  if (normalizedRole !== "reviewer") return visible;
+  if (scope === "mine") {
+    return visible.filter((submission) =>
+      isAssignedReviewerSubmission(submission, role),
+    );
+  }
+  if (scope === "queue") {
+    return visible.filter(
+      (submission) => !isAssignedReviewerSubmission(submission, role),
+    );
+  }
+  return visible;
+}
+
 function renderAdminSubmissionsPage() {
   adminFilterType = "All";
   adminFilterStatus = "All";
+  adminCaseView = "active";
+  adminCaseScope = "queue";
   adminSearchQuery = "";
   const normalizedRole = normalizeRole(currentRole);
-  const title =
-    normalizedRole === "reviewer" ? "Assigned Cases" : "All Submissions";
+  const pageTitle =
+  normalizedRole === "reviewer" ? "Cases" : "All Submissions";
   const subtitle =
     normalizedRole === "reviewer"
-      ? "Review only the cases assigned to this reviewer account."
+      ? "Take an available case before updating its status. Assigned cases owned by other evaluators stay visible in read-only mode."
       : "Filter, review, and manage IP applications.";
   return `
     <div class="page-header">
-      <h1>${title}</h1>
+      <h1>${pageTitle}</h1>
       <p>${subtitle}</p>
     </div>
     ${renderAdminSubmissionsTable()}
   `;
 }
 
+function renderReviewerMyCasesPage() {
+  adminFilterType = "All";
+  adminFilterStatus = "All";
+  adminCaseView = "active";
+  adminCaseScope = "mine";
+  adminSearchQuery = "";
+  return `
+    <div class="page-header">
+      <h1>My Cases</h1>
+      <p>Track the cases you have taken and update their status from your personal work queue.</p>
+    </div>
+    ${renderAdminSubmissionsTable()}
+  `;
+}
+
 function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
-  let filtered = [...getVisibleSubmissions(currentRole)];
+  let filtered = [...getScopedReviewerSubmissions(adminCaseScope, currentRole)];
+  const activeCount = filtered.filter((s) => !isSubmissionArchived(s)).length;
+  const archivedCount = filtered.filter((s) => isSubmissionArchived(s)).length;
+  if (adminCaseView === "archived") {
+    filtered = filtered.filter((s) => isSubmissionArchived(s));
+  } else {
+    filtered = filtered.filter((s) => !isSubmissionArchived(s));
+  }
   if (filterType && filterType !== "All")
     filtered = filtered.filter((s) => s.type === filterType);
   if (filterStatus && filterStatus !== "All")
@@ -4649,7 +4832,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
   return `
     <div class="table-container" id="adminSubmissionsTable">
       <div class="table-header">
-        <h3>${normalizeRole(currentRole) === "reviewer" ? "Assigned Cases" : "Visible Cases"} <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>
+        <h3>${normalizeRole(currentRole) === "reviewer" ? "My Cases" : "Visible Cases"} <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>
         <select class="filter-select" onchange="filterAdminStatus(this.value)">
           <option value="All">All Status</option>
           <option value="Pending" ${(filterStatus || "") === "Pending" ? "selected" : ""}>Pending</option>
@@ -4661,6 +4844,10 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
           <option value="Awaiting Documents" ${(filterStatus || "") === "Awaiting Documents" ? "selected" : ""}>Awaiting Docs</option>
           <option value="Archived" ${(filterStatus || "") === "Archived" ? "selected" : ""}>Archived</option>
         </select>
+      </div>
+      <div style="padding:0 24px 10px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="filter-btn ${adminCaseView === "active" ? "active" : ""}" onclick="setAdminCaseView('active')">Active Cases (${activeCount})</button>
+        <button class="filter-btn ${adminCaseView === "archived" ? "active" : ""}" onclick="setAdminCaseView('archived')">Archived (${archivedCount})</button>
       </div>
       <div style="padding:0 24px 14px;display:flex;gap:6px;flex-wrap:wrap;">
         <button class="filter-btn ${!filterType || filterType === "All" ? "active" : ""}" onclick="filterAdminTable('All')">All</button>
@@ -4680,10 +4867,9 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
           <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${s.title}</td><td>${s.applicant}</td><td>${getAssignedReviewerName(s)}</td><td>${s.date}</td><td>${statusBadge(s.status)}</td>
           <td><div class="action-btns">
             <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
-            ${canAdvanceSubmission(s) ? `<button class="btn btn-sm btn-success" title="Approve" onclick="changeStatus('${s.id}','Approved')"><i class="fa-solid fa-check"></i></button>` : ""}
-            ${canAdvanceSubmission(s) ? `<button class="btn btn-sm btn-danger" title="Reject" onclick="changeStatus('${s.id}','Rejected')"><i class="fa-solid fa-xmark"></i></button>` : ""}
-            ${canEditSubmission(s) ? `<button class="btn btn-sm btn-secondary" title="Request Docs" onclick="requestDocs('${s.id}')"><i class="fa-solid fa-file-circle-plus"></i></button>` : ""}
-            ${canArchiveSubmission() ? `<button class="btn btn-sm btn-secondary" title="Archive" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i></button>` : ""}
+            ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
+            ${normalizeRole(currentRole) === "reviewer" && !canTakeSubmission(s) && !isAssignedReviewerSubmission(s) ? `<button class="btn btn-sm btn-secondary" disabled title="Assigned to ${getAssignedReviewerName(s)}"><i class="fa-solid fa-lock"></i> Read Only</button>` : ""}
+            ${canArchiveSubmission(s) ? `<button class="btn btn-sm btn-secondary" title="Archive" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
           </div></td></tr>`,
                 )
                 .join("")
@@ -4695,6 +4881,15 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
 let adminFilterType = "All",
   adminFilterStatus = "All",
   adminSearchQuery = "";
+let adminCaseView = "active";
+let adminCaseScope = "all";
+let adminMarketplaceView = "active";
+let announcementCategoryFilter = "All";
+let securityKeyVisibility = {
+  primary: false,
+  backup: false,
+};
+let integrityFreezeUnlocked = false;
 let userFilterType = "All",
   userFilterStatus = "All",
   userSearchQuery = "",
@@ -4706,6 +4901,16 @@ function filterAdminTable(type) {
 }
 function filterAdminStatus(status) {
   adminFilterStatus = status;
+  refreshAdminTable();
+}
+function setAdminCaseView(view) {
+  adminCaseView = view;
+  if (view === "active" && adminFilterStatus === "Archived") {
+    adminFilterStatus = "All";
+  }
+  if (view === "archived") {
+    adminFilterStatus = "Archived";
+  }
   refreshAdminTable();
 }
 function filterAdminSearch(q) {
@@ -4758,13 +4963,67 @@ function refreshUserTable() {
   }
 }
 
+function takeCase(id) {
+  const sub = submissions.find((s) => s.id === id);
+  if (!sub) return;
+  const user = getCurrentUser();
+  const normalizedRole = normalizeRole(currentRole);
+
+  if (normalizedRole !== "reviewer") {
+    showToast("Only specialists can take cases.");
+    return;
+  }
+
+  if (!canTakeSubmission(sub)) {
+    showToast(
+      sub.assignedReviewerId
+        ? `This case is already assigned to ${getAssignedReviewerName(sub)}.`
+        : "You cannot take this case.",
+    );
+    navigateTo("admin-submissions");
+    return;
+  }
+
+  sub.assignedReviewerId = user.id;
+  sub.assignedEvaluatorId = user.id;
+  sub.status = "Under Review";
+  syncSubmissionWorkflowState(sub);
+  
+  addAuditLog({
+    accountName: user.name,
+    action: "Took Case",
+    record: sub.id,
+    details: `Specialist ${user.name} took the case for processing. Status updated to Under Review.`,
+    module: sub.type,
+  });
+
+  showToast(`You have taken the case: ${sub.id}`);
+  navigateTo("reviewer-my-cases");
+}
+
 function changeStatus(id, newStatus) {
   const sub = submissions.find((s) => s.id === id);
   if (!sub) return;
+  normalizeUnassignedSubmissionStatus(sub);
   if (!canAdvanceSubmission(sub)) {
     showToast(`${getRoleMeta().label} cannot advance this case.`);
     return;
   }
+
+  if (newStatus !== "Pending" && !canLeavePendingStatus(sub)) {
+    showToast(
+      "This case must remain Pending until it is assigned or taken by a specialist.",
+    );
+    return;
+  }
+
+  // Specialist-specific restriction: Must take the case first
+  const normalizedRole = normalizeRole(currentRole);
+  if (normalizedRole === "reviewer" && !isAssignedReviewerSubmission(sub)) {
+    showToast("You must 'Take' this case before you can update its status.");
+    return;
+  }
+
   const previousStatus = sub.status;
   sub.status = newStatus;
   if (newStatus === "Payment Requested") {
@@ -4825,7 +5084,7 @@ function requestDocs(id) {
 function archiveSubmission(id) {
   const submission = submissions.find((s) => s.id === id);
   if (!submission) return;
-  if (!canArchiveSubmission()) {
+  if (!canArchiveSubmission(submission)) {
     showToast(`${getRoleMeta().label} cannot archive cases.`);
     return;
   }
@@ -5117,6 +5376,7 @@ function getCopyrightStageIndex(submission) {
 }
 
 function syncSubmissionWorkflowState(submission) {
+  normalizeUnassignedSubmissionStatus(submission);
   if (IPOPHL_TYPES.has(submission.type)) {
     syncIPOPHLWorkflowState(submission);
     return;
@@ -5503,6 +5763,13 @@ function renderSubmissionDetail() {
   const ipophlStageObj = IPOPHL_TYPES.has(s.type)
     ? IPOPHL_OPERATION_FLOW.find((step) => step.key === getIPOPHLStageKey(s))
     : null;
+  const assignedReviewer = getAssignedReviewer(s);
+  const assignedReviewerName = assignedReviewer?.name || "Unassigned";
+  const reviewerCanTake = canTakeSubmission(s);
+  const reviewerCanAdvance = canAdvanceSubmission(s);
+  const reviewerReadOnly =
+    normalizeRole(currentRole) === "reviewer" && !reviewerCanAdvance;
+  const archived = isSubmissionArchived(s);
 
   return `
     ${renderBackNav()}
@@ -5563,7 +5830,7 @@ function renderSubmissionDetail() {
           <div class="detail-row"><span class="label">Date Filed</span><span class="value">${s.date}</span></div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-paperclip"></i> Documents & Payment</h3>
+          <h3><i class="fa-solid fa-paperclip"></i> ${normalizedRole === "applicant" ? "Documents" : "Documents & Payment"}</h3>
           <div style="padding:16px;background:var(--gray-50);border-radius:8px;margin-bottom:12px">
             <div style="font-size:0.76rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:10px;">Required Documents</div>
             <div style="font-size:0.9rem; font-weight:700; color:var(--navy); margin-bottom:12px;">${requiredUploadedCount} of ${requiredDocCount} required files uploaded</div>
@@ -5604,6 +5871,23 @@ function renderSubmissionDetail() {
         <div class="detail-panel">
           <h3><i class="fa-solid fa-circle-info"></i> Status</h3>
           <div style="margin-bottom:16px">${statusBadge(s.status)}</div>
+          <div style="margin-bottom:16px; padding:14px 16px; background:${reviewerReadOnly ? "rgba(148,163,184,0.12)" : "rgba(59,130,246,0.06)"}; border:1px solid ${reviewerReadOnly ? "rgba(148,163,184,0.28)" : "rgba(59,130,246,0.18)"}; border-radius:10px;">
+            <div style="font-size:.76rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:${reviewerReadOnly ? "var(--gray-500)" : "#1d4ed8"}; margin-bottom:6px;">Assignment</div>
+            <div style="font-size:.95rem; font-weight:700; color:var(--navy);">${assignedReviewerName}</div>
+            <div style="font-size:.8rem; color:var(--gray-500); margin-top:4px;">
+              ${
+                archived
+                  ? "This case is archived and read-only."
+                  : reviewerCanTake
+                    ? "This case is currently unassigned. Take the case to unlock status actions."
+                    : reviewerCanAdvance
+                      ? "You are the assigned evaluator for this case."
+                      : normalizeRole(currentRole) === "reviewer"
+                        ? `Read-only view. Only ${assignedReviewerName} can update this case.`
+                        : "Assignment and action state are shown here for traceability."
+              }
+            </div>
+          </div>
           <div style="margin-bottom:16px; padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:10px;">
             ${renderApplicantStatusLegend(s.status)}
             <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--gray-100);">
@@ -5622,7 +5906,7 @@ function renderSubmissionDetail() {
               : ""
           }
           ${
-            ipophlStageObj
+            ipophlStageObj && normalizedRole !== "reviewer"
               ? `<div style="padding:12px 14px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.18); border-radius:10px; margin-bottom:16px;">
             <div style="font-size:.78rem; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:.08em;">Current IPOPHL Step</div>
             <div style="font-size:.95rem; font-weight:700; color:var(--navy); margin-top:4px;">Step ${ipophlStageObj.step}: ${ipophlStageObj.title}</div>
@@ -5631,7 +5915,7 @@ function renderSubmissionDetail() {
               : ""
           }
           ${
-            canAdvanceSubmission(s) && !frozen
+            reviewerCanAdvance && !frozen
               ? `
           <label class="form-group" style="margin-bottom:12px">
             <span style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Update Status</span>
@@ -5643,23 +5927,29 @@ function renderSubmissionDetail() {
               <option ${s.status === "Awaiting Documents" ? "selected" : ""}>Awaiting Documents</option>
               <option ${s.status === "Approved" ? "selected" : ""}>Approved</option>
               <option ${s.status === "Rejected" ? "selected" : ""}>Rejected</option>
-              ${canArchiveSubmission() ? `<option ${s.status === "Archived" ? "selected" : ""}>Archived</option>` : ""}
+              ${canArchiveSubmission(s) ? `<option ${s.status === "Archived" ? "selected" : ""}>Archived</option>` : ""}
             </select>
           </label>`
+              : reviewerCanTake
+                ? '<p style="font-size:.8rem;color:#1d4ed8;background:rgba(59,130,246,0.06);padding:10px;border-radius:6px;"><i class="fa-solid fa-hand-holding-hand"></i> Take this case to enable status updates.</p>'
               : frozen
                 ? '<p style="font-size:.8rem;color:#6366f1;background:rgba(99,102,241,0.06);padding:10px;border-radius:6px;"><i class="fa-solid fa-lock"></i> Status changes are locked for certified submissions.</p>'
-                : ""
+                : reviewerReadOnly
+                  ? `<p style="font-size:.8rem;color:var(--gray-500);background:rgba(148,163,184,0.12);padding:10px;border-radius:6px;"><i class="fa-solid fa-eye"></i> Read-only mode. Only ${assignedReviewerName} can perform actions on this case.</p>`
+                  : archived
+                    ? '<p style="font-size:.8rem;color:var(--gray-500);background:rgba(148,163,184,0.12);padding:10px;border-radius:6px;"><i class="fa-solid fa-box-archive"></i> Archived cases are locked and remain view-only.</p>'
+                    : ""
           }
           ${
-            canAdvanceSubmission(s) && !frozen
+            (reviewerCanAdvance || reviewerCanTake || canArchiveSubmission(s)) && !frozen
               ? `<div class="detail-actions">
-            <button class="btn btn-secondary btn-sm" onclick="changeStatus('${s.id}','Under Review')"><i class="fa-solid fa-magnifying-glass"></i> Review</button>
-            <button class="btn btn-success btn-sm" onclick="changeStatus('${s.id}','Validated')"><i class="fa-solid fa-circle-check"></i> Validate</button>
-            <button class="btn btn-secondary btn-sm" onclick="requestPayment('${s.id}')"><i class="fa-solid fa-receipt"></i> Request Payment</button>
-            <button class="btn btn-success btn-sm" onclick="changeStatus('${s.id}','Approved')"><i class="fa-solid fa-check"></i> Approve</button>
-            <button class="btn btn-danger btn-sm" onclick="changeStatus('${s.id}','Rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
-            <button class="btn btn-secondary btn-sm" onclick="requestDocs('${s.id}')"><i class="fa-solid fa-file-circle-plus"></i> Request Docs</button>
-            ${canArchiveSubmission() ? `<button class="btn btn-secondary btn-sm" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
+            ${
+              reviewerCanTake
+                ? `<button class="btn btn-primary btn-sm" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>`
+                : `
+            ${canArchiveSubmission(s) ? `<button class="btn btn-secondary btn-sm" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
+            `
+            }
           </div>` 
               : ""
           }
@@ -5672,9 +5962,17 @@ function renderSubmissionDetail() {
           </div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-timeline"></i> ${normalizedRole !== "evaluator" && s.type === "Copyright" ? "Copyright Operational Flow" : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type) ? "IPOPHL Operational Flow" : "Activity Timeline"}</h3>
+          <h3><i class="fa-solid fa-timeline"></i> ${normalizedRole === "reviewer" ? "Activity Timeline" : normalizedRole !== "evaluator" && s.type === "Copyright" ? "Copyright Operational Flow" : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type) ? "IPOPHL Operational Flow" : "Activity Timeline"}</h3>
           ${
-            normalizedRole !== "evaluator" && s.type === "Copyright"
+            normalizedRole === "reviewer"
+              ? `<div class="timeline">
+            ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
+            <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
+            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-receipt" style="color:var(--gold)"></i> Proof of payment verified</div></div>
+            <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
+            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${s.applicant}</div></div>
+          </div>`
+              : normalizedRole !== "evaluator" && s.type === "Copyright"
               ? renderCopyrightOperationTimeline(s)
               : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type)
                 ? renderIPOPHLOperationTimeline(s)
@@ -11537,11 +11835,6 @@ function renderWizardStep() {
           ${renderRequirementChecklistPanel(currentFormType, { compact: true })}
         </div>
 
-        <div style="background:white; border:1px solid var(--gray-100); border-radius:16px; padding:18px; margin-bottom:20px;">
-          <h4 style="font-size:0.82rem; color:var(--navy); font-weight:800; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.08em;">Applicant Status Flow</h4>
-          ${renderApplicantStatusLegend("Pending")}
-        </div>
-
         <h4 style="font-size:0.85rem; color:var(--navy); text-transform:uppercase; letter-spacing:1px; margin-bottom:20px;">Guide & Tips</h4>
         
         <div style="background:var(--gray-50); padding:20px; border-radius:16px; border:1px solid var(--gray-100); margin-bottom:24px;">
@@ -11820,20 +12113,10 @@ function renderStep3() {
       <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
         <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Payment Step</div>
         <div style="font-size:1.1rem; font-weight:800; color:var(--navy);">${paymentLabel}</div>
-        <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Only triggered if the evaluator requests payment</div>
       </div>
     </div>
 
     <div style="border:1.5px solid var(--gray-100); background:white; border-radius:20px; padding:24px;">
-      <div class="requirement-checklist" style="background:linear-gradient(to right, #f8fafc, #ffffff); border-radius:16px; padding:24px; margin-bottom:24px; border:1.5px solid var(--gray-100); box-shadow:0 4px 6px -1px rgba(0,0,0,0.02);">
-        <h4 style="font-size:.9rem; color:var(--navy); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i>
-          Required Documents Checklist
-        </h4>
-        <p style="font-size:0.82rem; color:var(--gray-500); margin-bottom:16px; line-height:1.6;">Each requirement is labeled individually below so applicants always know exactly which file they are attaching.</p>
-        ${renderRequirementChecklistPanel(currentFormType)}
-      </div>
-
       <div>
         <h4 style="color:var(--navy); margin-bottom:6px;">Dynamic Requirement Uploads</h4>
         <p style="color:var(--gray-500); font-size:0.88rem; line-height:1.6; margin:0 0 20px;">Upload one file for each listed requirement. This behavior is shared across all application types for consistency.</p>
@@ -11878,7 +12161,7 @@ function renderStep4Review() {
       </div>
       ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "…" : ""}</span></div>` : ""}
     </div>
-    <div class="review-section"><h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents & Payment</h4>
+    <div class="review-section"><h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents</h4>
       <p style="color:var(--gray-500);font-size:.9rem; margin-bottom:14px;">Required uploads are summarized below. Proof of payment stays hidden unless an evaluator requests it later in the review flow.</p>
       <div style="margin-bottom:16px;">${renderRequirementChecklistPanel(currentFormType, { compact: true })}</div>
       ${renderConditionalPaymentUploadPanel(wizardData, { infoOnly: true })}
@@ -12528,6 +12811,163 @@ window.showCancellationModal = function(id) {
   overlay.classList.add('active');
 };
 
+function getCancellationDocumentConfig(submission, reason) {
+  const applicantName = submission.applicant || getCurrentUser().name || "";
+  const safeReason = reason || "Voluntary cancellation requested by the applicant.";
+  const configs = {
+    Patent: {
+      mode: "cancellation",
+      title: "Petition for Cancellation / Voluntary Surrender",
+      formNo: "IPAS FORM NO. 018",
+      office: "The Director, Bureau of Patents",
+      matterLabel: "Letters Patent",
+      pdfPath: "file:///C:/Users/Owen/Downloads/patent%20for%20Cancellation.pdf",
+      recordLabel: "Patent/Registration No.",
+      recordValue: submission.id,
+      titleLabel: "Title of the Invention",
+      titleValue: submission.title,
+      applicantName,
+      filingDate: submission.date,
+      reason: safeReason,
+    },
+    "Utility Model": {
+      mode: "cancellation",
+      title: "Petition for Cancellation / Voluntary Surrender",
+      formNo: "IPAS FORM NO. 018",
+      office: "The Director, Bureau of Patents",
+      matterLabel: "Utility Model Registration",
+      pdfPath: "file:///C:/Users/Owen/Downloads/utility%20model%20Cancellation-018.pdf",
+      recordLabel: "Patent/Registration No.",
+      recordValue: submission.id,
+      titleLabel: "Title of the Invention",
+      titleValue: submission.title,
+      applicantName,
+      filingDate: submission.date,
+      reason: safeReason,
+    },
+    "Industrial Design": {
+      mode: "cancellation",
+      title: "Petition for Cancellation / Voluntary Surrender",
+      formNo: "BOP FORM NO. (v01): P018",
+      office: "The Director, Bureau of Patents",
+      matterLabel: "Industrial Design Registration",
+      pdfPath: "file:///C:/Users/Owen/Downloads/industrial%20design%20for%20Cancellation-P018.pdf",
+      recordLabel: "Application No.",
+      recordValue: submission.id,
+      titleLabel: "Title of the Invention",
+      titleValue: submission.title,
+      applicantName,
+      filingDate: submission.date,
+      reason: safeReason,
+    },
+    Trademark: {
+      mode: "suspension",
+      title: "Request for Suspension of Action",
+      formNo: "IPOPHL-SOP-BOT-01-F11",
+      office: "The Director of Trademarks",
+      matterLabel: "Trademark Application",
+      pdfPath: "file:///C:/Users/Owen/Downloads/trademark%20Request%20for%20Suspension%20of%20Action.pdf",
+      recordLabel: "Application No.",
+      recordValue: submission.id,
+      titleLabel: "Trademark",
+      titleValue: submission.title,
+      applicantName,
+      filingDate: submission.date,
+      reason: safeReason,
+    },
+  };
+  return configs[submission.type] || configs.Patent;
+}
+
+function renderCancellationChecklistItem(label, checked) {
+  return `<div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:10px;">
+    <span style="font-size:1rem; color:${checked ? "var(--navy)" : "var(--gray-400)"};">${checked ? "☑" : "☐"}</span>
+    <span style="font-size:0.9rem; color:var(--gray-700); line-height:1.6;">${escapeHtml(label)}</span>
+  </div>`;
+}
+
+window.showCancellationDocumentModal = function(id, finalReason) {
+  const submission = submissions.find((sub) => sub.id === id);
+  if (!submission) return;
+  const config = getCancellationDocumentConfig(submission, finalReason);
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  const overlay = document.getElementById("modalOverlay");
+  const modalCard = document.querySelector(".modal-card");
+  if (modalCard) modalCard.classList.add("xl");
+  modalTitle.innerText = config.title;
+  modalTitle.style.display = "block";
+
+  const isTrademark = config.mode === "suspension";
+  const reasonLower = String(finalReason || "").toLowerCase();
+  const oppositionChecked =
+    reasonLower.includes("cancellation") || reasonLower.includes("duplicate");
+  const negotiationChecked =
+    reasonLower.includes("negotiat") || reasonLower.includes("settle");
+
+  modalBody.innerHTML = `
+    <div style="padding:0 8px;">
+      <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; margin-bottom:20px;">
+        <div>
+          <div style="font-size:.78rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gray-400);">${escapeHtml(config.formNo)}</div>
+          <div style="font-size:1.15rem; font-weight:800; color:var(--navy); margin-top:6px;">${escapeHtml(config.title)}</div>
+          <div style="font-size:.86rem; color:var(--gray-500); margin-top:4px;">${escapeHtml(config.office)}</div>
+        </div>
+        <button class="btn btn-outline-navy btn-sm" type="button" onclick="window.open('${config.pdfPath}', '_blank')"><i class="fa-solid fa-file-pdf"></i> Open Reference PDF</button>
+      </div>
+
+      <div style="background:linear-gradient(to right, #f8fafc, #ffffff); border:1px solid var(--gray-100); border-radius:18px; padding:22px; margin-bottom:18px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px 18px;">
+          <div><div style="font-size:.75rem; color:var(--gray-400); text-transform:uppercase; font-weight:800;">${escapeHtml(config.recordLabel)}</div><div style="font-size:.95rem; color:var(--navy); font-weight:700; margin-top:4px;">${escapeHtml(config.recordValue)}</div></div>
+          <div><div style="font-size:.75rem; color:var(--gray-400); text-transform:uppercase; font-weight:800;">Date Filed</div><div style="font-size:.95rem; color:var(--navy); font-weight:700; margin-top:4px;">${escapeHtml(config.filingDate || "")}</div></div>
+          <div><div style="font-size:.75rem; color:var(--gray-400); text-transform:uppercase; font-weight:800;">Applicant</div><div style="font-size:.95rem; color:var(--navy); font-weight:700; margin-top:4px;">${escapeHtml(config.applicantName)}</div></div>
+          <div><div style="font-size:.75rem; color:var(--gray-400); text-transform:uppercase; font-weight:800;">${escapeHtml(config.titleLabel)}</div><div style="font-size:.95rem; color:var(--navy); font-weight:700; margin-top:4px;">${escapeHtml(config.titleValue)}</div></div>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--gray-100); border-radius:18px; padding:22px; background:white;">
+        <div style="font-size:.78rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:12px;">Form Preview</div>
+        <div style="font-size:.92rem; color:var(--gray-700); line-height:1.75;">
+          ${
+            isTrademark
+              ? `
+          <p style="margin:0 0 14px;">This is to request for suspension of action in connection with the above-mentioned application on the ground that:</p>
+          ${renderCancellationChecklistItem("Applicant will file an Opposition/Petition for Cancellation against the applicant/registrant of the cited mark.", oppositionChecked)}
+          ${renderCancellationChecklistItem("Applicant will negotiate/is negotiating with the applicant/registrant of the cited mark.", negotiationChecked)}
+          ${renderCancellationChecklistItem(`Others, please state: ${finalReason}`, !oppositionChecked && !negotiationChecked)}
+          <div style="margin-top:14px; padding:14px; background:rgba(59,130,246,0.06); border-radius:12px; border:1px solid rgba(59,130,246,0.15);">
+            <div style="font-size:.76rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#1d4ed8; margin-bottom:8px;">Applicant Statement</div>
+            <div>I/We will pay the corresponding suspension of examination fee.</div>
+            <div style="margin-top:8px;">I/We hope for your kind consideration and approval.</div>
+          </div>`
+              : `
+          <p style="margin:0 0 14px;">In the matter of:</p>
+          ${renderCancellationChecklistItem("Letters Patent, in accordance with Sec. 56 of R.A. 8293, as amended", config.matterLabel === "Letters Patent")}
+          ${renderCancellationChecklistItem("Utility Model Registration in accordance with Sec. 109.4 of R.A. 8293, as amended", config.matterLabel === "Utility Model Registration")}
+          ${renderCancellationChecklistItem("Industrial Design Registration in accordance with Sec. 120 of R.A. 8293, as amended", config.matterLabel === "Industrial Design Registration")}
+          <div style="margin-top:14px; padding:14px; background:rgba(245,158,11,0.06); border-radius:12px; border:1px solid rgba(245,158,11,0.15);">
+            <div style="font-size:.76rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#b45309; margin-bottom:8px;">Grounds</div>
+            <div>${escapeHtml(finalReason)}</div>
+          </div>
+          <div style="margin-top:14px;">
+            <div style="font-size:.76rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Attached are the following</div>
+            ${renderCancellationChecklistItem("Certified and verified copies of documents supporting my petition", true)}
+            ${renderCancellationChecklistItem("Other supporting documents, if any", false)}
+          </div>
+          <div style="margin-top:14px;">Full payment of the required fee(s): <span style="display:inline-block; min-width:140px; border-bottom:1px solid var(--gray-300);">&nbsp;</span></div>`
+          }
+        </div>
+      </div>
+
+      <div style="margin-top:20px; display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap;">
+        <button class="btn btn-outline-navy" type="button" onclick="closeModal()">Close</button>
+        <button class="btn btn-primary" type="button" onclick="showToast('${escapeHtml(config.title)} ready for ${escapeHtml(submission.id)}')"><i class="fa-solid fa-print"></i> Prepare Form</button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add("active");
+};
+
 window.selectCancellationReason = function(el, reason) {
   document.querySelectorAll('.reason-option').forEach(opt => opt.classList.remove('selected'));
   el.classList.add('selected');
@@ -12564,10 +13004,9 @@ window.confirmCancellation = function(id) {
 
   s.status = "Cancelled";
   s.cancellationReason = finalReason;
-  
-  closeModal();
-  showToast("Application cancelled successfully.");
-  navigateTo("user-dashboard");
+
+  showCancellationDocumentModal(id, finalReason);
+  showToast("Cancellation request captured. Matching form opened.");
 };
 
 // ===== SUBMISSION METHOD SELECTION =====
@@ -12859,6 +13298,12 @@ window.handleSubmissionPaymentProofUpload = function(id, input) {
   if (!input?.files?.length) return;
   const submission = submissions.find((entry) => entry.id === id);
   if (!submission) return;
+  if (!getAssignedReviewerId(submission)) {
+    showToast(
+      "This case must remain Pending until it is assigned or taken by a specialist.",
+    );
+    return;
+  }
   const file = input.files[0];
   submission.depositFile = {
     name: file.name,
@@ -13009,6 +13454,10 @@ function submitForm() {
 
 // ===== MARKETPLACE =====
 function renderAdminMarketplacePage() {
+  const activeListings = marketplaceItems.filter((item) => !item.archived);
+  const archivedListings = marketplaceItems.filter((item) => item.archived);
+  const visibleListings =
+    adminMarketplaceView === "archived" ? archivedListings : activeListings;
   return `
     <div class="page-header">
       <h1>Market Listing</h1>
@@ -13018,22 +13467,26 @@ function renderAdminMarketplacePage() {
     <div class="stats-cards" style="margin-bottom:24px;">
       <div class="stat-card">
         <div class="stat-card-icon blue"><i class="fa-solid fa-store"></i></div>
-        <div class="stat-card-info"><h3>${marketplaceItems.length}</h3><p>Total Listings</p></div>
+        <div class="stat-card-info"><h3>${activeListings.length}</h3><p>Active Listings</p></div>
       </div>
       <div class="stat-card">
         <div class="stat-card-icon green"><i class="fa-solid fa-certificate"></i></div>
-        <div class="stat-card-info"><h3>${marketplaceItems.filter((item) => item.type === "Patent").length}</h3><p>Patent Listings</p></div>
+        <div class="stat-card-info"><h3>${activeListings.filter((item) => item.type === "Patent").length}</h3><p>Patent Listings</p></div>
       </div>
       <div class="stat-card">
         <div class="stat-card-icon yellow"><i class="fa-solid fa-bullhorn"></i></div>
-        <div class="stat-card-info"><h3>${marketplaceItems.filter((item) => item.college === "External" || String(item.college || "").toLowerCase().includes("external")).length}</h3><p>External Listings</p></div>
+        <div class="stat-card-info"><h3>${archivedListings.length}</h3><p>Archived Listings</p></div>
       </div>
     </div>
 
     <div class="table-container">
       <div class="table-header">
-        <h3>All Product Listings</h3>
+        <h3>${adminMarketplaceView === "archived" ? "Archived Product Listings" : "Active Product Listings"}</h3>
         <button class="btn btn-primary" onclick="showMarketListingModal()"><i class="fa-solid fa-plus"></i> Add Listing</button>
+      </div>
+      <div style="padding:0 24px 14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="filter-btn ${adminMarketplaceView === "active" ? "active" : ""}" onclick="setAdminMarketplaceView('active')">Listings (${activeListings.length})</button>
+        <button class="filter-btn ${adminMarketplaceView === "archived" ? "active" : ""}" onclick="setAdminMarketplaceView('archived')">Archived (${archivedListings.length})</button>
       </div>
       <div class="table-responsive">
         <table class="data-table">
@@ -13047,10 +13500,10 @@ function renderAdminMarketplacePage() {
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
+            <tbody>
             ${
-              marketplaceItems.length
-                ? marketplaceItems
+              visibleListings.length
+                ? visibleListings
                     .slice()
                     .sort((a, b) => a.id - b.id)
                     .map(
@@ -13064,20 +13517,24 @@ function renderAdminMarketplacePage() {
                   <td>
                     <div class="action-btns">
                       <button class="btn btn-sm btn-outline-navy" onclick="showInnovationDetail(${item.id})"><i class="fa-solid fa-eye"></i> View</button>
-                      <button class="btn btn-sm btn-secondary" onclick="showMarketListingModal(${item.id})"><i class="fa-solid fa-pen"></i> Edit</button>
-                      <button class="btn btn-sm btn-outline-danger" onclick="deleteMarketListing(${item.id})"><i class="fa-solid fa-trash"></i> Delete</button>
+                      ${item.archived ? `<button class="btn btn-sm btn-secondary" disabled><i class="fa-solid fa-lock"></i> Read Only</button>` : `<button class="btn btn-sm btn-secondary" onclick="archiveMarketListing(${item.id})"><i class="fa-solid fa-box-archive"></i> Archive</button>`}
                     </div>
                   </td>
                 </tr>`,
                     )
                     .join("")
-                : '<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--gray-400);">No market listings available.</td></tr>'
+                : `<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--gray-400);">No ${adminMarketplaceView === "archived" ? "archived" : "active"} market listings available.</td></tr>`
             }
           </tbody>
         </table>
       </div>
     </div>
   `;
+}
+
+function setAdminMarketplaceView(view) {
+  adminMarketplaceView = view;
+  renderDashboardContent("admin-marketplace");
 }
 
 function getMarketplaceIconForType(type) {
@@ -13104,8 +13561,10 @@ window.showMarketListingModal = function(id = null) {
         contactPerson: "",
         contactEmail: "",
         image: "",
+        archived: false,
       };
   if (!item) return;
+  const readOnly = Boolean(item.archived);
 
   document.getElementById("modalTitle").textContent = isEdit
     ? "Edit Market Listing"
@@ -13115,11 +13574,11 @@ window.showMarketListingModal = function(id = null) {
       <div class="form-row">
         <div class="form-group">
           <label>Product Title *</label>
-          <input type="text" id="marketTitle" value="${escapeHtml(item.title || "")}" required />
+          <input type="text" id="marketTitle" value="${escapeHtml(item.title || "")}" ${readOnly ? "disabled" : ""} required />
         </div>
         <div class="form-group">
           <label>IP Type *</label>
-          <select id="marketType" required>
+          <select id="marketType" ${readOnly ? "disabled" : ""} required>
             <option value="Patent" ${item.type === "Patent" ? "selected" : ""}>Patent</option>
             <option value="Trademark" ${item.type === "Trademark" ? "selected" : ""}>Trademark</option>
             <option value="Copyright" ${item.type === "Copyright" ? "selected" : ""}>Copyright</option>
@@ -13131,34 +13590,34 @@ window.showMarketListingModal = function(id = null) {
       <div class="form-row">
         <div class="form-group">
           <label>Inventor / Lead *</label>
-          <input type="text" id="marketInventor" value="${escapeHtml(item.inventor || "")}" required />
+          <input type="text" id="marketInventor" value="${escapeHtml(item.inventor || "")}" ${readOnly ? "disabled" : ""} required />
         </div>
         <div class="form-group">
           <label>College / External *</label>
-          <input type="text" id="marketCollege" value="${escapeHtml(item.college || "")}" required />
+          <input type="text" id="marketCollege" value="${escapeHtml(item.college || "")}" ${readOnly ? "disabled" : ""} required />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Contact Person</label>
-          <input type="text" id="marketContactPerson" value="${escapeHtml(item.contactPerson || item.inventor || "")}" />
+          <input type="text" id="marketContactPerson" value="${escapeHtml(item.contactPerson || item.inventor || "")}" ${readOnly ? "disabled" : ""} />
         </div>
         <div class="form-group">
           <label>Contact Email</label>
-          <input type="email" id="marketContactEmail" value="${escapeHtml(item.contactEmail || "")}" />
+          <input type="email" id="marketContactEmail" value="${escapeHtml(item.contactEmail || "")}" ${readOnly ? "disabled" : ""} />
         </div>
       </div>
       <div class="form-group">
         <label>Short Description *</label>
-        <textarea id="marketDescription" rows="4" required>${escapeHtml(item.description || "")}</textarea>
+        <textarea id="marketDescription" rows="4" ${readOnly ? "disabled" : ""} required>${escapeHtml(item.description || "")}</textarea>
       </div>
       <div class="form-group">
         <label>Image Path / URL</label>
-        <input type="text" id="marketImage" value="${escapeHtml(item.image || "")}" placeholder="images/your-image.png" />
+        <input type="text" id="marketImage" value="${escapeHtml(item.image || "")}" ${readOnly ? "disabled" : ""} placeholder="images/your-image.png" />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
         <button type="button" class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">${isEdit ? "Save Changes" : "Create Listing"}</button>
+        ${readOnly ? "" : `<button type="submit" class="btn btn-primary">${isEdit ? "Save Changes" : "Create Listing"}</button>`}
       </div>
     </form>
   `;
@@ -13199,6 +13658,7 @@ window.saveMarketListing = function(event, id) {
       contactEmail: contactEmail || entry.contactEmail || "techtransfer@psu.edu.ph",
       image: image || entry.image || "images/psu_logo_main.png",
       icon: entry.icon || getMarketplaceIconForType(type),
+      archived: Boolean(entry.archived),
     });
     addAuditLog({
       accountName: currentUser.name,
@@ -13229,6 +13689,7 @@ window.saveMarketListing = function(event, id) {
       year: new Date().getFullYear(),
       icon: getMarketplaceIconForType(type),
       image: image || "images/psu_logo_main.png",
+      archived: false,
     });
     addAuditLog({
       accountName: currentUser.name,
@@ -13244,25 +13705,24 @@ window.saveMarketListing = function(event, id) {
   renderDashboardContent("admin-marketplace");
 };
 
-window.deleteMarketListing = function(id) {
+window.archiveMarketListing = function(id) {
   const entry = marketplaceItems.find((item) => item.id === id);
   if (!entry) return;
-  if (!confirm(`Delete market listing "${entry.title}"?`)) return;
-
-  const index = marketplaceItems.findIndex((item) => item.id === id);
-  marketplaceItems.splice(index, 1);
+  if (!confirm(`Archive market listing "${entry.title}"?`)) return;
+  entry.archived = true;
   addAuditLog({
     accountName: getCurrentUser().name,
-    action: "Deleted Listing",
+    action: "Archived Listing",
     record: `Listing #${id}`,
-    details: `Deleted the market listing for ${entry.title}.`,
+    details: `Archived the market listing for ${entry.title}.`,
     module: "Market Listing",
   });
-  showToast("Market listing deleted.");
+  showToast("Market listing archived.");
   renderDashboardContent("admin-marketplace");
 };
 
 function renderMarketplace() {
+  const activeMarketplaceItems = marketplaceItems.filter((item) => !item.archived);
   return `
     ${renderBackNav("landing", "Home")}
     <div class="page-header"><h1>Innovation Marketplace</h1><p>Discover and connect with PSU innovations and research outputs.</p></div>
@@ -13276,7 +13736,7 @@ function renderMarketplace() {
       </div>
       <div>
         <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="mpSearch" placeholder="Search innovations..." oninput="filterMarketplace()" /></div>
-        <div class="innovation-grid" id="innovationGrid">${renderInnovationCards(marketplaceItems)}</div>
+        <div class="innovation-grid" id="innovationGrid">${renderInnovationCards(activeMarketplaceItems)}</div>
       </div>
     </div>`;
 }
@@ -13303,6 +13763,7 @@ function filterMarketplace() {
   const college = document.getElementById("mpFilterCollege")?.value || "All";
   const search = document.getElementById("mpSearch")?.value.toLowerCase() || "";
   let filtered = marketplaceItems.filter((item) => {
+    if (item.archived) return false;
     if (type !== "All" && item.type !== type) return false;
     if (college !== "All" && item.college !== college) return false;
     if (
@@ -13439,6 +13900,9 @@ function renderAuditTableRows(logs) {
 function renderAuditLog() {
   const visibleLogs = getVisibleAuditLogs(currentRole);
   const actions = Array.from(new Set(visibleLogs.map((log) => log.action))).sort();
+  const people = Array.from(
+    new Set(visibleLogs.map((log) => getAuditAccountName(log))),
+  ).sort();
   return `
     <div class="page-header"><h1>Audit Log</h1><p>Track account activity, case handling, listings, and announcement updates.</p></div>
     <div class="audit-filters">
@@ -13447,6 +13911,10 @@ function renderAuditLog() {
       <div class="form-group"><label>Action</label>
         <select id="auditAction" onchange="filterAudit()"><option value="All">All Actions</option>${actions
           .map((action) => `<option value="${action}">${action}</option>`)
+          .join("")}</select></div>
+      <div class="form-group"><label>People</label>
+        <select id="auditPeople" onchange="filterAudit()"><option value="All">All People</option>${people
+          .map((person) => `<option value="${person}">${person}</option>`)
           .join("")}</select></div>
       ${canExportAudit() ? '<button class="btn btn-primary btn-sm" style="margin-top:auto" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>' : ""}
     </div>
@@ -13459,11 +13927,13 @@ function filterAudit() {
   const from = document.getElementById("auditFrom").value;
   const to = document.getElementById("auditTo").value;
   const action = document.getElementById("auditAction").value;
+  const people = document.getElementById("auditPeople").value;
   const filtered = getVisibleAuditLogs(currentRole).filter((log) => {
     const logDate = String(log.timestamp || "").slice(0, 10);
     if (from && logDate < from) return false;
     if (to && logDate > to) return false;
     if (action !== "All" && log.action !== action) return false;
+    if (people !== "All" && getAuditAccountName(log) !== people) return false;
     return true;
   });
   const tbody = document.querySelector("#auditTable tbody");
@@ -13870,6 +14340,9 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
 function renderProfile() {
   const user = getCurrentUser();
   const role = getRoleMeta().label;
+  const normalizedRole = normalizeRole(currentRole);
+  const isAdminProfile =
+    normalizedRole === "admin" || normalizedRole === "superadmin";
   
   return `
     ${renderBackNav()}
@@ -13952,15 +14425,22 @@ function renderProfile() {
           </div>
         </div>
 
-        <div class="detail-panel" style="margin-top:32px; padding:32px;">
+        ${
+          isAdminProfile
+            ? ""
+            : `<div class="detail-panel" style="margin-top:32px; padding:32px;">
           <h3 style="margin-bottom:24px;"><i class="fa-solid fa-handshake" style="color:var(--gold); margin-right:10px;"></i> My Commercial Interests</h3>
           <div class="interests-list">
             ${renderInterestsList()}
           </div>
           <button class="btn btn-text" style="margin-top:24px; padding:0; color:var(--gold-dark); font-weight:700;" onclick="navigateTo('marketplace-dash')">Browse More Innovations <i class="fa-solid fa-arrow-right" style="margin-left:4px; font-size:0.8rem;"></i></button>
-        </div>
+        </div>`
+        }
 
-        <div class="detail-panel" style="margin-top:32px; padding:32px;">
+        ${
+          isAdminProfile
+            ? ""
+            : `<div class="detail-panel" style="margin-top:32px; padding:32px;">
           <h3 style="margin-bottom:24px;"><i class="fa-solid fa-clock-rotate-left" style="color:var(--gold); margin-right:10px;"></i> Recent Account Activity</h3>
           <div class="activity-log" style="display:flex; flex-direction:column; gap:20px;">
             <div style="display:flex; gap:16px; align-items:start;">
@@ -13986,7 +14466,8 @@ function renderProfile() {
             </div>
           </div>
           <button class="btn btn-text" style="margin-top:24px; padding:0; color:var(--gold-dark); font-weight:700;">View Full Security Log <i class="fa-solid fa-arrow-right" style="margin-left:4px; font-size:0.8rem;"></i></button>
-        </div>
+        </div>`
+        }
       </div>
     </div>`;
 }
@@ -13996,7 +14477,10 @@ function renderAdminRecords() {
   return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties — metadata is locked for integrity.</p></div>
     <div style="padding:12px 18px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-shield-halved" style="color:#6366f1; font-size:1.1rem;"></i>
-      <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> — All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions.</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; width:100%; flex-wrap:wrap;">
+        <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> — All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions unless the integrity layer is unlocked with a Primary Key or Backup Key.</p>
+        <button class="btn btn-outline-navy btn-sm" onclick="unlockIntegrityFreeze()"><i class="fa-solid fa-key"></i> ${integrityFreezeUnlocked ? "Integrity Freeze Unlocked" : "Unlock Integrity Freeze"}</button>
+      </div>
     </div>
     <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th></tr></thead><tbody>
       ${approved
@@ -14025,7 +14509,7 @@ function renderInterestsList() {
 
   return userInterests.map(id => {
     const item = marketplaceItems.find(i => i.id === id);
-    if (!item) return '';
+    if (!item || item.archived) return '';
     return `
       <div style="display:flex; align-items:center; gap:16px; padding:16px; background:white; border-radius:12px; border:1px solid var(--gray-100); margin-bottom:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02); cursor:pointer;" onclick="showInnovationDetail(${item.id})">
         <div style="width:48px; height:48px; border-radius:10px; background:var(--gray-50); display:flex; align-items:center; justify-content:center; color:var(--navy); font-size:1.2rem; flex-shrink:0;">
@@ -14425,15 +14909,41 @@ function editUserRole(userId) {
         `<option value="${role}" ${normalizeRole(user.role) === role ? "selected" : ""}>${formatRoleLabel(role)}</option>`,
     )
     .join("");
+
+  const caseTypes = ["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"];
+  const currentAllowed = user.allowedCaseTypes || [];
+  const checkboxes = caseTypes.map(type => `
+    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer;">
+      <input type="checkbox" name="editSpecialistCaseType" value="${type}" ${currentAllowed.includes(type) ? "checked" : ""} /> ${type}
+    </label>
+  `).join("");
+
   document.getElementById("modalTitle").textContent = "Edit User Role";
   document.getElementById("modalBody").innerHTML = `
     <div class="form-group"><label>Account</label><input type="text" value="${user.name}" disabled style="background:var(--gray-50)" /></div>
     <div class="form-group"><label>Assign Role</label>
-      <select id="newRoleSelect">${options}</select>
+      <select id="newRoleSelect" onchange="toggleEditSpecialistTypeVisibility(this.value)">${options}</select>
     </div>
+    
+    <div id="editSpecialistTypeGroup" style="display:${normalizeRole(user.role) === "reviewer" ? "block" : "none"}; margin-bottom:20px; padding:16px; background:var(--gray-50); border-radius:12px; border:1px solid var(--gray-200);">
+      <label style="display:block; margin-bottom:12px; font-weight:700; color:var(--navy); font-size:0.85rem;">
+        <i class="fa-solid fa-list-check" style="margin-right:6px; color:var(--gold);"></i> Assign Case Types
+      </label>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        ${checkboxes}
+      </div>
+    </div>
+
     <button class="btn btn-primary btn-block" onclick="applyRoleChange(${user.id})"><i class="fa-solid fa-save"></i> Save Changes</button>`;
   document.getElementById("modalOverlay").classList.add("active");
 }
+
+window.toggleEditSpecialistTypeVisibility = function(role) {
+  const group = document.getElementById("editSpecialistTypeGroup");
+  if (group) {
+    group.style.display = normalizeRole(role) === "reviewer" ? "block" : "none";
+  }
+};
 
 function applyRoleChange(userId) {
   const user = systemUsers.find((entry) => entry.id === userId);
@@ -14450,14 +14960,24 @@ function applyRoleChange(userId) {
 
   const previousRole = formatRoleLabel(user.role);
   user.role = newRole;
+  
   if (newRole === "reviewer") {
     user.dept = "Specialist Pool";
+    const checkboxes = document.querySelectorAll('input[name="editSpecialistCaseType"]:checked');
+    user.allowedCaseTypes = Array.from(checkboxes).map(cb => cb.value);
+    if (user.allowedCaseTypes.length === 0) {
+      showToast("Please assign at least one case type for the Specialist.");
+      return;
+    }
+  } else {
+    delete user.allowedCaseTypes;
   }
+
   addAuditLog({
     accountName: getCurrentUser().name,
     action: "Updated Account Role",
     record: user.email,
-    details: `Changed role from ${previousRole} to ${formatRoleLabel(newRole)}.`,
+    details: `Changed role from ${previousRole} to ${formatRoleLabel(newRole)}${user.allowedCaseTypes ? ` with types: ${user.allowedCaseTypes.join(", ")}` : ""}.`,
     module: "Accounts",
   });
   closeModal();
@@ -14491,6 +15011,16 @@ function renderCreateAccount() {
   const roleOptions = getManageableRoleOptions()
     .map((role) => `<option value="${role}">${formatRoleLabel(role)}</option>`)
     .join("");
+  
+  const caseTypes = [
+    "Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"
+  ];
+  const caseCheckboxes = caseTypes.map(type => `
+    <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer;">
+      <input type="checkbox" name="specialistCaseType" value="${type}" /> ${type}
+    </label>
+  `).join("");
+
   return `<div class="page-header"><h1><i class="fa-solid fa-user-plus"></i> Create New Account</h1><p>Create only the accounts allowed by the current RBAC role.</p></div>
     <div class="detail-panel" style="max-width:640px">
       <h3><i class="fa-solid fa-id-card"></i> New User Details</h3>
@@ -14498,8 +15028,24 @@ function renderCreateAccount() {
         <div class="form-group"><label>Full Name *</label><input type="text" id="newUserName" placeholder="Enter full name" /></div>
         <div class="form-group"><label>Email *</label><input type="email" id="newUserEmail" placeholder="user@psu.edu.ph" /></div>
       </div>
-      <div class="form-group"><label>Assigned Role *</label>
-        <select id="newUserRole"><option value="">Select Role</option>${roleOptions}</select></div>
+      <div class="form-group">
+        <label>Assigned Role *</label>
+        <select id="newUserRole" onchange="toggleSpecialistTypeVisibility(this.value)">
+          <option value="">Select Role</option>
+          ${roleOptions}
+        </select>
+      </div>
+
+      <div id="specialistTypeGroup" style="display:none; margin-bottom:20px; padding:16px; background:var(--gray-50); border-radius:12px; border:1px solid var(--gray-200);">
+        <label style="display:block; margin-bottom:12px; font-weight:700; color:var(--navy); font-size:0.85rem;">
+          <i class="fa-solid fa-list-check" style="margin-right:6px; color:var(--gold);"></i> Assign Case Types
+        </label>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;">
+          ${caseCheckboxes}
+        </div>
+        <p style="margin-top:12px; font-size:0.75rem; color:var(--gray-500);">Specialists will only see unassigned cases matching these selected types.</p>
+      </div>
+
       <div class="form-row">
         <div class="form-group"><label>Password *</label><input type="password" id="newUserPass" placeholder="Min 8 characters" /></div>
         <div class="form-group"><label>Confirm Password *</label><input type="password" id="newUserPassConfirm" placeholder="Re-enter password" /></div>
@@ -14513,6 +15059,13 @@ function renderCreateAccount() {
       </div>
     </div>`;
 }
+
+window.toggleSpecialistTypeVisibility = function(role) {
+  const group = document.getElementById("specialistTypeGroup");
+  if (group) {
+    group.style.display = normalizeRole(role) === "reviewer" ? "block" : "none";
+  }
+};
 
 function createNewAccount() {
   const name = document.getElementById("newUserName").value.trim();
@@ -14538,6 +15091,16 @@ function createNewAccount() {
     return;
   }
 
+  let allowedCaseTypes = undefined;
+  if (role === "reviewer") {
+    const checkboxes = document.querySelectorAll('input[name="specialistCaseType"]:checked');
+    allowedCaseTypes = Array.from(checkboxes).map(cb => cb.value);
+    if (allowedCaseTypes.length === 0) {
+      showToast("Please assign at least one case type for the Specialist.");
+      return;
+    }
+  }
+
   const newUser = {
     id: Math.max(...systemUsers.map((user) => user.id)) + 1,
     name,
@@ -14551,13 +15114,14 @@ function createNewAccount() {
           : "Unassigned",
     status: "Active",
     dateCreated: new Date().toISOString().split("T")[0],
+    allowedCaseTypes
   };
   systemUsers.push(newUser);
   addAuditLog({
     accountName: getCurrentUser().name,
     action: "Created Account",
     record: email,
-    details: `Created a ${formatRoleLabel(role)} account for ${name}.`,
+    details: `Created a ${formatRoleLabel(role)} account for ${name}${allowedCaseTypes ? ` with access to: ${allowedCaseTypes.join(", ")}` : ""}.`,
     module: "Accounts",
   });
   showToast(`Account created successfully for ${name}.`);
@@ -14799,8 +15363,8 @@ function renderRolePermissions() {
 }
 
 function renderAdminSettings() {
-  const primaryKey = "KMS-PSU-2026-ACTIVE";
-  const backupKey = "KMS-PSU-2026-STANDBY";
+  const primaryKey = getDisplaySecurityKey("primary");
+  const backupKey = getDisplaySecurityKey("backup");
   return `<div class="page-header"><h1>System Settings</h1><p>Administrative configuration and security controls.</p></div>
     <div class="detail-layout">
       <div class="detail-panel">
@@ -14814,8 +15378,8 @@ function renderAdminSettings() {
       </div>
       <div class="detail-panel">
         <h3><i class="fa-solid fa-key"></i> Encryption Key Management</h3>
-        <div class="detail-row"><span class="label">Primary Key</span><span class="value">${maskSensitiveValue(primaryKey)}</span></div>
-        <div class="detail-row"><span class="label">Backup Key</span><span class="value">${maskSensitiveValue(backupKey)}</span></div>
+        <div class="detail-row"><span class="label">Primary Key</span><span class="value" style="display:flex; align-items:center; gap:10px;">${primaryKey}<button class="btn btn-sm btn-outline-navy" type="button" onclick="toggleSecurityKeyVisibility('primary')"><i class="fa-solid fa-${securityKeyVisibility.primary ? "eye-slash" : "eye"}"></i></button></span></div>
+        <div class="detail-row"><span class="label">Backup Key</span><span class="value" style="display:flex; align-items:center; gap:10px;">${backupKey}<button class="btn btn-sm btn-outline-navy" type="button" onclick="toggleSecurityKeyVisibility('backup')"><i class="fa-solid fa-${securityKeyVisibility.backup ? "eye-slash" : "eye"}"></i></button></span></div>
         <div class="detail-row"><span class="label">Rotation Policy</span><span class="value">Quarterly</span></div>
         <div class="detail-actions">
           <button class="btn btn-primary btn-sm" onclick="showToast('Key rotation scheduled')"><i class="fa-solid fa-arrows-rotate"></i> Rotate Keys</button>
@@ -14824,6 +15388,32 @@ function renderAdminSettings() {
       </div>
     </div>`;
 }
+
+window.toggleSecurityKeyVisibility = function(type) {
+  securityKeyVisibility[type] = !securityKeyVisibility[type];
+  renderDashboardContent("admin-settings");
+};
+
+window.unlockIntegrityFreeze = function() {
+  const enteredKey = prompt(
+    "Enter the Primary Key or Backup Key to unlock the Integrity Freeze:",
+    "",
+  );
+  if (enteredKey === null) return;
+  const { primary, backup } = getSystemSecurityKeys();
+  if (enteredKey === primary || enteredKey === backup) {
+    integrityFreezeUnlocked = true;
+    showToast("Integrity Freeze unlocked successfully.");
+    renderDashboardContent("admin-records");
+    return;
+  }
+  showToast("Invalid key. Integrity Freeze remains locked.");
+};
+
+window.filterAnnouncementCategory = function(category) {
+  announcementCategoryFilter = category;
+  renderDashboardContent("admin-announcements");
+};
 
 // ===== TOAST =====
 function showToast(msg) {
@@ -14994,10 +15584,14 @@ window.toggleProfileDropdown = function () {
   if (dropdown) dropdown.classList.toggle("open", profileDropdownOpen);
   if (trigger) trigger.classList.toggle("active", profileDropdownOpen);
 
-  // Role-based visibility for Help & Support
+  // Role-based visibility for profile shortcuts
+  const accountLink = document.getElementById("profileAccountLink");
   const helpLink = document.getElementById("profileHelpLink");
+  const isApplicant = normalizeRole(currentRole) === "applicant";
+  if (accountLink) {
+    accountLink.style.display = isApplicant ? "flex" : "none";
+  }
   if (helpLink) {
-    const isApplicant = normalizeRole(currentRole) === "applicant";
     helpLink.style.display = isApplicant ? "flex" : "none";
   }
 
@@ -15025,6 +15619,15 @@ window.toggleProfileDropdown = function () {
 
 // ===== ANNOUNCEMENTS =====
 function renderAdminAnnouncementsPage() {
+  const categories = Array.from(
+    new Set(announcements.map((item) => item.category)),
+  ).sort();
+  const visibleAnnouncements =
+    announcementCategoryFilter === "All"
+      ? announcements
+      : announcements.filter(
+          (announcement) => announcement.category === announcementCategoryFilter,
+        );
   return `
     <div class="page-header" style="margin-bottom:32px;">
       <h1>Manage Announcements</h1>
@@ -15034,7 +15637,18 @@ function renderAdminAnnouncementsPage() {
     <div class="table-container">
       <div class="table-header">
         <h3>All Announcements</h3>
-        <button class="btn btn-primary" onclick="showAnnouncementModal()"><i class="fa-solid fa-plus"></i> Add New Announcement</button>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <select class="filter-select" onchange="filterAnnouncementCategory(this.value)">
+            <option value="All">All Categories</option>
+            ${categories
+              .map(
+                (category) =>
+                  `<option value="${category}" ${announcementCategoryFilter === category ? "selected" : ""}>${category}</option>`,
+              )
+              .join("")}
+          </select>
+          <button class="btn btn-primary" onclick="showAnnouncementModal()"><i class="fa-solid fa-plus"></i> Add New Announcement</button>
+        </div>
       </div>
       <div class="table-responsive">
         <table class="data-table">
@@ -15047,7 +15661,7 @@ function renderAdminAnnouncementsPage() {
             </tr>
           </thead>
           <tbody>
-            ${announcements.length ? announcements.map(a => `
+            ${visibleAnnouncements.length ? visibleAnnouncements.map(a => `
               <tr>
                 <td>${a.date}</td>
                 <td><span class="badge ${a.category === "Alert" ? "badge-rejected" : a.category === "Event" ? "badge-review" : "badge-approved"}">${a.category}</span></td>
@@ -15256,6 +15870,8 @@ window.assignEvaluator = function(submissionId, evaluatorId) {
       module: submission.type,
     });
   } else {
+    normalizeUnassignedSubmissionStatus(submission);
+    syncSubmissionWorkflowState(submission);
     addAuditLog({
       accountName: getCurrentUser().name,
       action: "Removed Specialist",
