@@ -181,7 +181,7 @@ let submissions = [
     type: "Patent",
     title: "High-Efficiency Solar Distiller",
     applicant: "Juan dela Cruz",
-    status: "Pending",
+    status: "Under Review",
     date: "2026-04-01",
     department: "College of Engineering",
     description: "A solar-powered distiller optimized for brackish water."
@@ -260,6 +260,16 @@ let submissions = [
     department: "College of Sciences",
     description: "Drafting phase for thermoelectric generator modules."
   },
+  {
+    id: "PSU-PAT-2026-008",
+    type: "Patent",
+    title: "Smart Hydroponics System",
+    applicant: "Juan dela Cruz",
+    status: "Pending",
+    date: "2026-04-26",
+    department: "College of Agriculture",
+    description: "Automated nutrient delivery system for indoor farming."
+  },
 
   // COPYRIGHTS
   {
@@ -267,7 +277,7 @@ let submissions = [
     type: "Copyright",
     title: "Palawan Ecosystem Documentary",
     applicant: "Juan dela Cruz",
-    status: "Pending",
+    status: "Under Review",
     date: "2026-04-05",
     department: "College of Arts",
     description: "Visual documentation of Palawan's flora and fauna."
@@ -345,6 +355,16 @@ let submissions = [
     date: "2026-04-26",
     department: "College of Sciences",
     description: "Internal codebase for submission tracking."
+  },
+  {
+    id: "PSU-COP-2026-008",
+    type: "Copyright",
+    title: "Native Plants Field Guide",
+    applicant: "Juan dela Cruz",
+    status: "Pending",
+    date: "2026-04-26",
+    department: "College of Sciences",
+    description: "Comprehensive field guide for Palawan's native plant species."
   },
 
   // ADDING SOME OTHER TYPES FOR VARIETY
@@ -2793,13 +2813,11 @@ function renderSidebar() {
       },
       { page: "admin-settings", icon: "fa-gear", text: "System Config" },
       { page: "admin-announcements", icon: "fa-bullhorn", text: "Announcements" },
-      { page: "user-profile", icon: "fa-user", text: "Profile" },
     ],
 
     reviewer: [
       { page: "admin-dashboard", icon: "fa-microscope", text: "Specialist Hub" },
       { page: "admin-submissions", icon: "fa-inbox", text: "Assigned Cases" },
-      { page: "user-profile", icon: "fa-user", text: "Profile" },
     ],
     applicant: [
       { page: "user-dashboard", icon: "fa-house", text: "Home" },
@@ -2807,7 +2825,6 @@ function renderSidebar() {
       { page: "forms-dash", icon: "fa-folder-open", text: "Forms" },
       { page: "marketplace-dash", icon: "fa-shop", text: "Marketplace" },
       { page: "notifications", icon: "fa-bell", text: "Notification" },
-      { page: "user-profile", icon: "fa-user", text: "Profile" },
     ],
   };
 
@@ -3089,9 +3106,6 @@ function renderConditionalPaymentUploadPanel(
               </div>
             </div>
           </div>
-          <button type="button" class="btn btn-outline btn-sm" onclick="showPaymentGuideModal()" style="white-space:nowrap;">
-            <i class="fa-solid fa-map-location-dot"></i> View PSU Campus Map
-          </button>
         </div>
         ${statusMarkup}
       </div>
@@ -3106,9 +3120,6 @@ function renderConditionalPaymentUploadPanel(
           <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px; line-height:1.6;">
             Payment was requested by the evaluator. Upload the receipt or proof of payment to move this case forward.
           </p>
-          <button type="button" class="btn btn-outline btn-sm" onclick="showPaymentGuideModal()" style="font-size:0.75rem; padding:6px 12px; background:white;">
-            <i class="fa-solid fa-map-location-dot"></i> View Payment Guide & Map
-          </button>
         </div>
         <button type="button" class="btn ${paymentFile ? "btn-outline-navy" : "btn-primary"} btn-sm" onclick="document.getElementById('${inputId}').click()">
           <i class="fa-solid fa-${paymentFile ? "arrows-rotate" : "upload"}"></i> ${paymentFile ? "Replace Proof" : "Choose File"}
@@ -5845,9 +5856,6 @@ function renderIpGuidelines(filterId = null) {
         <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Payment is <strong>conditional</strong> and only requested after evaluator review when needed.</li>
         <li><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Review is performed <strong>manually</strong> by PSU IP Office specialists.</li>
       </ul>
-      <button class="btn btn-primary" onclick="showPaymentGuideModal()" style="background:white; color:var(--navy); font-size:0.85rem; padding:10px 20px; border-radius:50px;">
-        <i class="fa-solid fa-map-location-dot" style="color:var(--gold-dark)"></i> View PSU Campus Map
-      </button>
     </div>
 
     <div style="display:flex; flex-direction:column; gap:32px; padding-bottom:80px;">
@@ -5908,9 +5916,6 @@ function renderIpGuidelines(filterId = null) {
                   </div>
                 `).join('')}
               </div>
-              <button class="btn btn-primary" style="width:100%; justify-content:center; background:${t.gradient}; border:none;" onclick="navigateTo('login')">
-                <i class="fa-solid fa-plus-circle"></i> Init ${t.title} Sequence
-              </button>
             </div>
           </div>
         </div>
@@ -12937,7 +12942,7 @@ function submitForm() {
         <div class="confirmation-screen">
           <div class="check-circle"><i class="fa-solid fa-check"></i></div>
           <h2>Patent request submitted</h2>
-          <p style="color:var(--gray-500)">The application was received and is now pending evaluator review. The final Form 100 preview is shown below.</p>
+          <p style="color:var(--gray-500)">The application was received and is now undergoing evaluator review. The final Form 100 preview is shown below.</p>
           <div class="ref-number">${refNum}</div>
           <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
           <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
@@ -13580,14 +13585,13 @@ function renderUserSubmissions() {
   const counts = getStatusCounts();
   const statuses = [
     { id: "All", label: "All" },
-    { id: "Pending", label: "Pending" },
-    { id: "Under Review", label: "Reviewing" },
-    { id: "Validated", label: "Validated" },
-    { id: "Payment Requested", label: "Payment" },
+    { id: "Draft", label: "Draft" },
+    { id: "Pending", label: "Submitted" },
+    { id: "Under Review", label: "Under Review" },
+    { id: "ActionRequired", label: "Action Required" },
+    { id: "Payment Requested", label: "For Payment" },
     { id: "Approved", label: "Approved" },
     { id: "Rejected", label: "Rejected" },
-    { id: "ActionRequired", label: "Action Needed" },
-    { id: "Draft", label: "Saved Draft" },
   ];
 
   return `
