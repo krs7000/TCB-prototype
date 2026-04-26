@@ -478,6 +478,32 @@ let submissions = [
       "A comprehensive digital catalog of flora and fauna endemic to the Palawan region.",
     workType: "Database/Software",
   },
+  {
+    id: "PSU-PAT-2026-016",
+    type: "Patent",
+    title: "Advanced Algae Photobioreactor",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
+    contact: "09181234567",
+    status: "Payment Requested",
+    date: "2026-04-20",
+    description: "High-efficiency photobioreactor for cultivation of microalgae for biofuel production.",
+    field: "Biotechnology",
+  },
+  {
+    id: "PSU-COP-2026-017",
+    type: "Copyright",
+    title: "Sustainable Architecture Guidelines",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    email: "juan.delacruz@psu.edu.ph",
+    contact: "09181234567",
+    status: "Payment Requested",
+    date: "2026-04-22",
+    description: "A digital manual outlining sustainable architectural practices for tropical climates.",
+    workType: "Literary Work",
+  },
 ];
 
 const marketplaceItems = [
@@ -3014,9 +3040,10 @@ const REQUIRED_DOCUMENTS_BY_TYPE = {
     { key: "goods-services-statement", name: "Statement of Goods / Services", type: "Required" },
   ],
   copyright: [
-    { key: "copyright-registration-form", name: "Copyright Registration Form (PSU-IPO-CR-01)", type: "Required" },
-    { key: "complete-copy-of-the-work", name: "Complete Copy of the Work", type: "Required" },
-    { key: "valid-philippine-id", name: "Valid Philippine ID (Digitized)", type: "Required" },
+    { key: "valid-id", name: "Valid ID", type: "Required" },
+    { key: "copy-of-work", name: "Copy of the work (soft copy)", type: "Required" },
+    { key: "registration-form", name: "Registration Form (BCRR Form 2025-1 / BCRR Form 2025-2)", type: "Required" },
+    { key: "affidavit-ownership", name: "Affidavit of Ownership", type: "Required" },
   ],
   utility: [
     { key: "utility-model-application-form", name: "Utility Model Application Form (IPOPHL Form 200)", type: "Required" },
@@ -3072,7 +3099,23 @@ const APPLICANT_VISIBLE_STATUSES = [
 ];
 
 function getRequiredDocumentsForType(formType = currentFormType) {
-  return REQUIRED_DOCUMENTS_BY_TYPE[formType] || REQUIRED_DOCUMENTS_BY_TYPE.patent;
+  let docs = REQUIRED_DOCUMENTS_BY_TYPE[formType] || REQUIRED_DOCUMENTS_BY_TYPE.patent;
+  if (formType === "copyright") {
+    // Deep copy to allow modifying objects inside the array safely
+    let copyDocs = docs.map(doc => ({ ...doc }));
+    if (typeof wizardData !== 'undefined' && wizardData) {
+      const regFormIndex = copyDocs.findIndex(d => d.key === "registration-form");
+      if (wizardData.applicantTypeGroup === "Individual") {
+        if (regFormIndex !== -1) copyDocs[regFormIndex].name = "Registration Form (BCRR Form 2025-1)";
+        copyDocs.push({ key: "tin-sss-gsis", name: "TIN / SSS / GSIS", type: "Required" });
+      } else if (wizardData.applicantTypeGroup === "Institution") {
+        if (regFormIndex !== -1) copyDocs[regFormIndex].name = "Registration Form (BCRR Form 2025-2)";
+        copyDocs.push({ key: "business-details", name: "Business Details / Company ID", type: "Required" });
+      }
+    }
+    return copyDocs;
+  }
+  return docs;
 }
 
 function getRequiredDocumentCount(formType = currentFormType) {
@@ -11600,12 +11643,20 @@ function renderFormWizard(title) {
     return renderIndustrialGoogleForm();
   }
 
-  const steps = [
+  let steps = [
     "Applicant Info",
     getStep2Label(),
     "Upload Documents",
     "Review & Submit",
   ];
+  
+  if (currentFormType === "copyright" && submissionMethod === "upload") {
+    steps = [
+      "Applicant Information",
+      "Upload Requirements",
+      "Review & Submit",
+    ];
+  }
   
   const roleMeta = getRoleMeta();
   const currentHour = new Date().getHours();
@@ -11698,6 +11749,12 @@ function getStep2Label() {
 
 function renderWizardStep() {
   const content = (() => {
+    if (currentFormType === "copyright" && submissionMethod === "upload") {
+      if (currentWizardStep === 1) return renderStep1();
+      if (currentWizardStep === 2) return renderStep3();
+      if (currentWizardStep === 3) return renderStep4Review();
+      return "";
+    }
     if (currentWizardStep === 1) return renderStep1();
     if (currentWizardStep === 2) return renderStep2();
     if (currentWizardStep === 3) return renderStep3();
@@ -11981,6 +12038,16 @@ function renderStep3() {
         ${uploadedCount} of ${totalRequired} REQUIRED UPLOADED
       </div>
     </div>
+    
+    ${currentFormType === 'copyright' ? `
+      <div style="background:#fff7ed; border:1px solid #ffedd5; padding:16px; border-radius:12px; margin-bottom:24px; display:flex; gap:12px; align-items:start;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:#f97316; margin-top:3px;"></i>
+        <div>
+          <h4 style="color:#c2410c; margin-bottom:4px; font-size:0.9rem;">First-time Applicants Note</h4>
+          <p style="color:#c2410c; font-size:0.85rem; margin:0;">You must be registered in the NBDB (National Book Development Board) as an Author or Publisher. If you are not yet registered, please register with NBDB before continuing.</p>
+        </div>
+      </div>
+    ` : ''}
 
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:28px;">
       <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
@@ -12458,6 +12525,7 @@ function captureWizardData() {
 
 function getMaxWizardSteps() {
   if (isCopyrightGoogleFlow()) return getCopyrightFormSteps().length;
+  if (currentFormType === "copyright" && submissionMethod === "upload") return 3;
   if (isPatentGoogleFlow()) return 4;
   if (isUtilityGoogleFlow()) return 4;
   if (isIndustrialGoogleFlow()) return 4;
@@ -12468,7 +12536,7 @@ function nextWizardStep() {
   captureWizardData();
   const maxSteps = getMaxWizardSteps();
   if (currentWizardStep < maxSteps) {
-    if (currentWizardStep === 1 && submissionMethod === "upload") {
+    if (currentWizardStep === 1 && submissionMethod === "upload" && currentFormType !== "copyright") {
       currentWizardStep = maxSteps - 1; // Fast-track to upload step
     } else {
       currentWizardStep++;
@@ -12478,7 +12546,7 @@ function nextWizardStep() {
 }
 function prevWizardStep() {
   if (currentWizardStep > 1) {
-    if (currentWizardStep === 3 && submissionMethod === "upload") {
+    if (currentWizardStep === 3 && submissionMethod === "upload" && currentFormType !== "copyright") {
       currentWizardStep = 1; // Back to start from fast-track
     } else {
       currentWizardStep--;
@@ -12961,6 +13029,10 @@ function renderFormsPublicContent() {
 }
 
 window.startSubmissionFlow = function(typeId, method, applicantType = null) {
+  if (typeId === "copyright-form" && !applicantType) {
+    showApplicantTypeModal(typeId, method);
+    return;
+  }
   wizardData = createSubmissionWizardSeed();
   if (applicantType) {
     wizardData.applicantTypeGroup = applicantType;
