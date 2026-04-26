@@ -194,7 +194,9 @@ let submissions = [
     status: "Under Review",
     date: "2026-03-15",
     department: "College of Agriculture",
-    description: "IoT-based system for detecting common pests in rice fields."
+    description: "IoT-based system for detecting common pests in rice fields.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3
   },
   {
     id: "PSU-PAT-2026-003",
@@ -204,7 +206,9 @@ let submissions = [
     status: "Validated",
     date: "2026-03-01",
     department: "College of Engineering",
-    description: "Optimized blade design using composite local materials."
+    description: "Optimized blade design using composite local materials.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3
   },
   {
     id: "PSU-PAT-2026-004",
@@ -276,7 +280,9 @@ let submissions = [
     status: "Under Review",
     date: "2026-03-20",
     department: "College of Sciences",
-    description: "Mobile application for campus navigation and info."
+    description: "Mobile application for campus navigation and info.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3
   },
   {
     id: "PSU-COP-2026-003",
@@ -286,7 +292,9 @@ let submissions = [
     status: "Validated",
     date: "2026-03-05",
     department: "College of Arts",
-    description: "Illustrated guide for eco-friendly urban living."
+    description: "Illustrated guide for eco-friendly urban living.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3
   },
   {
     id: "PSU-COP-2026-004",
@@ -1105,6 +1113,10 @@ const REVIEWER_ASSIGNMENTS = {
   "PSU-COP-2026-007": 4,
   "PSU-PAT-2026-008": 5,
   "PSU-UM-2026-009": 3,
+  "PSU-PAT-2026-002": 3,
+  "PSU-PAT-2026-003": 3,
+  "PSU-COP-2026-002": 3,
+  "PSU-COP-2026-003": 3,
 };
 const COPYRIGHT_CASE_OVERRIDES = {
   "PSU-COP-2026-002": {
@@ -1209,8 +1221,8 @@ submissions = submissions.map((submission) => ({
   ...(IPOPHL_TYPES.has(submission.type)
     ? IPOPHL_CASE_OVERRIDES[submission.id] || {}
     : {}),
-  assignedReviewerId: REVIEWER_ASSIGNMENTS[submission.id] || null,
-  assignedEvaluatorId: REVIEWER_ASSIGNMENTS[submission.id] || null,
+  assignedReviewerId: REVIEWER_ASSIGNMENTS[submission.id] || submission.assignedReviewerId || null,
+  assignedEvaluatorId: REVIEWER_ASSIGNMENTS[submission.id] || submission.assignedEvaluatorId || null,
   hasTopSecretAnnex: ["Patent", "Utility Model"].includes(submission.type),
 }));
 
@@ -3389,7 +3401,7 @@ function renderUserDashboard() {
   const role = "applicant";
   const userSubmissions = getVisibleSubmissions(role);
   const total = userSubmissions.length;
-  const actionRequired = userSubmissions.filter((s) => s.status === "ActionRequired").length;
+  const actionRequired = userSubmissions.filter((s) => s.status === "Awaiting Documents").length;
   const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
   const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
   const paymentRequested = userSubmissions.filter((s) => s.status === "Payment Requested").length;
@@ -5639,7 +5651,7 @@ function renderSubmissionDetail() {
           }
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-comment"></i> Admin Notes</h3>
+          <h3><i class="fa-solid fa-comment"></i> Evaluator Notes</h3>
           <div class="admin-notes">
             <textarea placeholder="Add internal notes about this submission..." ${frozen || !canEditSubmission(s) ? "disabled" : ""}></textarea>
             ${!frozen && canEditSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="showToast('Notes saved')">Save Notes</button>` : ""}
@@ -13555,7 +13567,7 @@ function getStatusCounts() {
   };
   visible.forEach((s) => {
     if (counts[s.status] !== undefined) counts[s.status]++;
-    if (s.status === "Awaiting Documents" || s.status === "Payment Requested")
+    if (s.status === "Awaiting Documents")
       counts.ActionRequired++;
   });
   return counts;
@@ -13682,9 +13694,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
     if (ft && ft !== "All") filtered = filtered.filter((s) => s.type === ft);
     
     if (fs === "ActionRequired") {
-      filtered = filtered.filter(
-        (s) => s.status === "Awaiting Documents" || s.status === "Payment Requested",
-      );
+      filtered = filtered.filter((s) => s.status === "Awaiting Documents");
     } else if (fs && fs !== "All") {
       filtered = filtered.filter((s) => s.status === fs);
     }
