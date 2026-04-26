@@ -120,7 +120,7 @@
             <a href="javascript:void(0)" class="nav-link" onclick="event.preventDefault()">Help <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; margin-left:3px;"></i></a>
             <div class="dropdown-content">
               <a href="javascript:void(0)" onclick="navigateTo('faq')"><i class="fa-solid fa-circle-question"></i> FAQ</a>
-              <a href="javascript:void(0)" onclick="navigateTo('guidelines')"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+              <a href="javascript:void(0)" onclick="navigateTo('guidelines')"><i class="fa-solid fa-book-open"></i> IP Guidelines</a>
               <a href="javascript:void(0)" onclick="navigateTo('contact')"><i class="fa-solid fa-envelope"></i> Contact Us</a>
             </div>
           </li>
@@ -193,10 +193,27 @@
                   <i class="fa-solid fa-sliders"></i>
                   <span>Settings</span>
                 </a>
-                <a href="#" class="dropdown-item" onclick="showToast('Help Center open')">
-                  <i class="fa-solid fa-circle-question"></i>
-                  <span>Help & Support</span>
-                </a>
+                <div class="dropdown-item has-submenu" id="profileHelpLink">
+                  <div class="dropdown-item-main">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span>Help & Support</span>
+                    <i class="fa-solid fa-chevron-right submenu-arrow"></i>
+                  </div>
+                  <div class="profile-submenu">
+                    <a href="#" class="submenu-item" onclick="navigateTo('faq-dash')">
+                      <i class="fa-solid fa-circle-question"></i>
+                      <span>FAQ</span>
+                    </a>
+                    <a href="#" class="submenu-item" onclick="navigateTo('ip-guidelines')">
+                      <i class="fa-solid fa-book-open"></i>
+                      <span>IP Guidelines</span>
+                    </a>
+                    <a href="#" class="submenu-item" onclick="navigateTo('contact-dash')">
+                      <i class="fa-solid fa-envelope"></i>
+                      <span>Contact Us</span>
+                    </a>
+                  </div>
+                </div>
                 <div class="dropdown-divider"></div>
                 <a href="#" class="dropdown-item logout-item" onclick="logout()">
                   <i class="fa-solid fa-right-from-bracket"></i>

@@ -1801,6 +1801,7 @@ function navigateTo(page, isBack = false, params = null) {
     "filing-hub",
     "notifications",
     "forms-dash",
+    "contact-dash",
   ];
 
   if (page === "notifications") {
@@ -2804,7 +2805,6 @@ function renderSidebar() {
       { page: "user-dashboard", icon: "fa-house", text: "Home" },
       { page: "user-submissions", icon: "fa-file-lines", text: "My Cases" },
       { page: "forms-dash", icon: "fa-folder-open", text: "Forms" },
-      { page: "ip-guidelines", icon: "fa-book-open", text: "IP Guidelines" },
       { page: "marketplace-dash", icon: "fa-shop", text: "Marketplace" },
       { page: "notifications", icon: "fa-bell", text: "Notification" },
       { page: "user-profile", icon: "fa-user", text: "Profile" },
@@ -3366,6 +3366,9 @@ function renderDashboardContent(page) {
       break;
     case "admin-announcements":
       mc.innerHTML = renderAdminAnnouncementsPage();
+      break;
+    case "contact-dash":
+      mc.innerHTML = renderContactUs();
       break;
       default:
         mc.innerHTML = `
@@ -14940,10 +14943,6 @@ function renderForms() {
     </div>
 
     <div style="margin-top:20px; padding: 40px; background: white; border-top: 1px solid var(--gray-100); border-radius: 24px; text-align: center; box-shadow: 0 -10px 40px rgba(0,0,0,0.02);">
-      <div style="display: inline-flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--gray-50); border-radius: 50px; margin-bottom: 20px;">
-        <i class="fa-solid fa-circle-info" style="color: var(--navy);"></i>
-        <span style="font-size: 0.85rem; font-weight: 600; color: var(--gray-600);">Need help with the legal requirements? Visit our <a href="#" onclick="navigateTo('ip-guidelines')" style="color: var(--navy); text-decoration: underline;">Guidelines Section</a>.</span>
-      </div>
       <p style="color:var(--gray-400); font-size: 0.8rem; font-weight: 500;">&copy; 2026 PSU Intellectual Property Office — Authorized Document Repository</p>
     </div>
   `;
@@ -14990,6 +14989,13 @@ window.toggleProfileDropdown = function () {
   
   if (dropdown) dropdown.classList.toggle("open", profileDropdownOpen);
   if (trigger) trigger.classList.toggle("active", profileDropdownOpen);
+
+  // Role-based visibility for Help & Support
+  const helpLink = document.getElementById("profileHelpLink");
+  if (helpLink) {
+    const isApplicant = normalizeRole(currentRole) === "applicant";
+    helpLink.style.display = isApplicant ? "flex" : "none";
+  }
 
   // Populate dynamic name if available
   const nameEl = document.getElementById("dropdownFullUserName");
