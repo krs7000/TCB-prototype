@@ -7437,12 +7437,14 @@ function getPatentFormSteps() {
 }
 
 function getPatentIntakeTypeLabel() {
+  if (currentFormType === "copyright") return "Copyright";
   if (currentFormType === "utility") return "Utility Model";
   if (currentFormType === "industrial") return "Industrial Design";
   return "Patent";
 }
 
 function getPatentIntakeServiceDefault() {
+  if (currentFormType === "copyright") return "copyright";
   if (currentFormType === "utility") return "utility";
   if (currentFormType === "industrial") return "industrial";
   return "patent";
@@ -7649,11 +7651,11 @@ function renderPatentAdvisorySheetStep() {
         <div class="patent-editor-section">
           <div class="patent-paper__section-title">Service Availed</div>
           <div class="patent-choice-grid">
-            ${renderPatentCheckbox("advisoryServiceAvailed", "copyright", "Copyright / Related Rights")}
+            ${renderPatentCheckbox("advisoryServiceAvailed", "copyright", "Copyright / Related Rights", { defaultChecked: getPatentIntakeServiceDefault() === "copyright" })}
             ${renderPatentCheckbox("advisoryServiceAvailed", "trademark", "Trademark")}
             ${renderPatentCheckbox("advisoryServiceAvailed", "patent", "Patent", { defaultChecked: getPatentIntakeServiceDefault() === "patent" })}
             ${renderPatentCheckbox("advisoryServiceAvailed", "utility", "Utility Model", { defaultChecked: getPatentIntakeServiceDefault() === "utility" })}
-            ${renderPatentCheckbox("advisoryServiceAvailed", "industrial", "Industrial Design")}
+            ${renderPatentCheckbox("advisoryServiceAvailed", "industrial", "Industrial Design", { defaultChecked: getPatentIntakeServiceDefault() === "industrial" })}
           </div>
         </div>
 
@@ -8947,7 +8949,8 @@ function renderCopyrightEditorHeader(title, subtitle) {
 
 function getCopyrightFormSteps() {
   return [
-    "Fill Out Form",
+    "Advisory Sheet",
+    "BCRR Form 2025-1",
     "Upload Requirements",
     "Preview & Submit",
   ];
@@ -8974,10 +8977,10 @@ function renderCopyrightGoogleForm(
         <div class="patent-gform-card patent-gform-card--hero">
           <span class="patent-gform-kicker">${wizardData.applicantTypeGroup === 'Institution' ? 'BCRR FORM 2025-2' : 'BCRR FORM 2025-1'}</span>
           <h1>${wizardData.applicantTypeGroup === 'Institution' ? 'Institutional Copyright Registration' : 'Fillable Copyright Form'}</h1>
-          <p>Complete the Copyright Registry Enrollment Form online, then review a three-page BCRR-style preview based on your sample before submission.</p>
+          <p>Complete the Advisory Service Sheet first, fill out the Copyright Registry Enrollment Form, then review the paper-style preview before submission.</p>
           <div class="patent-gform-meta">
             <span><i class="fa-solid fa-copyright"></i> ${steps.length} guided sections</span>
-            <span><i class="fa-solid fa-file-lines"></i> 3-page registry preview</span>
+            <span><i class="fa-solid fa-file-lines"></i> Advisory + BCRR previews</span>
             <span><i class="fa-solid fa-building-shield"></i> BCRR enrollment layout</span>
           </div>
         </div>
@@ -9026,14 +9029,15 @@ function renderCopyrightGoogleForm(
             <div class="patent-progress-bar">
               <span style="width:${getCopyrightProgressPercent()}%; background:linear-gradient(135deg, #10b981, #0f766e);"></span>
             </div>
-            <p>Step ${currentWizardStep} of ${steps.length}. The final step shows your completed three-page copyright registry form.</p>
+            <p>Step ${currentWizardStep} of ${steps.length}. The final step shows your completed advisory sheet and copyright registry form.</p>
           </div>
 
           <div class="patent-gform-card">
             <span class="patent-gform-side-label">How This Works</span>
             <ul class="patent-gform-note-list">
-              <li>The guided fields map to the BCRR enrollment form sections in your screenshots.</li>
-              <li>The last step composes a three-page registry-style preview for final checking.</li>
+              <li>The first section mirrors the PSU Advisory Service Sheet.</li>
+              <li>The BCRR fields map to the enrollment form sections in your screenshots.</li>
+              <li>The last step composes the advisory and registry-style previews for final checking.</li>
               <li>Required uploads still follow the system checklist before submission is allowed.</li>
             </ul>
           </div>
@@ -9044,11 +9048,12 @@ function renderCopyrightGoogleForm(
 }
 
 function renderCopyrightGoogleStep() {
-  if (currentWizardStep === 1) {
+  if (currentWizardStep === 1) return renderPatentAdvisorySheetStep();
+  if (currentWizardStep === 2) {
     if (wizardData.applicantTypeGroup === 'Institution') return renderCopyrightSupplementalStep();
     return renderCopyrightFillFormStep();
   }
-  if (currentWizardStep === 2) return renderCopyrightVerificationUploadStep();
+  if (currentWizardStep === 3) return renderCopyrightVerificationUploadStep();
   return renderCopyrightPreviewStep();
 }
 
@@ -9139,8 +9144,8 @@ function renderCopyrightFillFormStep() {
   // Combines all form sections into one scrollable step
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step 1 — Fill Out Online Form</span>
-      <h2>Complete Your Copyright Application</h2>
+      <span class="patent-gform-kicker">Step 2 - BCRR FORM 2025-1</span>
+      <h2>Complete the Fillable Copyright Form</h2>
       <p>Fill in all fields below. These map directly to the BCRR Form sections and will populate the final preview.</p>
     </div>
     ${renderCopyrightSubmissionOwnerBody()}
@@ -9912,17 +9917,26 @@ function renderCopyrightPreviewStep() {
   return `
     <div class="patent-gform-card">
       <span class="patent-gform-kicker">Section ${currentWizardStep}</span>
-      <h2>Final BCRR Preview</h2>
-      <p>This is the BCRR-style output based on your sample. Go back to any section if you want to revise the final form before submitting.</p>
+      <h2>Final Advisory and BCRR Preview</h2>
+      <p>This is the completed Advisory Service Sheet and BCRR-style output based on your samples. Go back to any section if you want to revise the final forms before submitting.</p>
     </div>
 
     <div class="patent-gform-card patent-gform-card--sheet">
-      ${renderCopyrightFormSheetBundle()}
+      ${renderCopyrightIntakeFormBundle()}
     </div>
 
     <div class="patent-gform-card">
       <h3>Submission Summary</h3>
       ${renderCopyrightSubmissionList()}
+    </div>
+  `;
+}
+
+function renderCopyrightIntakeFormBundle() {
+  return `
+    <div class="patent-paper-stack psu-form-stack">
+      ${renderPatentAdvisoryServiceSheetPaper()}
+      ${renderCopyrightFormSheetBundle()}
     </div>
   `;
 }
@@ -10665,10 +10679,16 @@ function renderCopyrightReferencePage3() {
 }
 
 function captureCopyrightGoogleData() {
+  captureAdvisoryServiceSheetData();
+
   const currentUser = getCurrentUser();
   const countries = ["Philippines", "United States", "Japan", "Singapore", "Australia"];
   const getValue = (id, fallback = "") =>
     document.getElementById(id)?.value || wizardData[fallback] || "";
+  const getCheckedArray = (name, key) =>
+    document.querySelector(`input[name="${name}"]`)
+      ? getCheckedValuesByName(name)
+      : getWizardArray(key);
 
   wizardData.copyrightSubmissionType =
     document.querySelector('input[name="copyrightSubmissionType"]:checked')?.value ||
@@ -10689,7 +10709,7 @@ function captureCopyrightGoogleData() {
     wizardData.copyrightHardCopyRequested ||
     "no";
   wizardData.copyrightHardCopyQty = getValue("copyright-hard-copy-qty", "copyrightHardCopyQty");
-  wizardData.copyrightApplicantTypes = getCheckedValuesByName("copyrightApplicantTypes");
+  wizardData.copyrightApplicantTypes = getCheckedArray("copyrightApplicantTypes", "copyrightApplicantTypes");
   wizardData.copyrightAssetSize =
     document.querySelector('input[name="copyrightAssetSize"]:checked')?.value ||
     wizardData.copyrightAssetSize ||
@@ -10790,8 +10810,8 @@ function captureCopyrightGoogleData() {
     wizardData.copyrightAuthorCivilStatus ||
     "";
 
-  wizardData.copyrightDisclaimers = getCheckedValuesByName("copyrightDisclaimers");
-  wizardData.copyrightAuthorshipClaims = getCheckedValuesByName("copyrightAuthorshipClaims");
+  wizardData.copyrightDisclaimers = getCheckedArray("copyrightDisclaimers", "copyrightDisclaimers");
+  wizardData.copyrightAuthorshipClaims = getCheckedArray("copyrightAuthorshipClaims", "copyrightAuthorshipClaims");
 
   wizardData.copyrightAuthorDeceased =
     document.querySelector('input[name="copyrightAuthorDeceased"]:checked')?.value ||
@@ -10817,7 +10837,7 @@ function captureCopyrightGoogleData() {
     document.querySelector('input[name="copyrightAiAssisted"]:checked')?.value ||
     wizardData.copyrightAiAssisted ||
     "no";
-  wizardData.copyrightSubmittedDocs = getCheckedValuesByName("copyrightSubmittedDocs");
+  wizardData.copyrightSubmittedDocs = getCheckedArray("copyrightSubmittedDocs", "copyrightSubmittedDocs");
   wizardData.copyrightTermsAgreement =
     document.querySelector('input[name="copyrightTermsAgreement"]:checked')?.value ||
     wizardData.copyrightTermsAgreement ||
@@ -10834,7 +10854,7 @@ function captureCopyrightGoogleData() {
     wizardData.copyrightAuthorCountry = wizardData.copyrightAuthorCountry || "Philippines";
   }
 
-  wizardData.copyrightOwnerBusinessRegistration = getCheckedValuesByName("copyrightOwnerBusinessRegistration");
+  wizardData.copyrightOwnerBusinessRegistration = getCheckedArray("copyrightOwnerBusinessRegistration", "copyrightOwnerBusinessRegistration");
   wizardData.copyrightOwnerBusinessRegistrationOther = document.getElementById("copyright-owner-business-registration-other")?.value || wizardData.copyrightOwnerBusinessRegistrationOther || "";
   wizardData.copyrightOwnerInstitutionAddress = document.getElementById("copyright-owner-institution-address")?.value || wizardData.copyrightOwnerInstitutionAddress || "";
   wizardData.copyrightOwnerInstitutionCity = document.getElementById("copyright-owner-institution-city")?.value || wizardData.copyrightOwnerInstitutionCity || "";
@@ -10868,20 +10888,22 @@ function captureCopyrightGoogleData() {
     .trim();
 
   wizardData.name =
-    ownerName || authorName || wizardData.copyrightSignatureName || currentUser.name;
+    ownerName || authorName || getPatentAdvisoryFullName() || wizardData.copyrightSignatureName || currentUser.name;
   wizardData.email =
     wizardData.copyrightOwnerEmail ||
     wizardData.copyrightAuthorEmail ||
+    wizardData.advisoryEmail ||
     currentUser.email ||
     "";
   wizardData.contact =
     wizardData.copyrightOwnerContact ||
     wizardData.copyrightAuthorContact ||
+    wizardData.advisoryContact ||
     "";
   wizardData.dept =
-    wizardData.copyrightOwnerInstitutionName || currentUser.dept || "Copyright Filing";
+    wizardData.copyrightOwnerInstitutionName || wizardData.advisoryCompany || currentUser.dept || "Copyright Filing";
   wizardData.title =
-    wizardData.copyrightWorkTitle || wizardData.title || "Untitled Copyright Work";
+    wizardData.copyrightWorkTitle || wizardData.advisoryTitle || wizardData.title || "Untitled Copyright Work";
   wizardData.worktype =
     wizardData.copyrightWorkClassification || wizardData.worktype || "";
   wizardData.description =
@@ -13668,6 +13690,53 @@ function saveFormDraft() {
   showToast("Application draft saved successfully!", "success");
 }
 
+function captureAdvisoryServiceSheetData() {
+  const captureValue = (key, id, fallback = "") => {
+    const el = document.getElementById(id);
+    if (el) wizardData[key] = el.value || fallback;
+  };
+  const captureRadio = (key, name, fallback = "") => {
+    const input = document.querySelector(`input[name="${name}"]:checked`);
+    if (input) wizardData[key] = input.value;
+    else if (!wizardData[key] && fallback) wizardData[key] = fallback;
+  };
+  const captureChecks = (key, name, fallback = []) => {
+    const inputs = document.querySelectorAll(`input[name="${name}"]`);
+    if (inputs.length) {
+      const values = getCheckedValuesByName(name);
+      wizardData[key] = values.length ? values : fallback;
+    } else if (!Array.isArray(wizardData[key]) && fallback.length) {
+      wizardData[key] = fallback;
+    }
+  };
+
+  captureRadio("advisoryClientType", "advisoryClientType");
+  captureRadio("advisorySex", "advisorySex");
+  captureChecks("advisoryServiceAvailed", "advisoryServiceAvailed", [
+    getPatentIntakeServiceDefault(),
+  ]);
+  [
+    ["advisoryCompany", "advisory-company"],
+    ["advisoryDate", "advisory-date"],
+    ["advisoryPosition", "advisory-position"],
+    ["advisoryAge", "advisory-age"],
+    ["advisoryLastName", "advisory-last-name"],
+    ["advisoryFirstName", "advisory-first-name"],
+    ["advisoryMiddleName", "advisory-middle-name"],
+    ["advisoryAddress", "advisory-address"],
+    ["advisoryContact", "advisory-contact"],
+    ["advisoryEmail", "advisory-email"],
+    ["advisoryTitle", "advisory-title"],
+    ["advisoryTechnicalAdvisor", "advisory-technical-advisor"],
+    ["advisoryClientSignature", "advisory-client-signature"],
+  ].forEach(([key, id]) => captureValue(key, id, wizardData[key] || ""));
+
+  wizardData.advisoryServiceAvailed = getPatentSelectedValues(
+    "advisoryServiceAvailed",
+    [getPatentIntakeServiceDefault()],
+  );
+}
+
 function validateWizardStep() {
   return true; // Bypassed for prototyping
   const stepContainer = document.getElementById('wizardBody');
@@ -14560,48 +14629,12 @@ window.confirmCancellation = function(id) {
 
 // ===== SUBMISSION METHOD SELECTION =====
 window.showSubmissionMethodModal = function(typeId) {
-  // If it's not Copyright, skip the choice and go straight to online form
-  if (typeId !== 'copyright-form') {
-    startSubmissionFlow(typeId, 'online');
-    return;
-  }
-
-  const overlay = document.getElementById('modalOverlay');
-  const modalBody = document.getElementById('modalBody');
-  const modalTitle = document.getElementById('modalTitle');
-
-  const title = "Copyright Registration";
-  modalTitle.innerText = "How would you like to proceed?";
-  modalTitle.style.display = "block";
-
-  modalBody.innerHTML = `
-    <div style="padding: 0 8px;">
-      <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 24px; text-align: center;">Pick the most convenient way for you to register your ${title}.</p>
-      
-      <div class="method-selection-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
-        <div class="method-card" onclick="startSubmissionFlow('${typeId}', 'upload')" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
-          <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
-            <i class="fa-solid fa-file-export"></i>
-          </div>
-          <h4 style="color: var(--navy); font-weight: 800; margin-bottom: 8px; font-size: 1rem;">Upload Completed Form</h4>
-          <p style="font-size: 0.8rem; color: var(--gray-500); line-height: 1.5;">Already filled out your application? Upload it here.</p>
-        </div>
-
-        <div class="method-card" onclick="${typeId === 'copyright-form' ? `showApplicantTypeModal('${typeId}', 'online')` : `startSubmissionFlow('${typeId}', 'online')`}" style="border: 2px solid var(--gray-100); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.3s ease; text-align: center; background: white;">
-          <div style="width: 56px; height: 56px; background: var(--gray-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--navy); font-size: 1.5rem;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-          </div>
-          <h4 style="color: var(--navy); font-weight: 800; margin-bottom: 8px; font-size: 1rem;">Fill Out Online Form</h4>
-          <p style="font-size: 0.8rem; color: var(--gray-500); line-height: 1.5;">Complete your application directly in the system.</p>
-        </div>
-      </div>
-    </div>
-  `;
-
-  overlay.classList.add('active');
+  startSubmissionFlow(typeId, "online");
 };
 
 window.showApplicantTypeModal = function(typeId, method) {
+  startSubmissionFlow(typeId, method, "Individual");
+  return;
   const modalBody = document.getElementById('modalBody');
   const modalTitle = document.getElementById('modalTitle');
 
@@ -14677,6 +14710,7 @@ window.launchPatentOnlineForm = function() {
 
 window.launchCopyrightOnlineForm = function() {
   wizardData = createSubmissionWizardSeed();
+  wizardData.applicantTypeGroup = "Individual";
   selectedSubmissionId = null;
   currentWizardStep = 1;
   currentFormType = "copyright";
@@ -14733,6 +14767,7 @@ function renderFormsPublicContent() {
   if (currentParams.formView === "copyright-online") {
     currentFormType = "copyright";
     submissionMethod = "online";
+    wizardData.applicantTypeGroup = "Individual";
     return renderCopyrightGoogleForm("forms", "Forms");
   }
 
@@ -14759,9 +14794,9 @@ function renderFormsPublicContent() {
 }
 
 window.startSubmissionFlow = function(typeId, method, applicantType = null) {
-  if (typeId === "copyright-form" && !applicantType) {
-    showApplicantTypeModal(typeId, method);
-    return;
+  if (typeId === "copyright-form") {
+    method = "online";
+    applicantType = "Individual";
   }
   wizardData = createSubmissionWizardSeed();
   if (applicantType) {
@@ -14979,6 +15014,33 @@ function submitForm() {
       : document.getElementById("main-content");
 
   if (!confirmationTarget) return;
+
+  if (isCopyrightGoogleFlow()) {
+    confirmationTarget.innerHTML = `
+      <div class="patent-confirmation-shell">
+        <div class="confirmation-screen">
+          <div class="check-circle"><i class="fa-solid fa-check"></i></div>
+          <h2>Copyright form submitted</h2>
+          <p style="color:var(--gray-500)">The Advisory Service Sheet and BCRR copyright form were received and are now pending evaluator review. The completed paper-style forms are shown below.</p>
+          <div class="ref-number">${refNum}</div>
+          <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Please save this reference number for tracking purposes.</p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            ${
+              currentPage === "forms"
+                ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
+                   <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
+                : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
+                   <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`
+            }
+          </div>
+        </div>
+
+        <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
+          ${renderCopyrightIntakeFormBundle()}
+        </div>
+      </div>`;
+    return;
+  }
 
   confirmationTarget.innerHTML = `
     <div class="confirmation-screen">

@@ -68,13 +68,7 @@
               <div class="nav-item-sub-dropdown">
                 <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-copyright"></i> Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
                 <div class="sub-dropdown-content">
-                  <div class="nav-item-sub-sub-dropdown">
-                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
-                    <div class="sub-sub-dropdown-content">
-                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
-                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
-                    </div>
-                  </div>
+                  <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'online')"><i class="fa-solid fa-file-circle-plus"></i> Register Copyright</a>
                   <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'copyright' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
                 </div>
               </div>
@@ -371,7 +365,7 @@
               <ul>
                 <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('patent-form', 'upload')">Patent Filing</a></li>
 
-                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'upload')">Copyright Protection</a></li>
+                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'online')">Copyright Protection</a></li>
                 <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('utility-form', 'upload')">Utility Model Registration</a></li>
                 <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('industrial-form', 'upload')">Industrial Design Registration</a></li>
               </ul>
@@ -724,6 +718,6 @@
 
   </div> <!-- End #app -->
 
-  <script src="app.js?v=32"></script>
+  <script src="app.js?v=34"></script>
 </body>
 </html>
