@@ -2996,11 +2996,9 @@ function renderSidebar() {
 
 const REQUIRED_DOCUMENTS_BY_TYPE = {
   patent: [
-    { key: "patent-application-form", name: "Patent Application Form (PSU-IPO-PAT-01)", type: "Required" },
-    { key: "invention-disclosure-statement", name: "Invention Disclosure Statement", type: "Required" },
-    { key: "technical-drawings-diagrams", name: "Technical Drawings / Diagrams", type: "Required" },
-    { key: "abstract", name: "Abstract", type: "Required" },
-    { key: "claims-statement", name: "Claims Statement", type: "Required" },
+    { key: "technical-drawings-diagrams", name: "Technical Drawings / Diagrams", type: "Optional" },
+    { key: "abstract", name: "Abstract", type: "Optional" },
+    { key: "claims-statement", name: "Claims Statement", type: "Optional" },
   ],
   copyright: [
     { key: "valid-id", name: "Valid ID", type: "Required" },
@@ -3009,15 +3007,14 @@ const REQUIRED_DOCUMENTS_BY_TYPE = {
     { key: "affidavit-ownership", name: "Affidavit of Ownership", type: "Required" },
   ],
   utility: [
-    { key: "utility-model-application-form", name: "Utility Model Application Form (IPOPHL Form 200)", type: "Required" },
-    { key: "technical-description", name: "Specification / Technical Description", type: "Required" },
-    { key: "drawings-illustrations", name: "Drawings / Illustrations", type: "Required" },
-    { key: "claims-statement", name: "Claims Statement / Abstract", type: "Required" },
+    { key: "technical-drawings-diagrams", name: "Technical Drawings / Diagrams", type: "Optional" },
+    { key: "abstract", name: "Abstract", type: "Optional" },
+    { key: "claims-statement", name: "Claims Statement", type: "Optional" },
   ],
   industrial: [
-    { key: "industrial-design-application-form", name: "Industrial Design Application Form (IPOPHL Form 300)", type: "Required" },
-    { key: "design-representations", name: "Design Representations / Drawings", type: "Required" },
-    { key: "description-of-design", name: "Specification / Description of Design", type: "Required" },
+    { key: "technical-drawings-diagrams", name: "Technical Drawings / Diagrams", type: "Optional" },
+    { key: "abstract", name: "Abstract", type: "Optional" },
+    { key: "claims-statement", name: "Claims Statement", type: "Optional" },
   ],
 };
 
@@ -5863,6 +5860,171 @@ const COPYRIGHT_TRACKING_GROUPS = [
   { label: "Certificate Released", keys: ["certificate-released"] },
 ];
 
+const PATENT_OPERATION_FLOW = [
+  {
+    key: "advisory-disclosure",
+    step: 1,
+    title: "Advisory Sheet and Disclosure form (to PSU)",
+    owner: "Applicant",
+    lane: "Applicant",
+    description:
+      "Applicant completes the Advisory Service Sheet and IP Disclosure Form for PSU intake.",
+  },
+  {
+    key: "optional-documents",
+    step: 2,
+    title: "Optional Document to Upload",
+    owner: "Applicant",
+    lane: "Applicant",
+    description:
+      "Optional supporting files may be uploaded with the patent intake packet.",
+    subitems: [
+      "Technical Drawings / Diagrams (Accepted formats: PDF, DOCX, JPG, PNG)",
+      "Abstract (Accepted formats: PDF, DOCX, JPG, PNG)",
+      "Claims Statement (Accepted formats: PDF, DOCX, JPG, PNG)",
+    ],
+  },
+  {
+    key: "acknowledgement-application",
+    step: 3,
+    title: "Acknowledgement of Application (from PSU)",
+    owner: "PSU",
+    lane: "PSU / IPTTO",
+    description: "PSU acknowledges receipt of the patent intake packet.",
+  },
+  {
+    key: "payment-slip-generated",
+    step: 4,
+    title:
+      "Payment Slip Generated (Download) Payment Required: Outsider, Payment Situational: Insider",
+    owner: "PSU",
+    lane: "PSU / IPTTO",
+    description:
+      "Payment slip is generated when payment is required for the applicant route.",
+  },
+  {
+    key: "or-upload",
+    step: 5,
+    title: "OR Upload (Upload)",
+    owner: "Applicant",
+    lane: "Applicant",
+    description: "Applicant uploads the official receipt.",
+  },
+  {
+    key: "payment-ack-psu",
+    step: 6,
+    title: "Payment Acknowledgement (from PSU)",
+    owner: "PSU",
+    lane: "PSU / IPTTO",
+    description: "PSU acknowledges payment and receipt records.",
+  },
+  {
+    key: "under-review",
+    step: 7,
+    title: "Status: Under review",
+    owner: "Evaluator",
+    lane: "PSU / IPTTO",
+    description: "PSU reviews the patent intake packet.",
+  },
+  {
+    key: "approved-for-drafting",
+    step: 8,
+    title: "Status: Approved",
+    owner: "PSU",
+    lane: "PSU / IPTTO",
+    description: "The patent packet is approved for drafting.",
+  },
+  {
+    key: "application-drafting",
+    step: 9,
+    title: "Status: Application Drafting (From PSU to IPOPHL)",
+    owner: "PSU",
+    lane: "PSU / IPTTO",
+    description: "PSU prepares the formal patent application for IPOPHL.",
+  },
+  {
+    key: "application-submitted",
+    step: 10,
+    title: "Status: Application Submitted (From PSU to IPOPHL)",
+    owner: "PSU",
+    lane: "PSU / IPTTO",
+    description: "The prepared application is submitted to IPOPHL.",
+  },
+  {
+    key: "ipophil-payment-slip",
+    step: 11,
+    title: "Payment Slip Generate (From IPOPHL website to agent to inventor)",
+    owner: "IPOPHL",
+    lane: "IPOPHL / Agent / Inventor",
+    description: "IPOPHL payment slip is generated and relayed to the inventor.",
+  },
+  {
+    key: "eor-email",
+    step: 12,
+    title: "eOR email (IPOPHL emails PSU to inventor)",
+    owner: "IPOPHL",
+    lane: "IPOPHL / PSU / Inventor",
+    description: "Electronic official receipt email is relayed through PSU.",
+  },
+  {
+    key: "ipophil-payment-ack",
+    step: 13,
+    title: "Payment Acknowledgement (From IPOPHL to PSU to inventor)",
+    owner: "IPOPHL",
+    lane: "IPOPHL / PSU / Inventor",
+    description: "IPOPHL acknowledges payment and PSU relays it to the inventor.",
+  },
+  {
+    key: "filing-acknowledgement",
+    step: 14,
+    title: "Filing Acknowledgement (From IPOPHL to PSU to inventor)",
+    owner: "IPOPHL",
+    lane: "IPOPHL / PSU / Inventor",
+    description: "IPOPHL filing acknowledgement is relayed to the inventor.",
+  },
+  {
+    key: "formality-report",
+    step: 15,
+    title: "Status: Formality Report received (IPOPHL to PSU to inventor)",
+    owner: "IPOPHL",
+    lane: "IPOPHL / PSU / Inventor",
+    description: "Formality report is received and reviewed for defects.",
+    subitems: [
+      "No defect (no action need)",
+      "With defect (need to file a response: PSU to IPOPHL)",
+    ],
+  },
+  {
+    key: "publication",
+    step: 16,
+    title: "Status: Publication (IPOPHL publication at gazette, 18 months after filing)",
+    owner: "IPOPHL",
+    lane: "IPOPHL",
+    description: "The application is published in the gazette 18 months after filing.",
+  },
+  {
+    key: "substantial-examination-report",
+    step: 17,
+    title:
+      "Status: Substantial Examination Report received (From IPOPHL to PSU to inventor)",
+    owner: "IPOPHL",
+    lane: "IPOPHL / PSU / Inventor",
+    description: "Substantive examination report is received and reviewed.",
+    subitems: [
+      "No defect (no action need)",
+      "With defect (need to file a response: PSU to IPOPHL)",
+    ],
+  },
+  {
+    key: "certificate-registration-withdrawal",
+    step: 18,
+    title: "Status: Certificate Registration or Withdrawal",
+    owner: "IPOPHL",
+    lane: "IPOPHL / PSU / Inventor",
+    description: "The application reaches registration, certificate issuance, or withdrawal.",
+  },
+];
+
 const IPOPHL_OPERATION_FLOW = [
   {
     key: "inventor-submission",
@@ -5974,6 +6136,36 @@ const IPOPHL_TRACKING_GROUPS = [
   { label: "Certificate Released", keys: ["certificate-released"] },
 ];
 
+function isPatentSubmission(submission) {
+  return (
+    submission?.type === "Patent" ||
+    submission?.type === "Utility Model" ||
+    submission?.type === "Industrial Design"
+  );
+}
+
+function getIPOPHLOperationFlow(submission) {
+  return isPatentSubmission(submission)
+    ? PATENT_OPERATION_FLOW
+    : IPOPHL_OPERATION_FLOW;
+}
+
+function normalizePatentStageKey(key) {
+  const aliases = {
+    "inventor-submission": "advisory-disclosure",
+    "technical-review": "under-review",
+    "mis-recording": "acknowledgement-application",
+    "payment-slip-issued": "payment-slip-generated",
+    "cashier-receipt": "or-upload",
+    "receipt-submitted": "payment-ack-psu",
+    "mis-forwarding": "application-drafting",
+    "ip-director-action": "application-submitted",
+    "certificate-received": "substantial-examination-report",
+    "certificate-released": "certificate-registration-withdrawal",
+  };
+  return aliases[key] || key;
+}
+
 function getCopyrightStageKey(submission) {
   if (submission.copyrightStage) return submission.copyrightStage;
   if (submission.status === "Approved") return "certificate-released";
@@ -6047,6 +6239,17 @@ function getCopyrightTrackingSteps(submission) {
 
 // ===== IPOPHL STAGE MANAGEMENT (Patent, Utility Model, Industrial Design) =====
 function getIPOPHLStageKey(submission) {
+  if (isPatentSubmission(submission)) {
+    if (submission.ipophlStage) {
+      return normalizePatentStageKey(submission.ipophlStage);
+    }
+    if (submission.status === "Approved") return "certificate-registration-withdrawal";
+    if (submission.status === "Validated") return "application-submitted";
+    if (submission.status === "Payment Requested") return "payment-slip-generated";
+    if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
+      return "under-review";
+    return "advisory-disclosure";
+  }
   if (submission.ipophlStage) return submission.ipophlStage;
   if (submission.status === "Approved") return "certificate-released";
   if (submission.status === "Payment Requested") return "payment-slip-issued";
@@ -6058,11 +6261,36 @@ function getIPOPHLStageKey(submission) {
 
 function getIPOPHLStageIndex(submission) {
   const key = getIPOPHLStageKey(submission);
-  const idx = IPOPHL_OPERATION_FLOW.findIndex((step) => step.key === key);
+  const idx = getIPOPHLOperationFlow(submission).findIndex((step) => step.key === key);
   return idx < 0 ? 0 : idx;
 }
 
 function syncIPOPHLWorkflowState(submission) {
+  if (isPatentSubmission(submission)) {
+    if (submission.status === "Approved") {
+      submission.ipophlStage = "certificate-registration-withdrawal";
+      return;
+    }
+    if (
+      submission.status === "Awaiting Documents" ||
+      submission.status === "Under Review"
+    ) {
+      submission.ipophlStage = "under-review";
+      return;
+    }
+    if (submission.status === "Payment Requested") {
+      submission.ipophlStage = "payment-slip-generated";
+      return;
+    }
+    if (submission.status === "Validated") {
+      submission.ipophlStage = "application-submitted";
+      return;
+    }
+    if (submission.status === "Pending") {
+      submission.ipophlStage = "advisory-disclosure";
+    }
+    return;
+  }
   if (submission.status === "Approved") {
     submission.ipophlStage = "certificate-released";
     return;
@@ -6204,7 +6432,83 @@ function renderCopyrightOperationTimeline(submission) {
   `;
 }
 
+function renderPatentFlowItem(step, idx, activeIdx, closed) {
+  let state = "pending";
+  if (closed) state = idx === 0 ? "completed" : "pending";
+  else if (idx < activeIdx) state = "completed";
+  else if (idx === activeIdx) state = "active";
+
+  return `
+    <div class="patent-flow-item ${state}">
+      <span class="patent-flow-num">${step.step}.</span>
+      <div class="patent-flow-copy">
+        <div class="patent-flow-title">${escapeHtml(step.title)}</div>
+        ${
+          step.subitems?.length
+            ? `<ul>${step.subitems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+            : ""
+        }
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentFlowItems(startStep, endStep, activeIdx, closed) {
+  return PATENT_OPERATION_FLOW.filter(
+    (step) => step.step >= startStep && step.step <= endStep,
+  )
+    .map((step) =>
+      renderPatentFlowItem(
+        step,
+        PATENT_OPERATION_FLOW.findIndex((entry) => entry.key === step.key),
+        activeIdx,
+        closed,
+      ),
+    )
+    .join("");
+}
+
+function renderPatentProgressGroup(startStep, endStep, activeIdx, closed) {
+  return `
+    <div class="patent-flow-progress-group">
+      <div class="patent-flow-progress-label">Progress</div>
+      <div class="patent-flow-progress-brace"></div>
+      <div class="patent-flow-progress-items">
+        ${renderPatentFlowItems(startStep, endStep, activeIdx, closed)}
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentFlowReference({ submission = null, activeIndex = null } = {}) {
+  const activeIdx =
+    activeIndex !== null
+      ? activeIndex
+      : submission
+        ? getIPOPHLStageIndex(submission)
+        : 0;
+  const closed =
+    submission?.status === "Rejected" || submission?.status === "Archived";
+  const heading = (submission?.type || getPatentIntakeTypeLabel()).toUpperCase();
+
+  return `
+    <div class="patent-flow-paper">
+      <h3>${escapeHtml(heading)}</h3>
+      <div class="patent-flow-list">
+        ${renderPatentFlowItems(1, 6, activeIdx, closed)}
+        ${renderPatentProgressGroup(7, 10, activeIdx, closed)}
+        ${renderPatentFlowItems(11, 14, activeIdx, closed)}
+        ${renderPatentProgressGroup(15, 18, activeIdx, closed)}
+      </div>
+    </div>
+  `;
+}
+
 function renderIPOPHLOperationTimeline(submission) {
+  if (isPatentSubmission(submission)) {
+    return renderPatentFlowReference({ submission });
+  }
+
   const activeIdx = getIPOPHLStageIndex(submission);
   const closed =
     submission.status === "Rejected" || submission.status === "Archived";
@@ -6216,7 +6520,7 @@ function renderIPOPHLOperationTimeline(submission) {
       ${feeWaived ? "<br><strong>Fee-waived route:</strong> Steps 4\u20136 are bypassed because an approved letter-request is on file." : ""}
     </div>
     <div class="copyright-flow-grid">
-      ${IPOPHL_OPERATION_FLOW.map((step, idx) => {
+      ${getIPOPHLOperationFlow(submission).map((step, idx) => {
         const isPaymentStep = [3, 4, 5].includes(idx);
         let state = "pending";
         if (closed) {
@@ -6377,7 +6681,7 @@ function renderSubmissionDetail() {
         )
       : null;
   const ipophlStageObj = IPOPHL_TYPES.has(s.type)
-    ? IPOPHL_OPERATION_FLOW.find((step) => step.key === getIPOPHLStageKey(s))
+    ? getIPOPHLOperationFlow(s).find((step) => step.key === getIPOPHLStageKey(s))
     : null;
   const assignedReviewer = getAssignedReviewer(s);
   const assignedReviewerName = assignedReviewer?.name || "Unassigned";
@@ -6936,6 +7240,15 @@ function isPatentGoogleFlow() {
   return currentFormType === "patent" && submissionMethod === "online";
 }
 
+function isPatentIntakeFlow() {
+  return (
+    (currentFormType === "patent" ||
+      currentFormType === "utility" ||
+      currentFormType === "industrial") &&
+    submissionMethod === "online"
+  );
+}
+
 function isCopyrightGoogleFlow() {
   return currentFormType === "copyright" && submissionMethod === "online";
 }
@@ -6950,7 +7263,7 @@ function isIndustrialGoogleFlow() {
 
 function isAdvancedGuidedFlow() {
   return (
-    isPatentGoogleFlow() ||
+    isPatentIntakeFlow() ||
     isCopyrightGoogleFlow() ||
     isUtilityGoogleFlow() ||
     isIndustrialGoogleFlow()
@@ -6961,7 +7274,7 @@ function renderActiveGuidedForm(
   backTarget = "filing-hub",
   backLabel = "Filing Hub",
 ) {
-  if (isPatentGoogleFlow()) {
+  if (isPatentIntakeFlow()) {
     return renderPatentGoogleForm(backTarget, backLabel);
   }
   if (isCopyrightGoogleFlow()) {
@@ -7116,15 +7429,29 @@ function renderPatentEditorHeader(title, subtitle) {
 
 function getPatentFormSteps() {
   return [
-    "Filing Details",
-    "Applicant & Inventor",
-    "Representative & Uploads",
-    "Final Form Preview",
+    "Advisory Sheet",
+    "IP Disclosure",
+    "Optional Documents",
+    "Preview & Submit",
   ];
 }
 
+function getPatentIntakeTypeLabel() {
+  if (currentFormType === "utility") return "Utility Model";
+  if (currentFormType === "industrial") return "Industrial Design";
+  return "Patent";
+}
+
+function getPatentIntakeServiceDefault() {
+  if (currentFormType === "utility") return "utility";
+  if (currentFormType === "industrial") return "industrial";
+  return "patent";
+}
+
 function getPatentProgressPercent() {
-  return Math.max(25, Math.min(100, currentWizardStep * 25));
+  const stepsCount = getPatentFormSteps().length;
+  const stepSize = 100 / stepsCount;
+  return Math.max(stepSize, Math.min(100, currentWizardStep * stepSize));
 }
 
 function renderPatentGoogleForm(
@@ -7133,6 +7460,7 @@ function renderPatentGoogleForm(
 ) {
   const steps = getPatentFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
+  const typeLabel = getPatentIntakeTypeLabel();
 
   return `
     ${renderBackNav(backTarget, backLabel)}
@@ -7140,13 +7468,13 @@ function renderPatentGoogleForm(
       <div class="patent-gform-header">
         <div class="patent-gform-header-bar"></div>
         <div class="patent-gform-card patent-gform-card--hero">
-          <span class="patent-gform-kicker">Official Form 100</span>
-          <h1>Fillable Patent Form</h1>
-          <p>Fill the patent request online like a real editable form. When you finish, the last step shows a two-page Form 100-style preview based on your reference.</p>
+          <span class="patent-gform-kicker">PSU ${typeLabel} Intake</span>
+          <h1>${typeLabel} Fill-Up Forms</h1>
+          <p>Complete the Advisory Service Sheet and IP Disclosure Form first, attach optional ${typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.</p>
           <div class="patent-gform-meta">
-            <span><i class="fa-solid fa-file-lines"></i> 4 sections</span>
-            <span><i class="fa-solid fa-table-cells-large"></i> Two-page paper preview</span>
-            <span><i class="fa-solid fa-building-shield"></i> Office-only fields stay blank</span>
+            <span><i class="fa-solid fa-file-lines"></i> ${steps.length} guided sections</span>
+            <span><i class="fa-solid fa-table-cells-large"></i> Advisory and disclosure previews</span>
+            <span><i class="fa-solid fa-diagram-project"></i> 18-step ${typeLabel.toLowerCase()} progress map</span>
           </div>
         </div>
       </div>
@@ -7179,9 +7507,9 @@ function renderPatentGoogleForm(
             <div class="patent-gform-actions__right">
               <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
               ${
-                currentWizardStep < 4
+                currentWizardStep < steps.length
                   ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next Section <i class="fa-solid fa-arrow-right"></i></button>`
-                  : `<button class="btn btn-success" onclick="submitForm()">Submit Form 100 <i class="fa-solid fa-paper-plane"></i></button>`
+                  : `<button class="btn btn-success" onclick="submitForm()">Submit Patent Intake <i class="fa-solid fa-paper-plane"></i></button>`
               }
             </div>
           </div>
@@ -7194,15 +7522,15 @@ function renderPatentGoogleForm(
             <div class="patent-progress-bar">
               <span style="width:${getPatentProgressPercent()}%"></span>
             </div>
-            <p>Step ${currentWizardStep} of 4. You can go back anytime and the final form preview will update.</p>
+            <p>Step ${currentWizardStep} of ${steps.length}. You can go back anytime and the final form preview will update.</p>
           </div>
 
           <div class="patent-gform-card">
             <span class="patent-gform-side-label">How This Works</span>
             <ul class="patent-gform-note-list">
-              <li>The online questions map to the actual Form 100 fields from your PDF.</li>
-              <li>The last step shows the finished two-page paper-style version before submission.</li>
-              <li>Application number, received date, and mailing fields remain blank for office processing.</li>
+              <li>The first form mirrors the PSU Advisory Service Sheet layout from your reference.</li>
+              <li>The disclosure section follows the 2026 IP Disclosure Form fields.</li>
+              <li>Technical drawings, abstract, and claims remain optional uploads at intake.</li>
             </ul>
           </div>
         </aside>
@@ -7212,10 +7540,302 @@ function renderPatentGoogleForm(
 }
 
 function renderPatentGoogleStep() {
-  if (currentWizardStep === 1) return renderPatentFilingDetailsStep();
-  if (currentWizardStep === 2) return renderPatentApplicantInventorStep();
-  if (currentWizardStep === 3) return renderPatentRepresentativeUploadsStep();
+  if (currentWizardStep === 1) return renderPatentAdvisorySheetStep();
+  if (currentWizardStep === 2) return renderPatentDisclosureStep();
+  if (currentWizardStep === 3) return renderPatentOptionalDocumentsStep();
   return renderPatentPreviewStep();
+}
+
+function getPatentTodayValue() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getPatentUserNameParts() {
+  const name = String(getCurrentUser().name || "").trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (!parts.length) return { first: "", middle: "", last: "" };
+  if (parts.length === 1) return { first: parts[0], middle: "", last: "" };
+  return {
+    first: parts[0],
+    middle: parts.length > 2 ? parts.slice(1, -1).join(" ") : "",
+    last: parts[parts.length - 1],
+  };
+}
+
+function getPatentAdvisoryFullName() {
+  return [
+    wizardData.advisoryFirstName || wizardData.applicantFirstName,
+    wizardData.advisoryMiddleName || wizardData.applicantMiddleName,
+    wizardData.advisoryLastName || wizardData.applicantLastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function renderPatentCheckbox(name, value, label, { defaultChecked = false } = {}) {
+  const selectedValues = getWizardArray(name);
+  const checked =
+    selectedValues.includes(value) || (!selectedValues.length && defaultChecked)
+      ? "checked"
+      : "";
+  return `
+    <label class="patent-choice patent-choice--check">
+      <input type="checkbox" name="${name}" value="${value}" ${checked} />
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `;
+}
+
+function renderPatentAdvisorySheetStep() {
+  const user = getCurrentUser();
+  const nameParts = getPatentUserNameParts();
+  const today = getPatentTodayValue();
+  const typeLabel = getPatentIntakeTypeLabel();
+
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 1 - Advisory Service Sheet</span>
+      <h2>Fill Up the Advisory Service Sheet</h2>
+      <p>This is the first PSU intake form in the ${typeLabel.toLowerCase()} process. The final preview will render it in the same table-style layout as the form reference.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Client Type</div>
+          <div class="patent-choice-grid">
+            ${renderPatentChoice("advisoryClientType", "individual", "Individual / Single Proprietor")}
+            ${renderPatentChoice("advisoryClientType", "company", "Company / Corporation")}
+            ${renderPatentChoice("advisoryClientType", "school", "School")}
+            ${renderPatentChoice("advisoryClientType", "government", "Government")}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Client Information</div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("Name of Company / Business / Government Agency / School", "advisory-company", wizardData.advisoryCompany || wizardData.applicantCompany || "", { placeholder: "Leave blank for individual clients" })}
+            ${renderPatentEditorInput("Date", "advisory-date", wizardData.advisoryDate || today, { type: "date" })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--three">
+            ${renderPatentEditorInput("Position / Designation", "advisory-position", wizardData.advisoryPosition || wizardData.applicantPosition || "", { placeholder: "Position or designation" })}
+            <div class="patent-editor-inline-group" style="margin:0;">
+              <span class="patent-editor-inline-group__label">Sex</span>
+              <div class="patent-choice-grid patent-choice-grid--two">
+                ${renderPatentChoice("advisorySex", "male", "Male")}
+                ${renderPatentChoice("advisorySex", "female", "Female")}
+              </div>
+            </div>
+            ${renderPatentEditorInput("Age", "advisory-age", wizardData.advisoryAge || "", { type: "number", placeholder: "Age" })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--three">
+            ${renderPatentEditorInput("Last Name", "advisory-last-name", wizardData.advisoryLastName || wizardData.applicantLastName || nameParts.last, { placeholder: "Surname" })}
+            ${renderPatentEditorInput("First Name", "advisory-first-name", wizardData.advisoryFirstName || wizardData.applicantFirstName || nameParts.first, { placeholder: "Given name" })}
+            ${renderPatentEditorInput("Middle Name", "advisory-middle-name", wizardData.advisoryMiddleName || wizardData.applicantMiddleName || nameParts.middle, { placeholder: "Optional" })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--one">
+            ${renderPatentEditorInput("Address", "advisory-address", wizardData.advisoryAddress || wizardData.applicantAddress || "", { placeholder: "Complete address", fullWidth: true })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("Contact No.", "advisory-contact", wizardData.advisoryContact || wizardData.applicantContact || wizardData.contact || "", { placeholder: "Mobile or landline" })}
+            ${renderPatentEditorInput("Email Address", "advisory-email", wizardData.advisoryEmail || wizardData.applicantEmail || user.email || "", { type: "email", placeholder: "name@example.com" })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--one">
+            ${renderPatentEditorInput("Title of Material / Technology / Invention", "advisory-title", wizardData.advisoryTitle || wizardData.title || "", { placeholder: "Exact invention title", fullWidth: true })}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Service Availed</div>
+          <div class="patent-choice-grid">
+            ${renderPatentCheckbox("advisoryServiceAvailed", "copyright", "Copyright / Related Rights")}
+            ${renderPatentCheckbox("advisoryServiceAvailed", "trademark", "Trademark")}
+            ${renderPatentCheckbox("advisoryServiceAvailed", "patent", "Patent", { defaultChecked: getPatentIntakeServiceDefault() === "patent" })}
+            ${renderPatentCheckbox("advisoryServiceAvailed", "utility", "Utility Model", { defaultChecked: getPatentIntakeServiceDefault() === "utility" })}
+            ${renderPatentCheckbox("advisoryServiceAvailed", "industrial", "Industrial Design")}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Signature Names</div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("Technical Advisor Name", "advisory-technical-advisor", wizardData.advisoryTechnicalAdvisor || "", { placeholder: "Optional, may be completed by PSU" })}
+            ${renderPatentEditorInput("Client Printed Name", "advisory-client-signature", wizardData.advisoryClientSignature || getPatentAdvisoryFullName(), { placeholder: "Name shown under client signature line" })}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentDisclosureStep() {
+  const advisoryName = getPatentAdvisoryFullName();
+  const disclosureDate =
+    wizardData.disclosureDate || wizardData.advisoryDate || getPatentTodayValue();
+
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 2 - IP Disclosure Form</span>
+      <h2>Fill Up the IP Disclosure Form</h2>
+      <p>These fields follow the 2026 IP Disclosure Form: general information, technical disclosure, funding, prior disclosure, and ownership declaration.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">General Information</div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("Name of Inventor(s)", "disclosure-inventors", wizardData.disclosureInventors || advisoryName, { placeholder: "List inventor names" })}
+            ${renderPatentEditorInput("Job Title / Position", "disclosure-job-title", wizardData.disclosureJobTitle || wizardData.advisoryPosition || "", { placeholder: "Job title or position" })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("College / Unit / Department", "disclosure-college", wizardData.disclosureCollege || wizardData.college || wizardData.dept || "", { placeholder: "College, unit, or department" })}
+            ${renderPatentEditorInput("Contact Details", "disclosure-contact", wizardData.disclosureContact || wizardData.advisoryContact || wizardData.advisoryEmail || "", { placeholder: "Phone and/or email" })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("Title of Invention", "disclosure-title", wizardData.disclosureTitle || wizardData.advisoryTitle || wizardData.title || "", { placeholder: "Exact invention title" })}
+            ${renderPatentEditorInput("Date of Disclosure", "disclosure-date", disclosureDate, { type: "date" })}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Technical Disclosure</div>
+          <div class="patent-editor-grid patent-editor-grid--one">
+            ${renderPatentEditorTextarea("Background and Problem Statement", "disclosure-background", wizardData.disclosureBackground || "", { placeholder: "Describe the existing problem, limitation, or gap that led to this invention.", fullWidth: true })}
+            ${renderPatentEditorTextarea("Description of the Intellectual Property", "disclosure-description", wizardData.disclosureDescription || wizardData.description || "", { placeholder: "Provide a clear and complete description of the invention, its parts, and how it works.", fullWidth: true })}
+            ${renderPatentEditorTextarea("Novel Features", "disclosure-novel-features", wizardData.disclosureNovelFeatures || wizardData.novelty || "", { placeholder: "Identify what is original, new, and different from existing inventions.", fullWidth: true })}
+            ${renderPatentEditorTextarea("Inventiveness and Advantages", "disclosure-advantages", wizardData.disclosureAdvantages || "", { placeholder: "Describe distinctive aspects and advantages over existing solutions.", fullWidth: true })}
+            ${renderPatentEditorTextarea("Potential Applications and Uses", "disclosure-applications", wizardData.disclosureApplications || "", { placeholder: "State practical, commercial, or societal applications.", fullWidth: true })}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Funding and University Resources</div>
+          <div class="patent-editor-inline-group">
+            <span class="patent-editor-inline-group__label">Was this IP developed using PSU resources?</span>
+            <div class="patent-choice-grid patent-choice-grid--two">
+              ${renderPatentChoice("disclosureUsedPsuResources", "yes", "Yes")}
+              ${renderPatentChoice("disclosureUsedPsuResources", "no", "No")}
+            </div>
+          </div>
+          <div class="patent-choice-grid">
+            ${renderPatentCheckbox("disclosureResourcesUsed", "facilities", "University facilities")}
+            ${renderPatentCheckbox("disclosureResourcesUsed", "research-funds", "Research funds")}
+            ${renderPatentCheckbox("disclosureResourcesUsed", "equipment", "Equipment")}
+            ${renderPatentCheckbox("disclosureResourcesUsed", "assistance", "Staff or student assistance")}
+            ${renderPatentCheckbox("disclosureResourcesUsed", "others", "Others")}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--one">
+            ${renderPatentEditorInput("Other PSU Resource Details", "disclosure-resource-other", wizardData.disclosureResourceOther || "", { placeholder: "Specify other resources, if any", fullWidth: true })}
+          </div>
+          <div class="patent-editor-inline-group">
+            <span class="patent-editor-inline-group__label">Source of Funding</span>
+            <div class="patent-choice-grid">
+              ${renderPatentCheckbox("disclosureFundingSource", "psu-funded", "PSU-funded")}
+              ${renderPatentCheckbox("disclosureFundingSource", "externally-funded", "Externally funded")}
+              ${renderPatentCheckbox("disclosureFundingSource", "self-funded", "Self-funded")}
+            </div>
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--one">
+            ${renderPatentEditorInput("External Funding Details", "disclosure-external-funding", wizardData.disclosureExternalFunding || "", { placeholder: "Specify external funder, if applicable", fullWidth: true })}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Prior Disclosure</div>
+          <div class="patent-editor-inline-group">
+            <span class="patent-editor-inline-group__label">Has any part of this IP been publicly disclosed?</span>
+            <div class="patent-choice-grid patent-choice-grid--two">
+              ${renderPatentChoice("disclosurePriorPublic", "no", "No")}
+              ${renderPatentChoice("disclosurePriorPublic", "yes", "Yes")}
+            </div>
+          </div>
+          <div class="patent-choice-grid">
+            ${renderPatentCheckbox("disclosurePriorTypes", "thesis", "Thesis / Dissertation")}
+            ${renderPatentCheckbox("disclosurePriorTypes", "conference", "Conference presentation")}
+            ${renderPatentCheckbox("disclosurePriorTypes", "journal", "Journal publication")}
+            ${renderPatentCheckbox("disclosurePriorTypes", "demonstration", "Demonstration / Exhibit")}
+            ${renderPatentCheckbox("disclosurePriorTypes", "online", "Online posting")}
+            ${renderPatentCheckbox("disclosurePriorTypes", "others", "Others")}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("Other Prior Disclosure Details", "disclosure-prior-other", wizardData.disclosurePriorOther || "", { placeholder: "Specify other disclosure" })}
+            ${renderPatentEditorInput("Date and Venue of Disclosure", "disclosure-prior-date-venue", wizardData.disclosurePriorDateVenue || "", { placeholder: "Date and venue, if applicable" })}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Ownership Declaration Signatories</div>
+          <div class="patent-editor-grid patent-editor-grid--three">
+            ${renderPatentEditorInput("Creator / Representative 1", "disclosure-creator-1", wizardData.disclosureCreator1 || advisoryName, { placeholder: "Name" })}
+            ${renderPatentEditorInput("Creator / Representative 2", "disclosure-creator-2", wizardData.disclosureCreator2 || "", { placeholder: "Name" })}
+            ${renderPatentEditorInput("Creator / Representative 3", "disclosure-creator-3", wizardData.disclosureCreator3 || "", { placeholder: "Name" })}
+          </div>
+          <div class="patent-editor-grid patent-editor-grid--two">
+            ${renderPatentEditorInput("IPTTO Representative", "disclosure-iptto-representative", wizardData.disclosureIpttoRepresentative || "", { placeholder: "For IPTTO use" })}
+            ${renderPatentEditorInput("Head, TTPU", "disclosure-ttpu-head", wizardData.disclosureTtpuHead || "", { placeholder: "For noting" })}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentOptionalDocumentsStep() {
+  const uploads = ensureRequirementUploads(wizardData);
+  const uploadedCount = Object.keys(uploads).length;
+  const formType = currentFormType === "industrial"
+    ? "industrial"
+    : currentFormType === "utility"
+      ? "utility"
+      : "patent";
+  const typeLabel = getPatentIntakeTypeLabel();
+
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 3 - Optional Documents</span>
+      <h2>Upload Optional ${typeLabel} Documents</h2>
+      <p>Your reference flow lists these as optional attachments. Accepted formats are PDF, DOCX, JPG, and PNG.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Optional Upload Checklist</div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
+            ${[
+              ["technical-drawings-diagrams", "Technical Drawings / Diagrams", "PDF, DOCX, JPG, PNG"],
+              ["abstract", "Abstract", "PDF, DOCX, JPG, PNG"],
+              ["claims-statement", "Claims Statement", "PDF, DOCX, JPG, PNG"],
+            ]
+              .map(([key, title, formats]) => {
+                const uploaded = Boolean(uploads[key]);
+                return `
+                  <div class="patent-upload-pill ${uploaded ? "success" : ""}" style="align-items:flex-start;">
+                    <i class="fa-solid fa-${uploaded ? "circle-check" : "file-arrow-up"}"></i>
+                    <span>
+                      <strong style="display:block; margin:0 0 4px; color:inherit;">${title}</strong>
+                      <small style="color:var(--gray-500);">${formats}</small>
+                    </span>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+          ${renderDynamicRequirementUploaders(formType)}
+          <div id="uploadStatus" style="margin-top:20px;">
+            ${uploadedCount > 0 ? renderUploadedFiles() : ""}
+          </div>
+        </div>
+
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Attachment Notes</div>
+          ${renderPatentEditorTextarea("Notes for PSU / IPTTO", "patent-supporting-notes", wizardData.supportingNotes || "", { placeholder: "Optional notes about uploaded files or missing attachments.", fullWidth: true })}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderPatentFilingDetailsStep() {
@@ -7727,6 +8347,279 @@ function renderPatentSubmissionList() {
   `;
 }
 
+function formatPatentHumanDate(value) {
+  if (!value) return "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const date = new Date(`${value}T00:00:00`);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function renderPsuPaperValue(value, { multiline = false } = {}) {
+  const text = escapeHtml(value || " ");
+  return `<div class="psu-paper-value ${multiline ? "psu-paper-value--multi" : ""}">${text}</div>`;
+}
+
+function renderPsuCheck(label, checked) {
+  return `
+    <span class="psu-paper-check ${checked ? "checked" : ""}">
+      <span class="psu-paper-check__box"></span>
+      <span>${escapeHtml(label)}</span>
+    </span>
+  `;
+}
+
+function getPatentSelectedValues(name, fallback = []) {
+  const values = getWizardArray(name);
+  return values.length ? values : fallback;
+}
+
+function renderPatentAdvisoryServiceSheetPaper() {
+  const clientType = wizardData.advisoryClientType || "";
+  const sex = wizardData.advisorySex || "";
+  const serviceValues = getPatentSelectedValues("advisoryServiceAvailed", [
+    getPatentIntakeServiceDefault(),
+  ]);
+  const hasService = (value) => serviceValues.includes(value);
+  const company =
+    wizardData.advisoryCompany || wizardData.applicantCompany || "";
+  const title =
+    wizardData.advisoryTitle || wizardData.disclosureTitle || wizardData.title || "";
+  const clientSignature =
+    wizardData.advisoryClientSignature || getPatentAdvisoryFullName();
+
+  return `
+    <div class="psu-form-paper psu-advisory-paper">
+      <div class="psu-advisory-head">
+        <div class="psu-advisory-logo-cell">
+          <img src="images/psu_logo_main.png" alt="Palawan State University logo" />
+        </div>
+        <div class="psu-advisory-title-cell">
+          <div class="psu-advisory-title">ADVISORY SERVICE SHEET</div>
+          <div class="psu-advisory-office">Intellectual Property and Technology Transfer Office</div>
+          <div class="psu-advisory-sub">(An IPOPHL-accredited ITSO)</div>
+        </div>
+        <div class="psu-advisory-meta">
+          <div><span>Doc. Ref No.:</span><strong>PSU-ITSO-001</strong></div>
+          <div><span>Effectivity Date:</span><strong>14 May 2024</strong></div>
+          <div><span>Revision No.:</span><strong>0</strong></div>
+          <div><span>Page No.:</span><strong>Page 1 of 1</strong></div>
+        </div>
+      </div>
+
+      <div class="psu-form-redbar"></div>
+      <div class="psu-advisory-row psu-advisory-row--client">
+        <strong>Client type</strong>
+        ${renderPsuCheck("Individual/Single Proprietor", clientType === "individual")}
+        ${renderPsuCheck("Company/Corporation", clientType === "company")}
+        ${renderPsuCheck("School", clientType === "school")}
+        ${renderPsuCheck("Government", clientType === "government")}
+      </div>
+      <div class="psu-advisory-grid psu-advisory-grid--company">
+        <div>
+          <span>Name of the Company/Business/Government Agency/School</span>
+          ${renderPsuPaperValue(company)}
+        </div>
+        <div>
+          <span>Date</span>
+          ${renderPsuPaperValue(formatPatentHumanDate(wizardData.advisoryDate))}
+        </div>
+      </div>
+      <div class="psu-advisory-grid psu-advisory-grid--position">
+        <div>
+          <span>Position/Designation</span>
+          ${renderPsuPaperValue(wizardData.advisoryPosition)}
+        </div>
+        <div>
+          <div class="psu-advisory-inline-head">
+            <span>SEX</span>
+            <span>AGE</span>
+          </div>
+          <div class="psu-paper-inline">
+            ${renderPsuCheck("Male", sex === "male")}
+            ${renderPsuCheck("Female", sex === "female")}
+            ${renderPsuPaperValue(wizardData.advisoryAge)}
+          </div>
+        </div>
+      </div>
+      <div class="psu-advisory-grid psu-advisory-grid--names">
+        <div><span>Last Name</span>${renderPsuPaperValue(wizardData.advisoryLastName)}</div>
+        <div><span>First Name</span>${renderPsuPaperValue(wizardData.advisoryFirstName)}</div>
+        <div><span>Middle Name</span>${renderPsuPaperValue(wizardData.advisoryMiddleName)}</div>
+      </div>
+      <div class="psu-advisory-full">
+        <span>Address</span>
+        ${renderPsuPaperValue(wizardData.advisoryAddress)}
+      </div>
+      <div class="psu-advisory-grid psu-advisory-grid--contact">
+        <div><span>Contact No.</span>${renderPsuPaperValue(wizardData.advisoryContact)}</div>
+        <div><span>Email Address</span>${renderPsuPaperValue(wizardData.advisoryEmail)}</div>
+      </div>
+      <div class="psu-advisory-title-line">
+        <span>Title of Material/Technology/Invention</span>
+        ${renderPsuPaperValue(title)}
+      </div>
+      <div class="psu-advisory-services">
+        <strong>Service Availed</strong>
+        <div class="psu-advisory-service-grid">
+          ${renderPsuCheck("Copyright/Related Rights", hasService("copyright"))}
+          ${renderPsuCheck("Trademark", hasService("trademark"))}
+          ${renderPsuCheck("Patent", hasService("patent"))}
+          ${renderPsuCheck("Utility Model", hasService("utility"))}
+          ${renderPsuCheck("Industrial Design", hasService("industrial"))}
+        </div>
+      </div>
+
+      <div class="psu-advisory-signatures">
+        <div>
+          <div class="psu-sign-line">${escapeHtml(wizardData.advisoryTechnicalAdvisor || " ")}</div>
+          <span>(Name and Signature of Technical Advisor)</span>
+        </div>
+        <div>
+          <div class="psu-sign-line">${escapeHtml(clientSignature || " ")}</div>
+          <span>(Name and Signature of Client)</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentDisclosureSection(title, value) {
+  return `
+    <div class="psu-disclosure-section">
+      <div class="psu-disclosure-section-title">${escapeHtml(title)}</div>
+      ${renderPsuPaperValue(value, { multiline: true })}
+    </div>
+  `;
+}
+
+function renderPatentDisclosureFormPaper() {
+  const resources = getPatentSelectedValues("disclosureResourcesUsed");
+  const funding = getPatentSelectedValues("disclosureFundingSource");
+  const priorTypes = getPatentSelectedValues("disclosurePriorTypes");
+  const hasResource = (value) => resources.includes(value);
+  const hasFunding = (value) => funding.includes(value);
+  const hasPriorType = (value) => priorTypes.includes(value);
+  const disclosureTitle =
+    wizardData.disclosureTitle || wizardData.advisoryTitle || wizardData.title || "";
+
+  return `
+    <div class="psu-form-paper psu-disclosure-paper">
+      <div class="psu-disclosure-head">
+        <img src="images/psu_logo_main.png" alt="Palawan State University logo" />
+        <div>
+          <div class="psu-disclosure-kicker">Palawan State University</div>
+          <h2>IP Disclosure Form 2026</h2>
+          <p>Intellectual Property and Technology Transfer Office</p>
+        </div>
+      </div>
+
+      <div class="psu-disclosure-section">
+        <div class="psu-disclosure-section-title">GENERAL INFORMATION</div>
+        <div class="psu-disclosure-grid">
+          <div><span>Name of inventor(s):</span>${renderPsuPaperValue(wizardData.disclosureInventors)}</div>
+          <div><span>Job Title / Position:</span>${renderPsuPaperValue(wizardData.disclosureJobTitle)}</div>
+          <div><span>College / Unit / Department:</span>${renderPsuPaperValue(wizardData.disclosureCollege)}</div>
+          <div><span>Contact details:</span>${renderPsuPaperValue(wizardData.disclosureContact)}</div>
+          <div><span>Title of invention:</span>${renderPsuPaperValue(disclosureTitle)}</div>
+          <div><span>Date of disclosure:</span>${renderPsuPaperValue(formatPatentHumanDate(wizardData.disclosureDate))}</div>
+        </div>
+      </div>
+
+      ${renderPatentDisclosureSection("BACKGROUND AND PROBLEM STATEMENT", wizardData.disclosureBackground)}
+      ${renderPatentDisclosureSection("DESCRIPTION OF THE INTELLECTUAL PROPERTY", wizardData.disclosureDescription)}
+      ${renderPatentDisclosureSection("NOVEL FEATURES", wizardData.disclosureNovelFeatures)}
+      ${renderPatentDisclosureSection("INVENTIVENESS AND ADVANTAGES", wizardData.disclosureAdvantages)}
+      ${renderPatentDisclosureSection("POTENTIAL APPLICATIONS AND USES", wizardData.disclosureApplications)}
+
+      <div class="psu-disclosure-section">
+        <div class="psu-disclosure-section-title">FUNDING AND USE OF UNIVERSITY RESOURCES</div>
+        <div class="psu-paper-choice-line">
+          <span>Was this IP developed using PSU resources?</span>
+          ${renderPsuCheck("Yes", wizardData.disclosureUsedPsuResources === "yes")}
+          ${renderPsuCheck("No", wizardData.disclosureUsedPsuResources === "no")}
+        </div>
+        <div class="psu-paper-choice-grid">
+          ${renderPsuCheck("University facilities", hasResource("facilities"))}
+          ${renderPsuCheck("Research funds", hasResource("research-funds"))}
+          ${renderPsuCheck("Equipment", hasResource("equipment"))}
+          ${renderPsuCheck("Staff or student assistance", hasResource("assistance"))}
+          ${renderPsuCheck("Others", hasResource("others"))}
+        </div>
+        ${renderPsuPaperValue(wizardData.disclosureResourceOther, { multiline: true })}
+        <div class="psu-paper-choice-line">
+          <span>Source of Funding:</span>
+          ${renderPsuCheck("PSU-funded", hasFunding("psu-funded"))}
+          ${renderPsuCheck("Externally funded", hasFunding("externally-funded"))}
+          ${renderPsuCheck("Self-funded", hasFunding("self-funded"))}
+        </div>
+        ${renderPsuPaperValue(wizardData.disclosureExternalFunding, { multiline: true })}
+      </div>
+
+      <div class="psu-disclosure-section">
+        <div class="psu-disclosure-section-title">PRIOR DISCLOSURE</div>
+        <div class="psu-paper-choice-line">
+          <span>Has any part of this IP been publicly disclosed?</span>
+          ${renderPsuCheck("No", wizardData.disclosurePriorPublic === "no")}
+          ${renderPsuCheck("Yes", wizardData.disclosurePriorPublic === "yes")}
+        </div>
+        <div class="psu-paper-choice-grid">
+          ${renderPsuCheck("Thesis / Dissertation", hasPriorType("thesis"))}
+          ${renderPsuCheck("Conference presentation", hasPriorType("conference"))}
+          ${renderPsuCheck("Journal publication", hasPriorType("journal"))}
+          ${renderPsuCheck("Demonstration / Exhibit", hasPriorType("demonstration"))}
+          ${renderPsuCheck("Online posting", hasPriorType("online"))}
+          ${renderPsuCheck("Others", hasPriorType("others"))}
+        </div>
+        <div class="psu-disclosure-grid">
+          <div><span>Other details:</span>${renderPsuPaperValue(wizardData.disclosurePriorOther)}</div>
+          <div><span>Date and venue:</span>${renderPsuPaperValue(wizardData.disclosurePriorDateVenue)}</div>
+        </div>
+      </div>
+
+      <div class="psu-disclosure-section">
+        <div class="psu-disclosure-section-title">OWNERSHIP DECLARATION</div>
+        <p class="psu-disclosure-declaration">
+          The undersigned creator(s) declare that this intellectual property was created in accordance with the Palawan State University Intellectual Property Policy, 2025 Edition, and that all information provided herein is true and complete to the best of their knowledge. The creator(s) agree to cooperate with the Technology Transfer and Patent Unit (TTPU) in the evaluation, protection, and possible commercialization of the disclosed IP.
+        </p>
+        <div class="psu-disclosure-sign-grid">
+          ${[wizardData.disclosureCreator1, wizardData.disclosureCreator2, wizardData.disclosureCreator3]
+            .map(
+              (name, index) => `
+                <div>
+                  <span>Name & Signature ${index + 1}</span>
+                  <div class="psu-sign-line">${escapeHtml(name || " ")}</div>
+                </div>
+              `,
+            )
+            .join("")}
+          <div>
+            <span>Intellectual Property and Technology Transfer Office</span>
+            <div class="psu-sign-line">${escapeHtml(wizardData.disclosureIpttoRepresentative || " ")}</div>
+          </div>
+          <div>
+            <span>Noted by: Head, TTPU</span>
+            <div class="psu-sign-line">${escapeHtml(wizardData.disclosureTtpuHead || " ")}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentIntakeFormBundle({ includeFlow = false } = {}) {
+  return `
+    <div class="patent-paper-stack psu-form-stack">
+      ${renderPatentAdvisoryServiceSheetPaper()}
+      ${renderPatentDisclosureFormPaper()}
+      ${includeFlow ? renderPatentFlowReference({ activeIndex: 0 }) : ""}
+    </div>
+  `;
+}
+
 function renderPatentFormSheet() {
   const applicantKey = buildPatentIdentityKey([
     wizardData.applicantLastName,
@@ -8013,17 +8906,17 @@ function renderPatentFormSheet() {
 function renderPatentPreviewStep() {
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Section 4</span>
-      <h2>Final Form Preview</h2>
-      <p>This is the two-page Form 100-style output that follows the IPOPHL paper layout from your reference. Go back to any section if you want to correct the final form before submitting.</p>
+      <span class="patent-gform-kicker">Step 4 - Preview and Submit</span>
+      <h2>Review the Completed PSU Forms</h2>
+      <p>The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.</p>
     </div>
 
     <div class="patent-gform-card patent-gform-card--sheet">
-      ${renderPatentFormSheetBundle()}
+      ${renderPatentIntakeFormBundle({ includeFlow: true })}
     </div>
 
     <div class="patent-gform-card">
-      <h3>Submission Summary</h3>
+      <h3>Optional Document Summary</h3>
       ${renderPatentSubmissionList()}
       ${
         wizardData.supportingNotes
@@ -12254,8 +13147,7 @@ function captureIndustrialGoogleData() {
 }
 
 function renderFormWizard(title) {
-  /* 
-  if (isPatentGoogleFlow()) {
+  if (isPatentIntakeFlow()) {
     return renderPatentGoogleForm();
   }
   if (isCopyrightGoogleFlow()) {
@@ -12267,7 +13159,6 @@ function renderFormWizard(title) {
   if (isIndustrialGoogleFlow()) {
     return renderIndustrialGoogleForm();
   }
-  */
 
   let steps = [
     "Applicant Info",
@@ -12806,21 +13697,83 @@ function captureWizardData() {
     return;
   }
 
-  if (isUtilityGoogleFlow()) {
-    captureUtilityGoogleData();
-    return;
-  }
-
-  if (isIndustrialGoogleFlow()) {
-    captureIndustrialGoogleData();
-    return;
-  }
-
-  if (isPatentGoogleFlow()) {
+  if (isPatentIntakeFlow()) {
     const currentUser = getCurrentUser();
+    const captureValue = (key, id, fallback = "") => {
+      const el = document.getElementById(id);
+      if (el) wizardData[key] = el.value || fallback;
+    };
+    const captureRadio = (key, name, fallback = "") => {
+      const input = document.querySelector(`input[name="${name}"]:checked`);
+      if (input) wizardData[key] = input.value;
+      else if (!wizardData[key] && fallback) wizardData[key] = fallback;
+    };
+    const captureChecks = (key, name, fallback = []) => {
+      const inputs = document.querySelectorAll(`input[name="${name}"]`);
+      if (inputs.length) {
+        const values = getCheckedValuesByName(name);
+        wizardData[key] = values.length ? values : fallback;
+      } else if (!Array.isArray(wizardData[key]) && fallback.length) {
+        wizardData[key] = fallback;
+      }
+    };
+
+    captureRadio("advisoryClientType", "advisoryClientType");
+    captureRadio("advisorySex", "advisorySex");
+    captureChecks("advisoryServiceAvailed", "advisoryServiceAvailed", [
+      getPatentIntakeServiceDefault(),
+    ]);
+    [
+      ["advisoryCompany", "advisory-company"],
+      ["advisoryDate", "advisory-date"],
+      ["advisoryPosition", "advisory-position"],
+      ["advisoryAge", "advisory-age"],
+      ["advisoryLastName", "advisory-last-name"],
+      ["advisoryFirstName", "advisory-first-name"],
+      ["advisoryMiddleName", "advisory-middle-name"],
+      ["advisoryAddress", "advisory-address"],
+      ["advisoryContact", "advisory-contact"],
+      ["advisoryEmail", "advisory-email"],
+      ["advisoryTitle", "advisory-title"],
+      ["advisoryTechnicalAdvisor", "advisory-technical-advisor"],
+      ["advisoryClientSignature", "advisory-client-signature"],
+    ].forEach(([key, id]) => captureValue(key, id, wizardData[key] || ""));
+
+    captureRadio("disclosureUsedPsuResources", "disclosureUsedPsuResources");
+    captureRadio("disclosurePriorPublic", "disclosurePriorPublic");
+    captureChecks("disclosureResourcesUsed", "disclosureResourcesUsed");
+    captureChecks("disclosureFundingSource", "disclosureFundingSource");
+    captureChecks("disclosurePriorTypes", "disclosurePriorTypes");
+    [
+      ["disclosureInventors", "disclosure-inventors"],
+      ["disclosureJobTitle", "disclosure-job-title"],
+      ["disclosureCollege", "disclosure-college"],
+      ["disclosureContact", "disclosure-contact"],
+      ["disclosureTitle", "disclosure-title"],
+      ["disclosureDate", "disclosure-date"],
+      ["disclosureBackground", "disclosure-background"],
+      ["disclosureDescription", "disclosure-description"],
+      ["disclosureNovelFeatures", "disclosure-novel-features"],
+      ["disclosureAdvantages", "disclosure-advantages"],
+      ["disclosureApplications", "disclosure-applications"],
+      ["disclosureResourceOther", "disclosure-resource-other"],
+      ["disclosureExternalFunding", "disclosure-external-funding"],
+      ["disclosurePriorOther", "disclosure-prior-other"],
+      ["disclosurePriorDateVenue", "disclosure-prior-date-venue"],
+      ["disclosureCreator1", "disclosure-creator-1"],
+      ["disclosureCreator2", "disclosure-creator-2"],
+      ["disclosureCreator3", "disclosure-creator-3"],
+      ["disclosureIpttoRepresentative", "disclosure-iptto-representative"],
+      ["disclosureTtpuHead", "disclosure-ttpu-head"],
+      ["supportingNotes", "patent-supporting-notes"],
+    ].forEach(([key, id]) => captureValue(key, id, wizardData[key] || ""));
 
     wizardData.title =
-      document.getElementById("patent-title")?.value || wizardData.title || "";
+      document.getElementById("patent-title")?.value ||
+      wizardData.disclosureTitle ||
+      wizardData.advisoryTitle ||
+      wizardData.title ||
+      "";
     wizardData.applicationRoute =
       document.querySelector('input[name="applicationRoute"]:checked')?.value ||
       wizardData.applicationRoute ||
@@ -13060,18 +14013,59 @@ function captureWizardData() {
       "";
 
     wizardData.name = [
-      wizardData.applicantFirstName,
-      wizardData.applicantMiddleName,
-      wizardData.applicantLastName,
+      wizardData.advisoryFirstName || wizardData.applicantFirstName,
+      wizardData.advisoryMiddleName || wizardData.applicantMiddleName,
+      wizardData.advisoryLastName || wizardData.applicantLastName,
     ]
       .filter(Boolean)
       .join(" ")
       .trim();
-    wizardData.email = wizardData.applicantEmail || currentUser.email || "";
-    wizardData.contact = wizardData.applicantContact || "";
-    wizardData.dept = wizardData.applicantCompany || currentUser.dept || "";
-    wizardData.description = wizardData.supportingNotes || wizardData.title || "";
-    syncRequirementUploadsToFiles("patent");
+    wizardData.email =
+      wizardData.advisoryEmail || wizardData.applicantEmail || currentUser.email || "";
+    wizardData.contact = wizardData.advisoryContact || wizardData.applicantContact || "";
+    wizardData.dept =
+      wizardData.disclosureCollege ||
+      wizardData.advisoryCompany ||
+      wizardData.applicantCompany ||
+      currentUser.dept ||
+      "";
+    wizardData.description =
+      wizardData.disclosureDescription ||
+      wizardData.disclosureBackground ||
+      wizardData.supportingNotes ||
+      wizardData.title ||
+      "";
+    wizardData.applicantFirstName =
+      wizardData.applicantFirstName || wizardData.advisoryFirstName || "";
+    wizardData.applicantMiddleName =
+      wizardData.applicantMiddleName || wizardData.advisoryMiddleName || "";
+    wizardData.applicantLastName =
+      wizardData.applicantLastName || wizardData.advisoryLastName || "";
+    wizardData.applicantCompany =
+      wizardData.applicantCompany || wizardData.advisoryCompany || "";
+    wizardData.applicantPosition =
+      wizardData.applicantPosition || wizardData.advisoryPosition || "";
+    wizardData.applicantAddress =
+      wizardData.applicantAddress || wizardData.advisoryAddress || "";
+    wizardData.applicantContact =
+      wizardData.applicantContact || wizardData.advisoryContact || "";
+    wizardData.applicantEmail =
+      wizardData.applicantEmail || wizardData.advisoryEmail || currentUser.email || "";
+    wizardData.advisoryServiceAvailed =
+      getPatentSelectedValues("advisoryServiceAvailed", [
+        getPatentIntakeServiceDefault(),
+      ]);
+    syncRequirementUploadsToFiles(currentFormType);
+    return;
+  }
+
+  if (isUtilityGoogleFlow()) {
+    captureUtilityGoogleData();
+    return;
+  }
+
+  if (isIndustrialGoogleFlow()) {
+    captureIndustrialGoogleData();
     return;
   }
 
@@ -13136,7 +14130,7 @@ function captureWizardData() {
 function getMaxWizardSteps() {
   if (isCopyrightGoogleFlow()) return getCopyrightFormSteps().length;
   if ((currentFormType === "copyright" || currentFormType === "patent") && submissionMethod === "upload") return 3;
-  if (isPatentGoogleFlow()) return 4;
+  if (isPatentIntakeFlow()) return getPatentFormSteps().length;
   if (isUtilityGoogleFlow()) return 4;
   if (isIndustrialGoogleFlow()) return 4;
   return 4;
@@ -13745,13 +14739,13 @@ function renderFormsPublicContent() {
   if (currentParams.formView === "utility-online") {
     currentFormType = "utility";
     submissionMethod = "online";
-    return renderUtilityGoogleForm("forms", "Forms");
+    return renderPatentGoogleForm("forms", "Forms");
   }
 
   if (currentParams.formView === "industrial-online") {
     currentFormType = "industrial";
     submissionMethod = "online";
-    return renderIndustrialGoogleForm("forms", "Forms");
+    return renderPatentGoogleForm("forms", "Forms");
   }
 
   if (false) {
@@ -13879,7 +14873,14 @@ function submitForm() {
   };
   const refNum = `PSU-${prefix[currentFormType]}-2026-${String(submissions.length + 1).padStart(3, "0")}`;
 
-  if (isPatentGoogleFlow()) {
+  if (isPatentIntakeFlow()) {
+    const typeLabel = typeMap[currentFormType] || "Patent";
+    const formTypeKey =
+      currentFormType === "industrial"
+        ? "industrial"
+        : currentFormType === "utility"
+          ? "utility"
+          : "patent";
     const applicantName = [
       wizardData.applicantFirstName,
       wizardData.applicantMiddleName,
@@ -13891,26 +14892,27 @@ function submitForm() {
 
     const newPatentSubmission = {
       id: refNum,
-      type: "Patent",
-      title: wizardData.title || "Untitled Patent Application",
-      applicant: applicantName || "Unnamed Applicant",
-      department: wizardData.applicantCompany || getCurrentUser().dept || "Patent Filing",
-      email: wizardData.applicantEmail || getCurrentUser().email || "",
-      contact: wizardData.applicantContact || "",
+      type: typeLabel,
+      title: wizardData.title || `Untitled ${typeLabel} Application`,
+      applicant: wizardData.name || applicantName || "Unnamed Applicant",
+      department: wizardData.dept || wizardData.applicantCompany || getCurrentUser().dept || `${typeLabel} Filing`,
+      email: wizardData.email || wizardData.applicantEmail || getCurrentUser().email || "",
+      contact: wizardData.contact || wizardData.applicantContact || "",
       status: "Pending",
       date: new Date().toISOString().split("T")[0],
       description:
+        wizardData.disclosureDescription ||
         wizardData.supportingNotes ||
-        "Patent request generated through the guided Form 100 workflow.",
+        `${typeLabel} intake generated through the Advisory Service Sheet and IP Disclosure workflow.`,
       paymentRequested: false,
       paymentProofUploaded: false,
       paymentVerified: false,
       frozen: false,
-      formStyle: "Form 100",
+      formStyle: `PSU ${typeLabel} Intake`,
       filingMethod: "Guided Online Form",
       requirementUploads: { ...ensureRequirementUploads(wizardData) },
       files: [...(wizardData.files || [])],
-      requiredDocuments: getRequiredDocumentsForType("patent"),
+      requiredDocuments: getRequiredDocumentsForType(formTypeKey),
       formData: { ...wizardData },
     };
 
@@ -13926,8 +14928,8 @@ function submitForm() {
       <div class="patent-confirmation-shell">
         <div class="confirmation-screen">
           <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-          <h2>Patent request submitted</h2>
-          <p style="color:var(--gray-500)">The application was received and is now undergoing evaluator review. The final Form 100 preview is shown below.</p>
+          <h2>${typeLabel} intake submitted</h2>
+          <p style="color:var(--gray-500)">The Advisory Service Sheet and IP Disclosure Form were received and are now queued for PSU review. The completed paper-style forms are shown below.</p>
           <div class="ref-number">${refNum}</div>
           <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
           <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
@@ -13942,7 +14944,7 @@ function submitForm() {
         </div>
 
         <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
-          ${renderPatentFormSheetBundle()}
+          ${renderPatentIntakeFormBundle({ includeFlow: true })}
         </div>
       </div>`;
     return;
@@ -14853,7 +15855,7 @@ function getTrackingSteps(status) {
 
 function getPreciseSubmissionSteps(s) {
   const isCR = s.type === "Copyright";
-  const flow = isCR ? COPYRIGHT_OPERATION_FLOW : IPOPHL_OPERATION_FLOW;
+  const flow = isCR ? COPYRIGHT_OPERATION_FLOW : getIPOPHLOperationFlow(s);
   const activeIdx = isCR ? getCopyrightStageIndex(s) : getIPOPHLStageIndex(s);
   const approved = s.status === "Approved";
   const closed = s.status === "Rejected" || s.status === "Archived";
@@ -15052,7 +16054,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
     return filtered
       .map((s) => {
         const isCR = s.type === "Copyright";
-        const flow = isCR ? COPYRIGHT_OPERATION_FLOW : IPOPHL_OPERATION_FLOW;
+        const flow = isCR ? COPYRIGHT_OPERATION_FLOW : getIPOPHLOperationFlow(s);
         const stageIdx = isCR
           ? getCopyrightStageIndex(s)
           : getIPOPHLStageIndex(s);
