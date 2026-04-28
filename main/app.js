@@ -127,6 +127,18 @@ const mockNotifications = {
       read: false,
     },
     {
+      id: 5,
+      userId: 9,
+      icon: "fa-store",
+      color: "#f97316",
+      title: "Marketplace Approval Request",
+      body: "Admin requests approval to publish Bamboo-Based Water Filter in the marketplace.",
+      time: "Just now",
+      read: false,
+      type: "marketplace-approval",
+      requestId: "MKT-REQ-001",
+    },
+    {
       id: 2,
       icon: "fa-file-circle-plus",
       color: "#f59e0b",
@@ -815,6 +827,20 @@ const marketplaceItems = [
   },
 ];
 
+let marketplaceApprovalRequests = [
+  {
+    id: "MKT-REQ-001",
+    recordId: "PSU-PAT-2026-155",
+    applicantUserId: 9,
+    requestedByUserId: 2,
+    requestedByName: "Dir. Garcia",
+    status: "pending",
+    requestedAt: "2026-04-29T09:10:00+08:00",
+    respondedAt: null,
+    listingId: null,
+  },
+];
+
 let systemUsers = [
   {
     id: 0,
@@ -1304,6 +1330,30 @@ function pushReviewerNotification(userId, title, body) {
     body,
     time: "Just now",
     read: false,
+  });
+}
+
+function pushRoleNotification(role, notification) {
+  const normalizedRole = normalizeRole(role);
+  if (!mockNotifications[normalizedRole]) mockNotifications[normalizedRole] = [];
+  mockNotifications[normalizedRole].unshift({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    time: "Just now",
+    read: false,
+    ...notification,
+  });
+  if (normalizeRole(currentRole) === normalizedRole) {
+    renderNotifications();
+  }
+}
+
+function updateNotificationByRequestId(requestId, updates) {
+  Object.values(mockNotifications).forEach((notifications) => {
+    notifications.forEach((notification) => {
+      if (notification.requestId === requestId) {
+        Object.assign(notification, updates);
+      }
+    });
   });
 }
 
@@ -2020,6 +2070,29 @@ function resetMarketFilters() {
   else filterFullMarketplace();
 }
 
+function renderNotificationActions(notification) {
+  if (notification.type !== "marketplace-approval" || !notification.requestId) {
+    return "";
+  }
+
+  const request = marketplaceApprovalRequests.find(
+    (item) => item.id === notification.requestId,
+  );
+  if (!request) return "";
+  if (request.status === "accepted") {
+    return `<div class="notif-actions"><span class="badge badge-approved"><i class="fa-solid fa-check"></i> Accepted</span></div>`;
+  }
+  if (request.status === "declined") {
+    return `<div class="notif-actions"><span class="badge badge-rejected"><i class="fa-solid fa-xmark"></i> Declined</span></div>`;
+  }
+
+  return `
+    <div class="notif-actions">
+      <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); acceptMarketplaceApproval('${request.id}')"><i class="fa-solid fa-check"></i> Accept</button>
+      <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); declineMarketplaceApproval('${request.id}')"><i class="fa-solid fa-xmark"></i> Decline</button>
+    </div>`;
+}
+
 function renderNotifications() {
   const list = document.getElementById("notifList");
   if (!list) return;
@@ -2045,6 +2118,7 @@ function renderNotifications() {
         const clickAction = n.caseId
           ? `openCaseChat('${n.caseId}')`
           : `showToast(${JSON.stringify(`Notification: ${n.title}`)})`;
+        const actions = renderNotificationActions(n);
         return `
     <div class="notif-item ${n.read ? "" : "unread"}" onclick="${clickAction}">
       <div class="notif-icon" style="background:${n.color}15; color:${n.color}">
@@ -2054,6 +2128,7 @@ function renderNotifications() {
         <div class="notif-title">${escapeHtml(n.title)}</div>
         <div class="notif-body">${escapeHtml(n.body)}</div>
         <div class="notif-time">${escapeHtml(n.time)}</div>
+        ${actions}
       </div>
     </div>
   `;
@@ -2758,6 +2833,8 @@ function updateTopbarRole() {
   if (roleLabel) {
     roleLabel.textContent = userRole + " Portal";
   }
+  updateBodyRoleClass(normRole);
+  updateProfileDropdownRoleVisibility();
 
   // Hide topbar branding for Admin/Evaluator (they have sidebar brand)
   const isAdminOrEvaluator = normRole === "superadmin" || normRole === "reviewer";
@@ -2765,6 +2842,25 @@ function updateTopbarRole() {
   if (topbarBrand) {
     topbarBrand.style.display = isAdminOrEvaluator ? "none" : "flex";
   }
+  renderNotifications();
+}
+
+function updateBodyRoleClass(role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  document.body.classList.remove(
+    "role-applicant",
+    "role-reviewer",
+    "role-superadmin",
+    "role-admin",
+  );
+  document.body.classList.add(`role-${normalizedRole}`);
+}
+
+function updateProfileDropdownRoleVisibility() {
+  const isApplicant = normalizeRole(currentRole) === "applicant";
+  document.querySelectorAll("[data-applicant-only='true']").forEach((item) => {
+    item.style.display = isApplicant ? "" : "none";
+  });
 }
 
 // ===== SIDEBAR =====
@@ -5296,6 +5392,16 @@ let securityKeyVisibility = {
 let integrityFreezeUnlocked = false;
 let certifiedDemoRecords = [
   {
+    id: "PSU-PAT-2026-155",
+    type: "Patent",
+    title: "Bamboo-Based Water Filter",
+    applicant: "Juan dela Cruz",
+    department: "College of Engineering",
+    status: "Approved",
+    date: "2026-01-20",
+    description: "Natural filtration system using bamboo charcoal for community-scale potable water support.",
+  },
+  {
     id: "PSU-PAT-2026-101",
     type: "Patent",
     title: "MarineTrack Autonomous Reef Monitoring Buoy",
@@ -6280,6 +6386,16 @@ function renderSubmissionDetail() {
   const reviewerReadOnly =
     normalizeRole(currentRole) === "reviewer" && !reviewerCanAdvance;
   const archived = isSubmissionArchived(s);
+  const showInternalOperationalFlow =
+    normalizedRole === "superadmin" || normalizedRole === "admin";
+  const timelineTitle =
+    normalizedRole === "reviewer"
+      ? "Activity Timeline"
+      : showInternalOperationalFlow && s.type === "Copyright"
+        ? "Copyright Operational Flow"
+        : showInternalOperationalFlow && IPOPHL_TYPES.has(s.type)
+          ? "IPOPHL Operational Flow"
+          : "Activity Timeline";
 
   return `
     ${renderBackNav()}
@@ -6476,7 +6592,7 @@ function renderSubmissionDetail() {
           </div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-timeline"></i> ${normalizedRole === "reviewer" ? "Activity Timeline" : normalizedRole !== "evaluator" && s.type === "Copyright" ? "Copyright Operational Flow" : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type) ? "IPOPHL Operational Flow" : "Activity Timeline"}</h3>
+          <h3><i class="fa-solid fa-timeline"></i> ${timelineTitle}</h3>
           ${
             normalizedRole === "reviewer"
               ? `<div class="timeline">
@@ -6486,9 +6602,9 @@ function renderSubmissionDetail() {
             <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${s.applicant}</div></div>
           </div>`
-              : normalizedRole !== "evaluator" && s.type === "Copyright"
+              : showInternalOperationalFlow && s.type === "Copyright"
               ? renderCopyrightOperationTimeline(s)
-              : normalizedRole !== "evaluator" && IPOPHL_TYPES.has(s.type)
+              : showInternalOperationalFlow && IPOPHL_TYPES.has(s.type)
                 ? renderIPOPHLOperationTimeline(s)
                 : `<div class="timeline">
             ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
@@ -13972,6 +14088,149 @@ function getMarketplaceIconForType(type) {
   return icons[type] || "fa-solid fa-store";
 }
 
+function getMarketplaceImageForType(type) {
+  const images = {
+    Patent: "images/solar_rice_dryer.png",
+    Copyright: "images/ecolearn_app.png",
+    "Utility Model": "images/bamboo_filtration.png",
+    "Industrial Design": "images/palawan_honey.png",
+  };
+  return images[type] || "images/psu_logo_main.png";
+}
+
+function findMarketplaceListingByRecordId(recordId) {
+  return marketplaceItems.find((item) => item.sourceRecordId === recordId);
+}
+
+function getLatestMarketplaceApprovalRequest(recordId) {
+  return marketplaceApprovalRequests
+    .slice()
+    .reverse()
+    .find((request) => request.recordId === recordId);
+}
+
+function getNextMarketplaceRequestId() {
+  const nextNumber =
+    marketplaceApprovalRequests.reduce((max, request) => {
+      const match = String(request.id || "").match(/(\d+)$/);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+  return `MKT-REQ-${String(nextNumber).padStart(3, "0")}`;
+}
+
+function normalizePersonLookup(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\b(dr|engr|prof|atty|mr|mrs|ms)\.?\s+/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function getCertifiedRecordApplicantUser(record) {
+  const ownerKey = normalizePersonLookup(record.applicant);
+  return (
+    systemUsers.find(
+      (user) =>
+        normalizeRole(user.role) === "applicant" &&
+        (user.email === record.email ||
+          normalizePersonLookup(user.name) === ownerKey ||
+          ownerKey.includes(normalizePersonLookup(user.name)) ||
+          normalizePersonLookup(user.name).includes(ownerKey)),
+    ) ||
+    systemUsers.find((user) => normalizeRole(user.role) === "applicant")
+  );
+}
+
+function getCertifiedRecordOwnerEmail(record) {
+  const owner = systemUsers.find(
+    (user) =>
+      user.name === record.applicant ||
+      user.accountName === record.applicant ||
+      user.email === record.email,
+  );
+  return record.email || owner?.email || "techtransfer@psu.edu.ph";
+}
+
+function buildMarketplaceListingFromCertifiedRecord(record, id) {
+  const description =
+    record.description ||
+    `Certified ${record.type} record available for commercialization review.`;
+  return {
+    id,
+    title: record.title,
+    fullTitle: record.title.toUpperCase(),
+    type: record.type,
+    inventor: record.applicant,
+    college: record.department,
+    description,
+    longDescription: description,
+    features: [
+      `Certified ${record.type} record ${record.id}.`,
+      "Reviewed and locked in the IP Records archive for integrity.",
+      "Available for licensing, collaboration, or technology transfer inquiry.",
+    ],
+    businessPotential:
+      "Commercial potential assessment may be expanded by the technology transfer office after publication.",
+    contactPerson: record.applicant,
+    contactEmail: getCertifiedRecordOwnerEmail(record),
+    year: record.date
+      ? Number(String(record.date).slice(0, 4)) || new Date().getFullYear()
+      : new Date().getFullYear(),
+    icon: getMarketplaceIconForType(record.type),
+    image: getMarketplaceImageForType(record.type),
+    archived: false,
+    sourceRecordId: record.id,
+  };
+}
+
+function createMarketplaceListingFromCertifiedRecord(record) {
+  const existingListing = findMarketplaceListingByRecordId(record.id);
+  if (existingListing) return existingListing;
+
+  const nextId = marketplaceItems.length
+    ? Math.max(...marketplaceItems.map((item) => item.id)) + 1
+    : 1;
+  const listing = buildMarketplaceListingFromCertifiedRecord(record, nextId);
+  marketplaceItems.push(listing);
+  return listing;
+}
+
+function createMarketplaceApprovalRequest(record) {
+  const applicantUser = getCertifiedRecordApplicantUser(record);
+  const currentUser = getCurrentUser();
+  const request = {
+    id: getNextMarketplaceRequestId(),
+    recordId: record.id,
+    applicantUserId: applicantUser?.id || null,
+    requestedByUserId: currentUser?.id || null,
+    requestedByName: currentUser?.name || "Admin",
+    status: "pending",
+    requestedAt: new Date().toISOString(),
+    respondedAt: null,
+    listingId: null,
+  };
+
+  marketplaceApprovalRequests.push(request);
+  pushRoleNotification("applicant", {
+    userId: request.applicantUserId,
+    icon: "fa-store",
+    color: "#f97316",
+    title: "Marketplace Approval Request",
+    body: `${request.requestedByName} requests approval to publish ${record.title} in the marketplace.`,
+    type: "marketplace-approval",
+    requestId: request.id,
+  });
+
+  addAuditLog({
+    accountName: request.requestedByName,
+    action: "Requested Marketplace Approval",
+    record: record.id,
+    details: `Requested applicant approval to publish "${record.title}" to the marketplace.`,
+    module: "Market Listing",
+  });
+
+  return request;
+}
+
 window.showMarketListingModal = function(id = null) {
   const isEdit = id !== null;
   const item = isEdit
@@ -14127,6 +14386,152 @@ window.saveMarketListing = function(event, id) {
 
   closeModal();
   renderDashboardContent("admin-marketplace");
+};
+
+window.publishCertifiedRecordToMarketplace = function(recordId) {
+  const normalizedRole = normalizeRole(currentRole);
+  if (normalizedRole !== "superadmin" && normalizedRole !== "admin") {
+    showToast("Only administrators can request marketplace publication.");
+    return;
+  }
+
+  const match = findCertifiedRecord(recordId);
+  if (!match) {
+    showToast("Certified record not found.");
+    return;
+  }
+
+  const existingListing = findMarketplaceListingByRecordId(recordId);
+  if (existingListing) {
+    showToast("This certified record is already connected to a marketplace listing.");
+    showInnovationDetail(existingListing.id);
+    return;
+  }
+
+  const latestRequest = getLatestMarketplaceApprovalRequest(recordId);
+  if (latestRequest?.status === "pending") {
+    showToast("Marketplace approval request is already pending with the applicant.");
+    renderDashboardContent("admin-records");
+    return;
+  }
+
+  createMarketplaceApprovalRequest(match.record);
+
+  closeModal();
+  showToast("Marketplace approval request sent to the applicant.");
+  renderDashboardContent("admin-records");
+};
+
+window.acceptMarketplaceApproval = function(requestId) {
+  const request = marketplaceApprovalRequests.find((item) => item.id === requestId);
+  if (!request) {
+    showToast("Marketplace approval request not found.");
+    return;
+  }
+  const currentUser = getCurrentUser();
+  if (
+    normalizeRole(currentRole) !== "applicant" ||
+    (request.applicantUserId && currentUser.id !== request.applicantUserId)
+  ) {
+    showToast("Only the applicant owner can approve this marketplace request.");
+    return;
+  }
+  if (request.status !== "pending") {
+    showToast("This marketplace request has already been answered.");
+    return;
+  }
+
+  const match = findCertifiedRecord(request.recordId);
+  if (!match) {
+    showToast("Certified record not found.");
+    return;
+  }
+
+  const listing = createMarketplaceListingFromCertifiedRecord(match.record);
+  request.status = "accepted";
+  request.respondedAt = new Date().toISOString();
+  request.listingId = listing.id;
+
+  updateNotificationByRequestId(request.id, {
+    icon: "fa-circle-check",
+    color: "#22c55e",
+    title: "Marketplace Publication Approved",
+    body: `${match.record.title} has been published in the marketplace.`,
+    read: true,
+  });
+
+  pushRoleNotification("superadmin", {
+    userId: request.requestedByUserId,
+    icon: "fa-store",
+    color: "#22c55e",
+    title: "Marketplace Request Approved",
+    body: `${currentUser.name} approved publication of ${match.record.title}. Listing #${listing.id} is now active.`,
+    recordId: match.record.id,
+  });
+
+  addAuditLog({
+    accountName: currentUser.name,
+    action: "Approved Marketplace Listing",
+    record: match.record.id,
+    details: `Approved marketplace publication for "${match.record.title}".`,
+    module: "Market Listing",
+  });
+
+  showToast("Approved. The record is now live in the marketplace.");
+  renderNotifications();
+};
+
+window.declineMarketplaceApproval = function(requestId) {
+  const request = marketplaceApprovalRequests.find((item) => item.id === requestId);
+  if (!request) {
+    showToast("Marketplace approval request not found.");
+    return;
+  }
+  const currentUser = getCurrentUser();
+  if (
+    normalizeRole(currentRole) !== "applicant" ||
+    (request.applicantUserId && currentUser.id !== request.applicantUserId)
+  ) {
+    showToast("Only the applicant owner can decline this marketplace request.");
+    return;
+  }
+  if (request.status !== "pending") {
+    showToast("This marketplace request has already been answered.");
+    return;
+  }
+
+  const match = findCertifiedRecord(request.recordId);
+  const recordTitle = match?.record?.title || request.recordId;
+  request.status = "declined";
+  request.respondedAt = new Date().toISOString();
+
+  updateNotificationByRequestId(request.id, {
+    icon: "fa-circle-xmark",
+    color: "#ef4444",
+    title: "Marketplace Publication Declined",
+    body: `You declined marketplace publication for ${recordTitle}.`,
+    read: true,
+  });
+
+  pushRoleNotification("superadmin", {
+    userId: request.requestedByUserId,
+    icon: "fa-circle-xmark",
+    color: "#ef4444",
+    title: "Marketplace Request Declined",
+    body: `${currentUser.name} declined publication of ${recordTitle}.`,
+    recordId: request.recordId,
+  });
+
+  addAuditLog({
+    accountName: currentUser.name,
+    action: "Declined Marketplace Listing",
+    record: request.recordId,
+    details: `Declined marketplace publication for "${recordTitle}".`,
+    module: "Market Listing",
+  });
+
+  showToast("Declined. The admin has been notified.");
+  renderNotifications();
 };
 
 window.archiveMarketListing = function(id) {
@@ -14931,10 +15336,26 @@ function renderAdminRecords() {
         <button class="btn btn-outline-navy btn-sm" onclick="unlockIntegrityFreeze()"><i class="fa-solid fa-${integrityFreezeUnlocked ? "lock" : "key"}"></i> ${integrityFreezeUnlocked ? "Lock Integrity Freeze" : "Unlock Integrity Freeze"}</button>
       </div>
     </div>
-    <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th><th>Actions</th></tr></thead><tbody>
+    <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th><th>Marketplace</th><th>Actions</th></tr></thead><tbody>
       ${approved
         .map(
-          (s) => `<tr>
+          (s) => {
+            const marketplaceListing = findMarketplaceListingByRecordId(s.id);
+            const marketplaceRequest = getLatestMarketplaceApprovalRequest(s.id);
+            const marketplaceCell = marketplaceListing
+              ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span class="badge ${marketplaceListing.archived ? "badge-frozen" : "badge-approved"}"><i class="fa-solid fa-${marketplaceListing.archived ? "box-archive" : "store"}"></i> ${marketplaceListing.archived ? "Archived" : "Listed"}</span>
+                  <button class="btn btn-sm btn-outline-navy" onclick="showInnovationDetail(${marketplaceListing.id})"><i class="fa-solid fa-eye"></i> View</button>
+                </div>`
+              : marketplaceRequest?.status === "pending"
+                ? `<span class="badge badge-pending"><i class="fa-solid fa-clock"></i> Pending Approval</span>`
+                : marketplaceRequest?.status === "declined"
+                  ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                      <span class="badge badge-rejected"><i class="fa-solid fa-xmark"></i> Declined</span>
+                      <button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-rotate-right"></i> Request Again</button>
+                    </div>`
+              : `<button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-store"></i> Add to Marketplace</button>`;
+            return `<tr>
         <td>${escapeHtml(s.id)}</td>
         <td>${typeBadge(s.type)}</td>
         <td>${escapeHtml(s.title)}</td>
@@ -14942,6 +15363,7 @@ function renderAdminRecords() {
         <td>${escapeHtml(s.department)}</td>
         <td>${statusBadge(s.status)}</td>
         <td>${integrityFreezeUnlocked ? '<span class="badge badge-review"><i class="fa-solid fa-unlock"></i> Unlocked</span>' : '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span>'}</td>
+        <td>${marketplaceCell}</td>
         <td><div class="action-btns">
           <button class="btn btn-sm btn-outline-navy" onclick="viewCertifiedRecord('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
           ${
@@ -14950,7 +15372,8 @@ function renderAdminRecords() {
               : `<button class="btn btn-sm btn-secondary" disabled title="Unlock Integrity Freeze to edit certified metadata"><i class="fa-solid fa-lock"></i> Edit</button>`
           }
         </div></td>
-      </tr>`,
+      </tr>`;
+          },
         )
         .join("")}
     </tbody></table></div></div>`;
@@ -14992,6 +15415,22 @@ window.viewCertifiedRecord = function(id) {
     return;
   }
   const record = match.record;
+  const marketplaceListing = findMarketplaceListingByRecordId(record.id);
+  const marketplaceRequest = getLatestMarketplaceApprovalRequest(record.id);
+  const marketplaceStatus = marketplaceListing
+    ? `<span class="badge ${marketplaceListing.archived ? "badge-frozen" : "badge-approved"}"><i class="fa-solid fa-${marketplaceListing.archived ? "box-archive" : "store"}"></i> ${marketplaceListing.archived ? "Archived Listing" : "Listed"}</span>`
+    : marketplaceRequest?.status === "pending"
+      ? '<span class="badge badge-pending"><i class="fa-solid fa-clock"></i> Pending Applicant Approval</span>'
+      : marketplaceRequest?.status === "declined"
+        ? '<span class="badge badge-rejected"><i class="fa-solid fa-xmark"></i> Declined by Applicant</span>'
+        : '<span class="badge badge-pending"><i class="fa-solid fa-store-slash"></i> Not Listed</span>';
+  const marketplaceAction = marketplaceListing
+    ? `<button class="btn btn-outline-navy" onclick="showInnovationDetail(${marketplaceListing.id})"><i class="fa-solid fa-store"></i> View Listing</button>`
+    : marketplaceRequest?.status === "pending"
+      ? '<button class="btn btn-secondary" disabled><i class="fa-solid fa-clock"></i> Awaiting Applicant</button>'
+      : marketplaceRequest?.status === "declined"
+        ? `<button class="btn btn-primary" onclick="publishCertifiedRecordToMarketplace('${record.id}')"><i class="fa-solid fa-rotate-right"></i> Request Again</button>`
+        : `<button class="btn btn-primary" onclick="publishCertifiedRecordToMarketplace('${record.id}')"><i class="fa-solid fa-store"></i> Add to Marketplace</button>`;
   document.getElementById("modalTitle").textContent = "Certified IP Record";
   document.getElementById("modalBody").innerHTML = `
     <div class="detail-panel" style="box-shadow:none; border:1px solid var(--gray-100);">
@@ -15003,10 +15442,12 @@ window.viewCertifiedRecord = function(id) {
       <div class="detail-row"><span class="label">Date Filed</span><span class="value">${escapeHtml(record.date || "Not recorded")}</span></div>
       <div class="detail-row"><span class="label">Status</span><span class="value">${statusBadge(record.status)}</span></div>
       <div class="detail-row"><span class="label">Integrity</span><span class="value">${integrityFreezeUnlocked ? '<span class="badge badge-review"><i class="fa-solid fa-unlock"></i> Unlocked</span>' : '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span>'}</span></div>
+      <div class="detail-row"><span class="label">Marketplace</span><span class="value">${marketplaceStatus}</span></div>
       <div class="detail-row"><span class="label">Description</span><span class="value">${escapeHtml(record.description || "No description recorded.")}</span></div>
     </div>
     <div class="detail-actions" style="justify-content:flex-end; margin-top:18px;">
       <button class="btn btn-outline-navy" onclick="closeModal()">Close</button>
+      ${marketplaceAction}
       ${
         canEditCertifiedRecords()
           ? `<button class="btn btn-primary" onclick="editCertifiedRecord('${record.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit Record</button>`
@@ -16257,16 +16698,8 @@ window.toggleProfileDropdown = function () {
   if (dropdown) dropdown.classList.toggle("open", profileDropdownOpen);
   if (trigger) trigger.classList.toggle("active", profileDropdownOpen);
 
-  // Role-based visibility for profile shortcuts
-  const accountLink = document.getElementById("profileAccountLink");
-  const helpLink = document.getElementById("profileHelpLink");
-  const isApplicant = normalizeRole(currentRole) === "applicant";
-  if (accountLink) {
-    accountLink.style.display = isApplicant ? "flex" : "none";
-  }
-  if (helpLink) {
-    helpLink.style.display = isApplicant ? "flex" : "none";
-  }
+  updateBodyRoleClass();
+  updateProfileDropdownRoleVisibility();
 
   // Populate dynamic name if available
   const nameEl = document.getElementById("dropdownFullUserName");

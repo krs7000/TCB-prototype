@@ -154,7 +154,7 @@
                 </div>
               </div>
               <div class="profile-dropdown-body">
-                <a href="#" class="dropdown-item" id="profileAccountLink" onclick="navigateTo('user-profile')">
+                <a href="#" class="dropdown-item" id="profileAccountLink" data-applicant-only="true" onclick="navigateTo('user-profile')">
                   <i class="fa-solid fa-circle-user"></i>
                   <span>Account Details</span>
                 </a>
@@ -162,7 +162,7 @@
                   <i class="fa-solid fa-sliders"></i>
                   <span>Settings</span>
                 </a>
-                <div class="dropdown-item has-submenu" id="profileHelpLink">
+                <div class="dropdown-item has-submenu" id="profileHelpLink" data-applicant-only="true">
                   <div class="dropdown-item-main">
                     <i class="fa-solid fa-circle-question"></i>
                     <span>Help & Support</span>
@@ -724,6 +724,6 @@
 
   </div> <!-- End #app -->
 
-  <script src="app.js?v=25"></script>
+  <script src="app.js?v=30"></script>
 </body>
 </html>
