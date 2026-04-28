@@ -982,6 +982,7 @@ const DASHBOARD_ACCESS = {
   superadmin: [
     "admin-dashboard",
     "admin-submissions",
+    "messages",
     "submission-detail",
     "audit-log",
     "user-profile",
@@ -999,6 +1000,7 @@ const DASHBOARD_ACCESS = {
     "admin-dashboard",
     "admin-submissions",
     "reviewer-my-cases",
+    "messages",
     "submission-detail",
     "user-profile",
     "project-blueprint",
@@ -1006,6 +1008,7 @@ const DASHBOARD_ACCESS = {
   applicant: [
     "user-dashboard",
     "user-submissions",
+    "messages",
     "submission-detail",
     "user-profile",
     "patent-form",
@@ -1031,6 +1034,7 @@ const OPERATIONAL_AUDIT_MODULES = new Set([
   "Accounts",
   "Market Listing",
   "Announcements",
+  "Messages",
 ]);
 const REVIEWER_ASSIGNMENTS = {
   "PSU-COP-2026-007": 4,
@@ -1778,6 +1782,7 @@ function navigateTo(page, isBack = false, params = null) {
     "admin-dashboard",
     "admin-submissions",
     "reviewer-my-cases",
+    "messages",
     "patent-form",
    
     "copyright-form",
@@ -2036,18 +2041,23 @@ function renderNotifications() {
 
   list.innerHTML = roleNotifs
     .map(
-      (n) => `
-    <div class="notif-item ${n.read ? "" : "unread"}" onclick="showToast('Notification: ${n.title}')">
+      (n) => {
+        const clickAction = n.caseId
+          ? `openCaseChat('${n.caseId}')`
+          : `showToast(${JSON.stringify(`Notification: ${n.title}`)})`;
+        return `
+    <div class="notif-item ${n.read ? "" : "unread"}" onclick="${clickAction}">
       <div class="notif-icon" style="background:${n.color}15; color:${n.color}">
         <i class="fa-solid ${n.icon}"></i>
       </div>
       <div class="notif-info">
-        <div class="notif-title">${n.title}</div>
-        <div class="notif-body">${n.body}</div>
-        <div class="notif-time">${n.time}</div>
+        <div class="notif-title">${escapeHtml(n.title)}</div>
+        <div class="notif-body">${escapeHtml(n.body)}</div>
+        <div class="notif-time">${escapeHtml(n.time)}</div>
       </div>
     </div>
-  `,
+  `;
+      },
     )
     .join("");
 }
@@ -2783,6 +2793,7 @@ function renderSidebar() {
     superadmin: [
       { page: "admin-dashboard", icon: "fa-chart-line", text: "Dashboard" },
       { page: "admin-submissions", icon: "fa-inbox", text: "All Submissions" },
+      { page: "messages", icon: "fa-comments", text: "Chat Monitor" },
       { page: "admin-records", icon: "fa-folder-open", text: "IP Records" },
       { page: "admin-marketplace", icon: "fa-store", text: "Market Listing" },
       { page: "admin-users", icon: "fa-users", text: "User Manager" },
@@ -2796,10 +2807,12 @@ function renderSidebar() {
       { page: "admin-dashboard", icon: "fa-microscope", text: "Dashboard" },
       { page: "admin-submissions", icon: "fa-inbox", text: "Cases" },
       { page: "reviewer-my-cases", icon: "fa-briefcase", text: "My Cases" },
+      { page: "messages", icon: "fa-comments", text: "Messages" },
     ],
     applicant: [
       { page: "user-dashboard", icon: "fa-house", text: "Home" },
       { page: "user-submissions", icon: "fa-file-lines", text: "My Cases" },
+      { page: "messages", icon: "fa-comments", text: "Messages" },
       { page: "forms-dash", icon: "fa-folder-open", text: "Forms" },
       { page: "marketplace-dash", icon: "fa-shop", text: "Marketplace" },
       { page: "notifications", icon: "fa-bell", text: "Notification" },
@@ -2824,9 +2837,12 @@ function renderSidebar() {
 
     if (topNav) {
       topNav.innerHTML = `
-        ${mainItems.map(m => `
-          <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="top-nav-link">${m.text === "Dashboard" ? "Home" : m.text}</a>
-        `).join('')}
+        ${mainItems.map((m) => {
+          const badge = m.page === "messages" ? renderChatNavBadge() : "";
+          return `
+          <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="top-nav-link">${m.text === "Dashboard" ? "Home" : m.text}${badge}</a>
+        `;
+        }).join('')}
       `;
     }
   } else {
@@ -2835,12 +2851,15 @@ function renderSidebar() {
     if (topNav) topNav.innerHTML = "";
     nav.innerHTML = menu
       .map(
-        (m) => `
+        (m) => {
+          const badge = m.page === "messages" ? renderChatNavBadge() : "";
+          return `
       <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}">
         <i class="fa-solid ${m.icon}"></i>
-        <span class="nav-text">${m.text}</span>
+        <span class="nav-text">${m.text}${badge}</span>
       </a>
-    `,
+    `;
+        },
       )
       .join("");
   }
@@ -3265,6 +3284,9 @@ function renderDashboardContent(page) {
     case "reviewer-my-cases":
       mc.innerHTML = renderReviewerMyCasesPage();
       break;
+    case "messages":
+      mc.innerHTML = renderMessagesPage();
+      break;
     case "admin-search":
       mc.innerHTML = renderAdminSubmissionsPage();
       break;
@@ -3366,6 +3388,535 @@ function renderDashboardContent(page) {
   }
 }
 
+// ===== CASE CHAT / MESSAGING =====
+// Mock chats/messages collection schema:
+// id, case_id, sender_id, receiver_id, sender_role, message_text,
+// attachment_url, attachment_type, created_at, is_read
+function renderChatNavBadge() {
+  const count = getUnreadChatCount();
+  return count > 0 ? `<span class="chat-nav-badge">${count}</span>` : "";
+}
+
+function getSubmissionApplicantUser(submission) {
+  if (!submission) return null;
+  return (
+    systemUsers.find((user) => user.email && user.email === submission.email) ||
+    systemUsers.find((user) => user.name === submission.applicant) ||
+    systemUsers.find(
+      (user) =>
+        normalizeRole(user.role) === "applicant" &&
+        String(submission.applicant || "")
+          .toLowerCase()
+          .includes(String(user.name || "").toLowerCase()),
+    ) ||
+    null
+  );
+}
+
+function getChatUserName(userId) {
+  return systemUsers.find((user) => user.id === userId)?.name || "System User";
+}
+
+function getCaseChatAvailability(submission) {
+  if (!submission) {
+    return { available: false, message: "Case not found." };
+  }
+  const assignedReviewerId = getAssignedReviewerId(submission);
+  if (!assignedReviewerId) {
+    return {
+      available: false,
+      message: "Chat will be available once an evaluator takes your case.",
+    };
+  }
+  if (!getSubmissionApplicantUser(submission)) {
+    return {
+      available: false,
+      message: "Chat is unavailable because the applicant account could not be matched.",
+    };
+  }
+  if (!systemUsers.find((user) => user.id === assignedReviewerId)) {
+    return {
+      available: false,
+      message: "Chat is unavailable because the assigned evaluator account could not be found.",
+    };
+  }
+  return { available: true, message: "" };
+}
+
+function canAccessCaseChat(submission, role = currentRole) {
+  if (!submission) return false;
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === "superadmin" || normalizedRole === "admin") return true;
+  if (normalizedRole === "applicant") return isOwnSubmission(submission, role);
+  if (normalizedRole === "reviewer") {
+    return getAssignedReviewerId(submission) === getCurrentUser(role).id;
+  }
+  return false;
+}
+
+function canSendCaseChat(submission, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  return (
+    (normalizedRole === "applicant" || normalizedRole === "reviewer") &&
+    canAccessCaseChat(submission, role) &&
+    getCaseChatAvailability(submission).available
+  );
+}
+
+function getChatReceiverId(submission, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === "applicant") return getAssignedReviewerId(submission);
+  if (normalizedRole === "reviewer") return getSubmissionApplicantUser(submission)?.id || null;
+  return null;
+}
+
+function getCaseChatMessages(caseId) {
+  return chatMessages
+    .filter((message) => message.case_id === caseId)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+}
+
+function getLastChatMessage(caseId) {
+  return getCaseChatMessages(caseId).slice(-1)[0] || null;
+}
+
+function getUnreadChatCount(role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole !== "applicant" && normalizedRole !== "reviewer") return 0;
+  const user = getCurrentUser(role);
+  return chatMessages.filter((message) => {
+    if (message.receiver_id !== user.id || message.is_read) return false;
+    const submission = submissions.find((s) => s.id === message.case_id);
+    return canAccessCaseChat(submission, role);
+  }).length;
+}
+
+function getUnreadChatCountForCase(caseId, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole !== "applicant" && normalizedRole !== "reviewer") return 0;
+  const user = getCurrentUser(role);
+  return chatMessages.filter(
+    (message) =>
+      message.case_id === caseId &&
+      message.receiver_id === user.id &&
+      !message.is_read,
+  ).length;
+}
+
+function markCaseChatRead(caseId) {
+  const normalizedRole = normalizeRole(currentRole);
+  if (normalizedRole !== "applicant" && normalizedRole !== "reviewer") return;
+  const user = getCurrentUser();
+  chatMessages.forEach((message) => {
+    if (message.case_id === caseId && message.receiver_id === user.id) {
+      message.is_read = true;
+    }
+  });
+}
+
+function getChatConversationCases(role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  let cases = [];
+  if (normalizedRole === "applicant") {
+    cases = getVisibleSubmissions("applicant").filter((s) => s.status !== "Draft");
+  } else if (normalizedRole === "reviewer") {
+    cases = submissions.filter((s) => getAssignedReviewerId(s) === getCurrentUser(role).id);
+  } else if (normalizedRole === "superadmin" || normalizedRole === "admin") {
+    cases = submissions.filter(
+      (s) => getAssignedReviewerId(s) || chatMessages.some((message) => message.case_id === s.id),
+    );
+  }
+
+  return cases.sort((a, b) => {
+    const aLast = getLastChatMessage(a.id);
+    const bLast = getLastChatMessage(b.id);
+    return new Date(bLast?.created_at || b.date || 0) - new Date(aLast?.created_at || a.date || 0);
+  });
+}
+
+function formatChatDateTime(value) {
+  if (!value) return "Just now";
+  return new Date(value).toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatFileSize(bytes = 0) {
+  if (!bytes) return "Unknown size";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getChatAttachmentType(file) {
+  return file.type.startsWith("image/") ? "image" : "file";
+}
+
+function validateChatFile(file) {
+  if (!file) return { valid: true };
+  const lowerName = file.name.toLowerCase();
+  const hasSafeExtension = CHAT_ALLOWED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+  const hasSafeMime = CHAT_ALLOWED_MIME_TYPES.includes(file.type);
+  if (!hasSafeExtension || (file.type && !hasSafeMime)) {
+    return {
+      valid: false,
+      message: "Only JPG, PNG, PDF, and DOCX files are allowed.",
+    };
+  }
+  if (file.size > CHAT_MAX_FILE_SIZE) {
+    return {
+      valid: false,
+      message: "File is too large. Maximum upload size is 5 MB.",
+    };
+  }
+  return { valid: true };
+}
+
+function renderChatAttachment(attachment) {
+  if (!attachment || !attachment.attachment_url) return "";
+  const name = escapeHtml(attachment.attachment_name || "Attachment");
+  const size = formatFileSize(attachment.attachment_size);
+  if (attachment.attachment_type === "image") {
+    return `
+      <a class="chat-image-attachment" href="${attachment.attachment_url}" target="_blank" rel="noopener noreferrer">
+        <img src="${attachment.attachment_url}" alt="${name}" />
+      </a>
+      <div class="chat-file-meta">${name} - ${size}</div>
+    `;
+  }
+  return `
+    <div class="chat-file-attachment">
+      <div class="chat-file-icon"><i class="fa-solid fa-file-lines"></i></div>
+      <div class="chat-file-info">
+        <strong>${name}</strong>
+        <span>${size}</span>
+      </div>
+      <a class="btn btn-sm btn-outline-navy" href="${attachment.attachment_url}" download="${name}">
+        <i class="fa-solid fa-download"></i> Download
+      </a>
+    </div>
+  `;
+}
+
+function renderDraftChatAttachment(caseId) {
+  const draft = chatDraftAttachments[caseId];
+  if (!draft) return "";
+  return `
+    <div class="chat-draft-attachment">
+      ${draft.attachment_type === "image" ? `<img src="${draft.attachment_url}" alt="${escapeHtml(draft.attachment_name)}" />` : `<i class="fa-solid fa-file-lines"></i>`}
+      <div>
+        <strong>${escapeHtml(draft.attachment_name)}</strong>
+        <span>${formatFileSize(draft.attachment_size)}</span>
+      </div>
+      <button type="button" onclick="clearChatAttachment('${caseId}')" title="Remove attachment"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  `;
+}
+
+function renderCaseChatButton(submission) {
+  if (!canAccessCaseChat(submission)) return "";
+  const role = normalizeRole(currentRole);
+  const unread = getUnreadChatCountForCase(submission.id);
+  const label = role === "superadmin" || role === "admin" ? "View Chat History" : "Chat";
+  return `
+    <button class="btn btn-outline-navy btn-sm case-chat-btn" onclick="openCaseChat('${submission.id}')">
+      <i class="fa-solid fa-comments"></i> ${label}
+      ${unread ? `<span class="chat-button-badge">${unread}</span>` : ""}
+    </button>
+  `;
+}
+
+function renderChatConversationList(cases, activeCaseId) {
+  if (!cases.length) {
+    return `
+      <div class="chat-empty-state">
+        <i class="fa-solid fa-comments"></i>
+        <h3>No conversations yet</h3>
+        <p>Case chat threads will appear here once a submitted case is available.</p>
+      </div>
+    `;
+  }
+
+  return cases
+    .map((submission) => {
+      const last = getLastChatMessage(submission.id);
+      const unread = getUnreadChatCountForCase(submission.id);
+      const availability = getCaseChatAvailability(submission);
+      const counterpart =
+        normalizeRole(currentRole) === "applicant"
+          ? getAssignedReviewer(submission)?.name || "Evaluator pending"
+          : getSubmissionApplicantUser(submission)?.name || submission.applicant;
+      return `
+        <button class="chat-thread-item ${activeCaseId === submission.id ? "active" : ""}" onclick="openCaseChat('${submission.id}')">
+          <div class="chat-thread-top">
+            <strong>${escapeHtml(submission.id)}</strong>
+            ${unread ? `<span>${unread}</span>` : ""}
+          </div>
+          <div class="chat-thread-title">${escapeHtml(submission.title)}</div>
+          <div class="chat-thread-meta">${escapeHtml(counterpart)} - ${typeBadge(submission.type)}</div>
+          <p>${last ? escapeHtml(last.message_text || last.attachment_name || "Attachment sent") : availability.available ? "No messages yet." : availability.message}</p>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderChatThread(submission) {
+  if (!submission || !canAccessCaseChat(submission)) {
+    return `
+      <div class="chat-empty-state">
+        <i class="fa-solid fa-lock"></i>
+        <h3>Access Restricted</h3>
+        <p>You can only view conversations for cases that belong to you or are assigned to you.</p>
+      </div>
+    `;
+  }
+
+  const role = normalizeRole(currentRole);
+  const availability = getCaseChatAvailability(submission);
+  const messages = getCaseChatMessages(submission.id);
+  const applicant = getSubmissionApplicantUser(submission);
+  const reviewer = getAssignedReviewer(submission);
+  const counterpart =
+    role === "applicant"
+      ? reviewer?.name || "Evaluator pending"
+      : applicant?.name || submission.applicant;
+  const readOnly = role === "superadmin" || role === "admin";
+  const canSend = canSendCaseChat(submission);
+  const safeId = submission.id.replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  return `
+    <div class="chat-panel">
+      <div class="chat-panel-header">
+        <div>
+          <div class="chat-case-kicker">${escapeHtml(submission.id)} - ${escapeHtml(submission.type)}</div>
+          <h2>${escapeHtml(submission.title)}</h2>
+          <p>${readOnly ? "Monitoring view" : `Conversation with ${escapeHtml(counterpart)}`}</p>
+        </div>
+        <div class="chat-header-actions">
+          ${statusBadge(submission.status)}
+          ${readOnly ? '<span class="badge badge-review"><i class="fa-solid fa-eye"></i> Audit only</span>' : ""}
+        </div>
+      </div>
+
+      ${
+        availability.available
+          ? ""
+          : `<div class="chat-unavailable"><i class="fa-solid fa-circle-info"></i> ${availability.message}</div>`
+      }
+
+      <div class="chat-message-area" id="chatMessageArea-${safeId}">
+        ${
+          messages.length
+            ? messages
+                .map((message) => {
+                  const isMine = message.sender_id === getCurrentUser().id && role !== "superadmin";
+                  return `
+                    <div class="chat-message ${isMine ? "mine" : "theirs"}">
+                      <div class="chat-bubble">
+                        <div class="chat-message-head">
+                          <strong>${escapeHtml(getChatUserName(message.sender_id))}</strong>
+                          <span>${formatChatDateTime(message.created_at)}</span>
+                        </div>
+                        ${message.message_text ? `<div class="chat-message-text">${escapeHtml(message.message_text)}</div>` : ""}
+                        ${renderChatAttachment(message)}
+                        <div class="chat-message-status">${isMine ? (message.is_read ? "Seen" : "Sent") : "Seen"}</div>
+                      </div>
+                    </div>
+                  `;
+                })
+                .join("")
+            : `<div class="chat-empty-state compact"><i class="fa-solid fa-message"></i><p>No messages yet for this case.</p></div>`
+        }
+      </div>
+
+      ${
+        canSend
+          ? `<div class="chat-composer">
+              ${renderDraftChatAttachment(submission.id)}
+              <div class="chat-composer-row">
+                <button type="button" class="chat-file-button" onclick="document.getElementById('chatFileInput-${safeId}').click()" title="Attach file">
+                  <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <input id="chatFileInput-${safeId}" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" onchange="selectChatAttachment(this, '${submission.id}')" />
+                <textarea id="chatMessageInput-${safeId}" placeholder="Write a message about this case..."></textarea>
+                <button type="button" class="btn btn-primary" onclick="sendChatMessage('${submission.id}')">
+                  <i class="fa-solid fa-paper-plane"></i> Send
+                </button>
+              </div>
+              <div class="chat-upload-hint">Allowed: JPG, PNG, PDF, DOCX. Maximum size: 5 MB.</div>
+            </div>`
+          : readOnly
+            ? `<div class="chat-readonly-note"><i class="fa-solid fa-eye"></i> Admin monitoring is read-only. Messages cannot be sent from this view.</div>`
+            : ""
+      }
+    </div>
+  `;
+}
+
+function renderMessagesPage() {
+  const role = normalizeRole(currentRole);
+  const requestedCaseId = currentParams.caseId || "";
+  let cases = getChatConversationCases(role);
+  let activeCase =
+    cases.find((submission) => submission.id === requestedCaseId) ||
+    (requestedCaseId
+      ? submissions.find((submission) => submission.id === requestedCaseId && canAccessCaseChat(submission))
+      : null) ||
+    cases[0] ||
+    null;
+
+  if (activeCase && !cases.some((submission) => submission.id === activeCase.id)) {
+    cases = [activeCase, ...cases];
+  }
+
+  if (activeCase) {
+    currentParams.caseId = activeCase.id;
+    markCaseChatRead(activeCase.id);
+  }
+
+  const title =
+    role === "reviewer"
+      ? "Messages"
+      : role === "applicant"
+        ? "Case Messages"
+        : "Chat Monitoring";
+  const subtitle =
+    role === "reviewer"
+      ? "Reply to applicants for cases assigned to you."
+      : role === "applicant"
+        ? "Talk with the assigned evaluator for each submitted case."
+        : "Read-only monitoring of applicant and evaluator conversations.";
+
+  return `
+    ${renderBackNav()}
+    <div class="page-header">
+      <h1><i class="fa-solid fa-comments"></i> ${title}</h1>
+      <p>${subtitle}</p>
+    </div>
+    <div class="chat-shell">
+      <aside class="chat-thread-list">
+        <div class="chat-thread-list-header">
+          <strong>Conversations</strong>
+          ${getUnreadChatCount() ? `<span>${getUnreadChatCount()} unread</span>` : ""}
+        </div>
+        ${renderChatConversationList(cases, activeCase?.id || "")}
+      </aside>
+      <section class="chat-workspace">
+        ${
+          activeCase
+            ? renderChatThread(activeCase)
+            : `<div class="chat-empty-state"><i class="fa-solid fa-comments"></i><h3>Select a conversation</h3><p>No eligible case conversations are available yet.</p></div>`
+        }
+      </section>
+    </div>
+  `;
+}
+
+window.openCaseChat = function(caseId) {
+  navigateTo("messages", false, { caseId });
+};
+
+window.selectChatAttachment = function(input, caseId) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const result = validateChatFile(file);
+  if (!result.valid) {
+    input.value = "";
+    showToast(result.message);
+    return;
+  }
+  const attachmentUrl =
+    typeof URL !== "undefined" && URL.createObjectURL
+      ? URL.createObjectURL(file)
+      : "#";
+  chatDraftAttachments[caseId] = {
+    attachment_url: attachmentUrl,
+    attachment_type: getChatAttachmentType(file),
+    attachment_name: file.name,
+    attachment_size: file.size,
+  };
+  renderDashboardContent("messages");
+};
+
+window.clearChatAttachment = function(caseId) {
+  delete chatDraftAttachments[caseId];
+  renderDashboardContent("messages");
+};
+
+function pushChatNotification(receiverId, submission, preview) {
+  const receiver = systemUsers.find((user) => user.id === receiverId);
+  if (!receiver) return;
+  const receiverRole = normalizeRole(receiver.role);
+  if (receiverRole !== "applicant" && receiverRole !== "reviewer") return;
+  mockNotifications[receiverRole].unshift({
+    id: Date.now(),
+    userId: receiver.id,
+    icon: "fa-comment-dots",
+    color: "#3b82f6",
+    title: `New message: ${submission.id}`,
+    body: `${getCurrentUser().name}: ${preview || "Attachment sent"}`,
+    time: "Just now",
+    read: false,
+    caseId: submission.id,
+  });
+}
+
+window.sendChatMessage = function(caseId) {
+  const submission = submissions.find((s) => s.id === caseId);
+  if (!canSendCaseChat(submission)) {
+    showToast("You cannot send messages in this case chat.");
+    return;
+  }
+  const safeId = caseId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const input = document.getElementById(`chatMessageInput-${safeId}`);
+  const text = (input?.value || "").trim();
+  const attachment = chatDraftAttachments[caseId] || null;
+  if (!text && !attachment) {
+    showToast("Enter a message or attach a file before sending.");
+    return;
+  }
+
+  const sender = getCurrentUser();
+  const receiverId = getChatReceiverId(submission);
+  if (!receiverId) {
+    showToast("No eligible receiver found for this case.");
+    return;
+  }
+
+  chatMessages.push({
+    id: Date.now(),
+    case_id: caseId,
+    sender_id: sender.id,
+    receiver_id: receiverId,
+    sender_role: normalizeRole(currentRole),
+    message_text: text,
+    attachment_url: attachment?.attachment_url || "",
+    attachment_type: attachment?.attachment_type || "",
+    attachment_name: attachment?.attachment_name || "",
+    attachment_size: attachment?.attachment_size || 0,
+    created_at: new Date().toISOString(),
+    is_read: false,
+  });
+
+  delete chatDraftAttachments[caseId];
+  pushChatNotification(receiverId, submission, text || attachment?.attachment_name);
+  addAuditLog({
+    accountName: sender.name,
+    action: "Sent Chat Message",
+    record: caseId,
+    details: `Sent a case-linked message${attachment ? ` with attachment ${attachment.attachment_name}` : ""}.`,
+    module: "Messages",
+  });
+  showToast("Message sent.");
+  renderSidebar();
+  renderDashboardContent("messages");
+};
+
 // Badges deduplicated above.
 
 // ===== USER DASHBOARD =====
@@ -3384,6 +3935,7 @@ function renderUserDashboard() {
   const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
   const paymentRequested = userSubmissions.filter((s) => s.status === "Payment Requested").length;
   const recent = userSubmissions.filter(s => s.status !== 'Draft').slice(0, 3);
+  const unreadMessages = getUnreadChatCount("applicant");
 
   // Stats clicking helper
   window.goToFilteredSubmissions = function(status) {
@@ -3406,6 +3958,15 @@ function renderUserDashboard() {
         <div class="action-card-content">
           <h3>Register New IP</h3>
           <p>Begin a new submission for Patent, Utility Model, Industrial Design, or Copyright.</p>
+        </div>
+        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+
+      <div class="action-card" onclick="navigateTo('messages')">
+        <div class="action-card-icon"><i class="fa-solid fa-comments"></i></div>
+        <div class="action-card-content">
+          <h3>Messages ${unreadMessages ? `<span class="chat-button-badge">${unreadMessages}</span>` : ""}</h3>
+          <p>Chat with the assigned evaluator for your submitted cases.</p>
         </div>
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
@@ -4733,6 +5294,112 @@ let securityKeyVisibility = {
   backup: false,
 };
 let integrityFreezeUnlocked = false;
+let certifiedDemoRecords = [
+  {
+    id: "PSU-PAT-2026-101",
+    type: "Patent",
+    title: "MarineTrack Autonomous Reef Monitoring Buoy",
+    applicant: "Dr. Maria Santos",
+    department: "College of Engineering",
+    status: "Approved",
+    date: "2026-02-18",
+    description: "Autonomous buoy system for monitoring reef temperature, turbidity, and salinity.",
+  },
+  {
+    id: "PSU-ID-2026-044",
+    type: "Industrial Design",
+    title: "Palawan Green Seal Product Label Layout",
+    applicant: "PSU Innovation Office",
+    department: "IPTTO",
+    status: "Approved",
+    date: "2026-02-07",
+    description: "Protected product-label layout for PSU-supported sustainable products and services.",
+  },
+  {
+    id: "PSU-COP-2026-087",
+    type: "Copyright",
+    title: "Mangrove Atlas of Southern Palawan",
+    applicant: "Dr. Liza Manalo",
+    department: "College of Sciences",
+    status: "Approved",
+    date: "2026-01-30",
+    description: "Illustrated academic atlas documenting mangrove zones and conservation notes.",
+  },
+  {
+    id: "PSU-UM-2026-032",
+    type: "Utility Model",
+    title: "Modular Bamboo Drying Rack",
+    applicant: "Engr. Paolo Reyes",
+    department: "College of Engineering",
+    status: "Approved",
+    date: "2026-01-16",
+    description: "Collapsible bamboo rack designed for small-scale agricultural drying.",
+  },
+  {
+    id: "PSU-ID-2026-018",
+    type: "Industrial Design",
+    title: "Ergonomic Fisherfolk Sorting Tray",
+    applicant: "Prof. Ana Villanueva",
+    department: "College of Arts",
+    status: "Approved",
+    date: "2026-01-04",
+    description: "Ergonomic tray design for faster seafood sorting in coastal communities.",
+  },
+];
+
+let chatMessages = [
+  {
+    id: 1,
+    case_id: "PSU-PAT-2026-002",
+    sender_id: 9,
+    receiver_id: 3,
+    sender_role: "applicant",
+    message_text: "Good day, Engr. Tan. I uploaded the pest detector diagrams. Please let me know if you need a clearer copy.",
+    attachment_url: "",
+    attachment_type: "",
+    attachment_name: "",
+    attachment_size: 0,
+    created_at: "2026-04-28T09:18:00+08:00",
+    is_read: true,
+  },
+  {
+    id: 2,
+    case_id: "PSU-PAT-2026-002",
+    sender_id: 3,
+    receiver_id: 9,
+    sender_role: "reviewer",
+    message_text: "Thanks, Juan. Please send the latest sensor calibration sheet before I complete the technical review.",
+    attachment_url: "",
+    attachment_type: "",
+    attachment_name: "",
+    attachment_size: 0,
+    created_at: "2026-04-28T10:05:00+08:00",
+    is_read: false,
+  },
+  {
+    id: 3,
+    case_id: "PSU-COP-2026-002",
+    sender_id: 9,
+    receiver_id: 3,
+    sender_role: "applicant",
+    message_text: "Sharing the updated campus map screenshot for review.",
+    attachment_url: "images/marinetrack_software.png",
+    attachment_type: "image",
+    attachment_name: "campus-map-preview.png",
+    attachment_size: 428000,
+    created_at: "2026-04-28T11:42:00+08:00",
+    is_read: false,
+  },
+];
+let chatDraftAttachments = {};
+const CHAT_ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".pdf", ".docx"];
+const CHAT_ALLOWED_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+const CHAT_MAX_FILE_SIZE = 5 * 1024 * 1024;
 let userFilterType = "All",
   userFilterStatus = "All",
   userSearchQuery = "",
@@ -5569,6 +6236,7 @@ function renderSubmissionDetail() {
 
   const normalizedRole = normalizeRole(currentRole);
   const frozen = s.status === "Approved";
+  const certifiedMetadataEditable = frozen && canEditCertifiedRecords();
   const paymentVerified = s.paymentVerified === true;
   const formTypeKey = getFormTypeKeyFromSubmissionType(s.type);
   const requiredUploadedCount = getUploadedRequiredCount(formTypeKey, s);
@@ -5618,7 +6286,8 @@ function renderSubmissionDetail() {
     <div class="page-header">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <h1 style="margin:0">${s.title}</h1>
-        ${frozen ? '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen for Certification</span>' : ""}
+        ${frozen ? `<span class="badge ${certifiedMetadataEditable ? "badge-review" : "badge-frozen"}"><i class="fa-solid fa-${certifiedMetadataEditable ? "unlock" : "lock"}"></i> ${certifiedMetadataEditable ? "Integrity Unlocked" : "Frozen for Certification"}</span>` : ""}
+        ${renderCaseChatButton(s)}
       </div>
       <p style="margin-top:8px">Submission Detail - ${s.id} &bull; Filed ${s.date}</p>
     </div>
@@ -5639,9 +6308,12 @@ function renderSubmissionDetail() {
 
     ${
       frozen
-        ? `<div style="padding:14px 20px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
-      <i class="fa-solid fa-lock" style="color:#6366f1; font-size:1.2rem;"></i>
-      <div><strong style="color:#4f46e5;">Metadata Frozen</strong><p style="font-size:.85rem; color:var(--gray-500); margin:2px 0 0;">Per system policy, the core technical metadata of this approved submission has been locked and cannot be altered by administrators.</p></div>
+        ? `<div style="padding:14px 20px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px; justify-content:space-between; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <i class="fa-solid fa-${certifiedMetadataEditable ? "unlock" : "lock"}" style="color:#6366f1; font-size:1.2rem;"></i>
+        <div><strong style="color:#4f46e5;">${certifiedMetadataEditable ? "Metadata Editing Enabled" : "Metadata Frozen"}</strong><p style="font-size:.85rem; color:var(--gray-500); margin:2px 0 0;">${certifiedMetadataEditable ? "The integrity layer is unlocked. Authorized admins can edit approved record metadata, and changes are audit logged." : "Per system policy, the core technical metadata of this approved submission has been locked and cannot be altered by administrators."}</p></div>
+      </div>
+      ${certifiedMetadataEditable ? `<button class="btn btn-primary btn-sm" onclick="editCertifiedRecord('${s.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit Certified Metadata</button>` : ""}
     </div>`
         : ""
     }
@@ -14077,6 +14749,10 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                   <button class="btn btn-sm btn-outline-navy" style="width:100%; justify-content:center;" onclick="viewSubmission('${s.id}')">
                     <i class="fa-solid fa-circle-info"></i> Full Details & History
                   </button>
+                  <button class="btn btn-sm btn-outline-navy" style="width:100%; justify-content:center; margin-top:8px;" onclick="openCaseChat('${s.id}')">
+                    <i class="fa-solid fa-comments"></i> Chat
+                    ${getUnreadChatCountForCase(s.id) ? `<span class="chat-button-badge">${getUnreadChatCountForCase(s.id)}</span>` : ""}
+                  </button>
                   ${
                     s.status === "Draft"
                       ? `
@@ -14245,31 +14921,203 @@ function renderProfile() {
 }
 
 function renderAdminRecords() {
-  const approved = submissions.filter((s) => s.status === "Approved");
+  const approved = getCertifiedAdminRecords();
+  const canEditRecords = canEditCertifiedRecords();
   return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties — metadata is locked for integrity.</p></div>
     <div style="padding:12px 18px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-shield-halved" style="color:#6366f1; font-size:1.1rem;"></i>
       <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; width:100%; flex-wrap:wrap;">
         <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> — All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions unless the integrity layer is unlocked with a Primary Key or Backup Key.</p>
-        <button class="btn btn-outline-navy btn-sm" onclick="unlockIntegrityFreeze()"><i class="fa-solid fa-key"></i> ${integrityFreezeUnlocked ? "Integrity Freeze Unlocked" : "Unlock Integrity Freeze"}</button>
+        <button class="btn btn-outline-navy btn-sm" onclick="unlockIntegrityFreeze()"><i class="fa-solid fa-${integrityFreezeUnlocked ? "lock" : "key"}"></i> ${integrityFreezeUnlocked ? "Lock Integrity Freeze" : "Unlock Integrity Freeze"}</button>
       </div>
     </div>
-    <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th></tr></thead><tbody>
+    <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th><th>Actions</th></tr></thead><tbody>
       ${approved
         .map(
           (s) => `<tr>
-        <td>${s.id}</td>
+        <td>${escapeHtml(s.id)}</td>
         <td>${typeBadge(s.type)}</td>
-        <td>${s.title}</td>
-        <td>${s.applicant}</td>
-        <td>${s.department}</td>
+        <td>${escapeHtml(s.title)}</td>
+        <td>${escapeHtml(s.applicant)}</td>
+        <td>${escapeHtml(s.department)}</td>
         <td>${statusBadge(s.status)}</td>
-        <td><span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span></td>
+        <td>${integrityFreezeUnlocked ? '<span class="badge badge-review"><i class="fa-solid fa-unlock"></i> Unlocked</span>' : '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span>'}</td>
+        <td><div class="action-btns">
+          <button class="btn btn-sm btn-outline-navy" onclick="viewCertifiedRecord('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
+          ${
+            canEditRecords
+              ? `<button class="btn btn-sm btn-primary" onclick="editCertifiedRecord('${s.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`
+              : `<button class="btn btn-sm btn-secondary" disabled title="Unlock Integrity Freeze to edit certified metadata"><i class="fa-solid fa-lock"></i> Edit</button>`
+          }
+        </div></td>
       </tr>`,
         )
         .join("")}
     </tbody></table></div></div>`;
 }
+
+function canEditCertifiedRecords(role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  return (
+    integrityFreezeUnlocked &&
+    (normalizedRole === "superadmin" || normalizedRole === "admin")
+  );
+}
+
+function getCertifiedAdminRecords() {
+  const approvedSubmissions = submissions
+    .filter((s) => s.status === "Approved")
+    .map((s) => ({ ...s, source: "submission" }));
+  return [
+    ...approvedSubmissions,
+    ...certifiedDemoRecords.map((record) => ({
+      ...record,
+      source: "certified-demo",
+    })),
+  ];
+}
+
+function findCertifiedRecord(id) {
+  const submission = submissions.find((s) => s.id === id && s.status === "Approved");
+  if (submission) return { record: submission, source: "submission" };
+  const demoRecord = certifiedDemoRecords.find((record) => record.id === id);
+  if (demoRecord) return { record: demoRecord, source: "certified-demo" };
+  return null;
+}
+
+window.viewCertifiedRecord = function(id) {
+  const match = findCertifiedRecord(id);
+  if (!match) {
+    showToast("Certified record not found.");
+    return;
+  }
+  const record = match.record;
+  document.getElementById("modalTitle").textContent = "Certified IP Record";
+  document.getElementById("modalBody").innerHTML = `
+    <div class="detail-panel" style="box-shadow:none; border:1px solid var(--gray-100);">
+      <div class="detail-row"><span class="label">Reference</span><span class="value">${escapeHtml(record.id)}</span></div>
+      <div class="detail-row"><span class="label">Type</span><span class="value">${typeBadge(record.type)}</span></div>
+      <div class="detail-row"><span class="label">Title</span><span class="value">${escapeHtml(record.title)}</span></div>
+      <div class="detail-row"><span class="label">Owner</span><span class="value">${escapeHtml(record.applicant)}</span></div>
+      <div class="detail-row"><span class="label">Department</span><span class="value">${escapeHtml(record.department)}</span></div>
+      <div class="detail-row"><span class="label">Date Filed</span><span class="value">${escapeHtml(record.date || "Not recorded")}</span></div>
+      <div class="detail-row"><span class="label">Status</span><span class="value">${statusBadge(record.status)}</span></div>
+      <div class="detail-row"><span class="label">Integrity</span><span class="value">${integrityFreezeUnlocked ? '<span class="badge badge-review"><i class="fa-solid fa-unlock"></i> Unlocked</span>' : '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span>'}</span></div>
+      <div class="detail-row"><span class="label">Description</span><span class="value">${escapeHtml(record.description || "No description recorded.")}</span></div>
+    </div>
+    <div class="detail-actions" style="justify-content:flex-end; margin-top:18px;">
+      <button class="btn btn-outline-navy" onclick="closeModal()">Close</button>
+      ${
+        canEditCertifiedRecords()
+          ? `<button class="btn btn-primary" onclick="editCertifiedRecord('${record.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit Record</button>`
+          : `<button class="btn btn-secondary" disabled title="Unlock Integrity Freeze to edit certified metadata"><i class="fa-solid fa-lock"></i> Edit Locked</button>`
+      }
+    </div>`;
+  document.getElementById("modalOverlay").classList.add("active");
+};
+
+window.editCertifiedRecord = function(id) {
+  const match = findCertifiedRecord(id);
+  if (!match) {
+    showToast("Certified record not found.");
+    return;
+  }
+  if (!canEditCertifiedRecords()) {
+    showToast("Unlock the Integrity Freeze before editing certified records.");
+    return;
+  }
+  const record = match.record;
+  const typeOptions = [
+    "Patent",
+    "Copyright",
+    "Utility Model",
+    "Industrial Design",
+  ];
+  document.getElementById("modalTitle").textContent = "Edit Certified Record";
+  document.getElementById("modalBody").innerHTML = `
+    <form onsubmit="saveCertifiedRecordEdit(event, '${record.id}')">
+      <div class="form-group">
+        <label>Reference</label>
+        <input type="text" value="${escapeHtml(record.id)}" disabled />
+      </div>
+      <div class="form-group">
+        <label for="certifiedEditType">Type</label>
+        <select id="certifiedEditType" name="type" required>
+          ${typeOptions
+            .map(
+              (type) =>
+                `<option value="${type}" ${record.type === type ? "selected" : ""}>${type}</option>`,
+            )
+            .join("")}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="certifiedEditTitle">Title</label>
+        <input id="certifiedEditTitle" name="title" type="text" value="${escapeHtml(record.title)}" required />
+      </div>
+      <div class="form-group">
+        <label for="certifiedEditApplicant">Owner</label>
+        <input id="certifiedEditApplicant" name="applicant" type="text" value="${escapeHtml(record.applicant)}" required />
+      </div>
+      <div class="form-group">
+        <label for="certifiedEditDepartment">Department</label>
+        <input id="certifiedEditDepartment" name="department" type="text" value="${escapeHtml(record.department)}" required />
+      </div>
+      <div class="form-group">
+        <label for="certifiedEditDate">Date Filed</label>
+        <input id="certifiedEditDate" name="date" type="date" value="${escapeHtml(record.date || "")}" />
+      </div>
+      <div class="form-group">
+        <label for="certifiedEditDescription">Description</label>
+        <textarea id="certifiedEditDescription" name="description" style="min-height:110px;">${escapeHtml(record.description || "")}</textarea>
+      </div>
+      <div style="padding:12px 14px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:18px;">
+        <strong style="color:#4f46e5;">Integrity Freeze Unlocked</strong>
+        <p style="font-size:.8rem; color:var(--gray-500); margin:4px 0 0;">Saving this form updates the approved record metadata and writes an audit log entry.</p>
+      </div>
+      <div class="detail-actions" style="justify-content:flex-end;">
+        <button type="button" class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+      </div>
+    </form>`;
+  document.getElementById("modalOverlay").classList.add("active");
+};
+
+window.saveCertifiedRecordEdit = function(event, id) {
+  event.preventDefault();
+  const match = findCertifiedRecord(id);
+  if (!match || !canEditCertifiedRecords()) {
+    showToast("Certified record cannot be edited while integrity is locked.");
+    return;
+  }
+
+  const form = event.currentTarget;
+  const previousTitle = match.record.title;
+  match.record.type = form.elements.type.value;
+  match.record.title = form.elements.title.value.trim();
+  match.record.applicant = form.elements.applicant.value.trim();
+  match.record.department = form.elements.department.value.trim();
+  match.record.date = form.elements.date.value;
+  match.record.description = form.elements.description.value.trim();
+  match.record.status = "Approved";
+
+  if (match.source === "submission") {
+    match.record.formType = getFormTypeKeyFromSubmissionType(match.record.type);
+    syncSubmissionWorkflowState(match.record);
+  }
+
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Edited Certified Record",
+    record: match.record.id,
+    details: `Updated certified metadata for "${previousTitle}".`,
+    module: match.record.type,
+  });
+
+  closeModal();
+  showToast("Certified record updated.");
+  renderDashboardContent(currentPage === "submission-detail" ? "submission-detail" : "admin-records");
+};
 
 function renderInterestsList() {
   if (userInterests.length === 0) {
@@ -14572,7 +15420,14 @@ function legacyRenderCreateAccount() {
     <div class="detail-panel" style="max-width:640px">
       <h3><i class="fa-solid fa-id-card"></i> New User Details</h3>
       <div class="form-row">
-        <div class="form-group"><label>Full Name *</label><input type="text" id="newUserName" placeholder="Enter full name" /></div>
+        <div class="form-group"><label>First Name *</label><input type="text" id="newUserFirstName" placeholder="Enter first name" /></div>
+        <div class="form-group"><label>Middle Name <span style="font-weight:500; color:var(--gray-400);">(optional)</span></label><input type="text" id="newUserMiddleName" placeholder="Enter middle name" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Last Name *</label><input type="text" id="newUserLastName" placeholder="Enter last name" /></div>
+        <div class="form-group"><label>Suffix <span style="font-weight:500; color:var(--gray-400);">(optional)</span></label><input type="text" id="newUserSuffix" placeholder="Jr., Sr., III" /></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Email *</label><input type="email" id="newUserEmail" placeholder="user@psu.edu.ph" /></div>
       </div>
       <div class="form-row">
@@ -14596,14 +15451,18 @@ function legacyRenderCreateAccount() {
 }
 
 function legacyCreateNewAccount() {
-  const name = document.getElementById("newUserName").value;
+  const firstName = document.getElementById("newUserFirstName").value.trim();
+  const middleName = document.getElementById("newUserMiddleName").value.trim();
+  const lastName = document.getElementById("newUserLastName").value.trim();
+  const suffix = document.getElementById("newUserSuffix").value.trim();
+  const name = buildDisplayName(firstName, middleName, lastName, suffix);
   const email = document.getElementById("newUserEmail").value;
   const dept = document.getElementById("newUserDept").value;
   const role = document.getElementById("newUserRole").value;
   const pass = document.getElementById("newUserPass").value;
   const passC = document.getElementById("newUserPassConfirm").value;
 
-  if (!name || !email || !role || !pass) {
+  if (!firstName || !lastName || !email || !role || !pass) {
     showToast("Please fill in all required fields");
     return;
   }
@@ -14625,6 +15484,10 @@ function legacyCreateNewAccount() {
   const newUser = {
     id: systemUsers.length + 1,
     name,
+    firstName,
+    middleName,
+    lastName,
+    suffix,
     email,
     role,
     dept: finalDept,
@@ -14797,7 +15660,14 @@ function renderCreateAccount() {
     <div class="detail-panel" style="max-width:640px">
       <h3><i class="fa-solid fa-id-card"></i> New User Details</h3>
       <div class="form-row">
-        <div class="form-group"><label>Full Name *</label><input type="text" id="newUserName" placeholder="Enter full name" /></div>
+        <div class="form-group"><label>First Name *</label><input type="text" id="newUserFirstName" placeholder="Enter first name" /></div>
+        <div class="form-group"><label>Middle Name <span style="font-weight:500; color:var(--gray-400);">(optional)</span></label><input type="text" id="newUserMiddleName" placeholder="Enter middle name" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Last Name *</label><input type="text" id="newUserLastName" placeholder="Enter last name" /></div>
+        <div class="form-group"><label>Suffix <span style="font-weight:500; color:var(--gray-400);">(optional)</span></label><input type="text" id="newUserSuffix" placeholder="Jr., Sr., III" /></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Email *</label><input type="email" id="newUserEmail" placeholder="user@psu.edu.ph" /></div>
       </div>
       <div class="form-group">
@@ -14839,14 +15709,28 @@ window.toggleSpecialistTypeVisibility = function(role) {
   }
 };
 
+function buildDisplayName(firstName, middleName, lastName, suffix) {
+  const baseName = [firstName, middleName, lastName]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" ");
+  const trimmedSuffix = suffix.trim();
+  return trimmedSuffix ? `${baseName} ${trimmedSuffix}` : baseName;
+}
+
 function createNewAccount() {
-  const name = document.getElementById("newUserName").value.trim();
+  const firstName = document.getElementById("newUserFirstName").value.trim();
+  const middleName = document.getElementById("newUserMiddleName").value.trim();
+  const lastName = document.getElementById("newUserLastName").value.trim();
+  const suffix = document.getElementById("newUserSuffix").value.trim();
+  const name = buildDisplayName(firstName, middleName, lastName, suffix);
   const email = document.getElementById("newUserEmail").value.trim();
-  const role = normalizeRole(document.getElementById("newUserRole").value);
+  const rawRole = document.getElementById("newUserRole").value;
+  const role = rawRole ? normalizeRole(rawRole) : "";
   const pass = document.getElementById("newUserPass").value;
   const passC = document.getElementById("newUserPassConfirm").value;
 
-  if (!name || !email || !role || !pass) {
+  if (!firstName || !lastName || !email || !role || !pass) {
     showToast("Please fill in all required fields");
     return;
   }
@@ -14876,6 +15760,10 @@ function createNewAccount() {
   const newUser = {
     id: Math.max(...systemUsers.map((user) => user.id)) + 1,
     name,
+    firstName,
+    middleName,
+    lastName,
+    suffix,
     email,
     role,
     dept:
@@ -15167,6 +16055,20 @@ window.toggleSecurityKeyVisibility = function(type) {
 };
 
 window.unlockIntegrityFreeze = function() {
+  if (integrityFreezeUnlocked) {
+    integrityFreezeUnlocked = false;
+    addAuditLog({
+      accountName: getCurrentUser().name,
+      action: "Locked Integrity Freeze",
+      record: "Certified Records Archive",
+      details: "Re-enabled certified record metadata protection.",
+      module: "IP Records",
+    });
+    showToast("Integrity Freeze locked.");
+    renderDashboardContent(currentPage === "submission-detail" ? "submission-detail" : "admin-records");
+    return;
+  }
+
   const enteredKey = prompt(
     "Enter the Primary Key or Backup Key to unlock the Integrity Freeze:",
     "",
@@ -15175,8 +16077,15 @@ window.unlockIntegrityFreeze = function() {
   const { primary, backup } = getSystemSecurityKeys();
   if (enteredKey === primary || enteredKey === backup) {
     integrityFreezeUnlocked = true;
+    addAuditLog({
+      accountName: getCurrentUser().name,
+      action: "Unlocked Integrity Freeze",
+      record: "Certified Records Archive",
+      details: "Temporarily enabled editing for approved certified record metadata.",
+      module: "IP Records",
+    });
     showToast("Integrity Freeze unlocked successfully.");
-    renderDashboardContent("admin-records");
+    renderDashboardContent(currentPage === "submission-detail" ? "submission-detail" : "admin-records");
     return;
   }
   showToast("Invalid key. Integrity Freeze remains locked.");
