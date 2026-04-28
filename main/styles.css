@@ -1,4 +1,4 @@
-/* =============== RESET & BASE =============== */
+﻿/* =============== RESET & BASE =============== */
 *,
 *::before,
 *::after {
@@ -2562,11 +2562,13 @@ body.compact-layout .sidebar-toggle {
   align-items: center;
   gap: 16px;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 4px solid transparent;
 }
 .stat-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 20px 42px rgba(255, 127, 80, 0.12);
   border-color: rgba(255, 127, 80, 0.22);
+  border-left-color: var(--accent, var(--gold));
 }
 .stat-card-icon {
   width: 52px;
@@ -5477,12 +5479,13 @@ body.compact-layout .sidebar-toggle {
   padding: 18px;
   background: var(--gray-50);
   border-radius: var(--radius-sm);
-  border-left: 4px solid var(--gold);
+  border-left: 4px solid transparent;
   transition: var(--transition);
 }
 .tutorial-step:hover {
   background: rgba(255, 127, 80, 0.06);
   transform: translateX(4px);
+  border-left-color: var(--gold);
 }
 .step-badge {
   min-width: 56px;
@@ -5700,7 +5703,7 @@ body.compact-layout .sidebar-toggle {
   position: relative;
 }
 .guide-docs li::before {
-  content: "✓";
+  content: "âœ“";
   position: absolute;
   left: 0;
   color: var(--green);
@@ -6387,7 +6390,7 @@ body.compact-layout .sidebar-toggle {
     width: 280px;
     right: -120px;
   }
-  /* IP Tutorial grid → single column on mobile */
+  /* IP Tutorial grid â†’ single column on mobile */
   [style*="grid-template-columns:1fr 1fr 1fr"] {
     display: flex !important;
     flex-direction: column !important;
@@ -7400,3 +7403,49 @@ body.compact-layout .sidebar-toggle {
 .submenu-item:hover { background: rgba(255, 127, 80, 0.06); color: var(--gold-dark); }
 .submenu-item i { font-size: 0.95rem; width: 18px; text-align: center; color: var(--gray-400); }
 .submenu-item:hover i { color: var(--gold-dark); }
+
+
+.mp-type-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.mp-type-btn {
+  padding: 12px 24px;
+  border-radius: 100px;
+  border: 2px solid var(--gray-100);
+  background: white;
+  color: var(--gray-500);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mp-type-btn i {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+.mp-type-btn:hover {
+  border-color: var(--gold-light);
+  color: var(--gold-dark);
+  transform: translateY(-2px);
+  background: var(--gray-50);
+}
+.mp-type-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: white;
+  box-shadow: 0 10px 20px -5px rgba(212, 175, 55, 0.4);
+}
+.mp-type-btn.active i {
+  opacity: 1;
+}
+
+.marketplace-layout.no-sidebar {
+  grid-template-columns: 1fr;
+}

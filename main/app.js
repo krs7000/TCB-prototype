@@ -19,6 +19,16 @@ let notifOpen = false;
 let pendingSignupData = null; // Holds signup data during OTP verification
 let pendingParams = {};
 let pendingAction = null; // Stores action to perform after login/signup
+let currentMpType = "All";
+
+window.setMpType = function(type) {
+  currentMpType = type;
+  document.querySelectorAll('.mp-type-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  filterMarketplace();
+};
+
 const ROLE_ALIASES = {
   superadmin: "superadmin",
   "Admin": "superadmin",
@@ -1874,7 +1884,8 @@ function navigateTo(page, isBack = false, params = null) {
   const pubBack = document.getElementById("ui-back-btn-public");
   const dashBack = document.getElementById("ui-back-btn-dashboard");
   const topbarRight = document.querySelector(".topbar-right");
-  const showBack = navHistory.length > 0 && page !== "landing";
+  const NO_BACK_PAGES = ["landing", "forms", "marketplace", "faq", "guidelines", "contact", "about", "news"];
+  const showBack = navHistory.length > 0 && !NO_BACK_PAGES.includes(page);
   const userRole = normalizeRole(currentRole);
   
   if (pubBack) pubBack.style.display = showBack ? "block" : "none";
@@ -3399,16 +3410,6 @@ function renderUserDashboard() {
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
 
-      <div class="action-card" onclick="showPaymentGuideModal()">
-        <div class="action-card-icon"><i class="fa-solid fa-map-location-dot"></i></div>
-        <div class="action-card-content">
-          <h3>PSU Campus Map</h3>
-          <p>View the campus map and instructions on where to pay.</p>
-        </div>
-        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-
-
     </div>
 
     <div class="page-header" style="margin-bottom: 24px;">
@@ -3418,7 +3419,7 @@ function renderUserDashboard() {
 
     <div class="dashboard-stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:24px; margin-bottom:40px;">
       <!-- Payment Card -->
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; border-left: 4px solid var(--blue);" onclick="goToFilteredSubmissions('Payment Requested')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; --accent: var(--blue);" onclick="goToFilteredSubmissions('Payment Requested')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="width:48px; height:48px; border-radius:12px; background:var(--blue-light); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
           <i class="fa-solid fa-credit-card"></i>
         </div>
@@ -3429,7 +3430,7 @@ function renderUserDashboard() {
       </div>
 
       <!-- Rejected Card -->
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; border-left: 4px solid var(--red);" onclick="goToFilteredSubmissions('Rejected')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; --accent: var(--red);" onclick="goToFilteredSubmissions('Rejected')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="width:48px; height:48px; border-radius:12px; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
           <i class="fa-solid fa-circle-xmark"></i>
         </div>
@@ -3440,7 +3441,7 @@ function renderUserDashboard() {
       </div>
 
       <!-- Action Needed Card -->
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 10px 20px -10px rgba(239,68,68,0.2); cursor:pointer; transition: transform 0.2s; border-left: 4px solid #ef4444;" onclick="goToFilteredSubmissions('ActionRequired')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 10px 20px -10px rgba(239,68,68,0.2); cursor:pointer; transition: transform 0.2s; --accent: #ef4444;" onclick="goToFilteredSubmissions('ActionRequired')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="width:48px; height:48px; border-radius:12px; background:#ef444415; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
           <i class="fa-solid fa-circle-exclamation"></i>
         </div>
@@ -3451,7 +3452,7 @@ function renderUserDashboard() {
       </div>
 
       <!-- Saved Draft Card -->
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; border-left: 4px solid var(--gray-500);" onclick="goToFilteredSubmissions('Draft')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; --accent: var(--gray-500);" onclick="goToFilteredSubmissions('Draft')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="width:48px; height:48px; border-radius:12px; background:var(--gray-100); color:var(--gray-600); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
           <i class="fa-solid fa-file-pen"></i>
         </div>
@@ -5944,7 +5945,7 @@ function renderIpGuidelines(filterId = null) {
   ];
 
   return `
-    ${renderBackNav()}
+
     <div class="page-header" style="margin-bottom:36px">
       <span class="m-eyebrow" style="display:block; margin-bottom:12px;">Pre-Filing Intelligence</span>
       <h1 style="color:var(--navy); font-weight:800; font-size:2.2rem;"><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:12px"></i>${filterId ? types.find(t => t.id === filterId).title + ' Guidelines' : 'IP Application Guidelines'}</h1>
@@ -11465,6 +11466,7 @@ function captureIndustrialGoogleData() {
 }
 
 function renderFormWizard(title) {
+  /* 
   if (isPatentGoogleFlow()) {
     return renderPatentGoogleForm();
   }
@@ -11477,6 +11479,7 @@ function renderFormWizard(title) {
   if (isIndustrialGoogleFlow()) {
     return renderIndustrialGoogleForm();
   }
+  */
 
   let steps = [
     "Applicant Info",
@@ -12775,18 +12778,17 @@ window.confirmCancellation = function(id) {
 
 // ===== SUBMISSION METHOD SELECTION =====
 window.showSubmissionMethodModal = function(typeId) {
+  // If it's not Copyright, skip the choice and go straight to online form
+  if (typeId !== 'copyright-form') {
+    startSubmissionFlow(typeId, 'online');
+    return;
+  }
+
   const overlay = document.getElementById('modalOverlay');
   const modalBody = document.getElementById('modalBody');
   const modalTitle = document.getElementById('modalTitle');
-  
-  const typeMap = {
-    'patent-form': 'Patent Application',
-    'copyright-form': 'Copyright Registration',
-    'utility-form': 'Utility Model Registration',
-    'industrial-form': 'Industrial Design Registration'
-  };
-  
-  const title = typeMap[typeId] || "New Submission";
+
+  const title = "Copyright Registration";
   modalTitle.innerText = "How would you like to proceed?";
   modalTitle.style.display = "block";
 
@@ -13474,22 +13476,41 @@ window.archiveMarketListing = function(id) {
 function renderMarketplace() {
   const activeMarketplaceItems = marketplaceItems.filter((item) => !item.archived);
   return `
-    ${renderBackNav("landing", "Home")}
-    <div class="page-header"><h1>Innovation Marketplace</h1><p>Discover and connect with PSU innovations and research outputs.</p></div>
-    <div class="marketplace-layout">
-      <div class="filter-panel">
-        <h3><i class="fa-solid fa-filter"></i> Filters</h3>
-        <div class="filter-group"><label>Type</label>
-          <select id="mpFilterType" onchange="filterMarketplace()"><option value="All">All Types</option><option>Patent</option><option>Utility Model</option><option>Industrial Design</option><option>Copyright</option></select></div>
-        <div class="filter-group"><label>College</label>
-          <select id="mpFilterCollege" onchange="filterMarketplace()"><option value="All">All Colleges</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option></select></div>
-      </div>
+    <div class="page-header">
+
+      <h1>Innovation Marketplace</h1>
+      <p>Discover and connect with PSU innovations and research outputs.</p>
+    </div>
+
+    <div class="mp-type-filters">
+      <button class="mp-type-btn ${currentMpType === 'All' ? 'active' : ''}" data-type="All" onclick="setMpType('All')">
+        <i class="fa-solid fa-layer-group"></i> All Types
+      </button>
+      <button class="mp-type-btn ${currentMpType === 'Patent' ? 'active' : ''}" data-type="Patent" onclick="setMpType('Patent')">
+        <i class="fa-solid fa-lightbulb"></i> Patent
+      </button>
+      <button class="mp-type-btn ${currentMpType === 'Utility Model' ? 'active' : ''}" data-type="Utility Model" onclick="setMpType('Utility Model')">
+        <i class="fa-solid fa-gears"></i> Utility Model
+      </button>
+      <button class="mp-type-btn ${currentMpType === 'Industrial Design' ? 'active' : ''}" data-type="Industrial Design" onclick="setMpType('Industrial Design')">
+        <i class="fa-solid fa-pen-nib"></i> Industrial Design
+      </button>
+      <button class="mp-type-btn ${currentMpType === 'Copyright' ? 'active' : ''}" data-type="Copyright" onclick="setMpType('Copyright')">
+        <i class="fa-solid fa-copyright"></i> Copyright
+      </button>
+    </div>
+
+    <div class="marketplace-layout no-sidebar">
       <div>
-        <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="mpSearch" placeholder="Search innovations..." oninput="filterMarketplace()" /></div>
+        <div class="search-box" style="margin-bottom: 32px;">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="mpSearch" placeholder="Search by title, inventor, or description..." oninput="filterMarketplace()" />
+        </div>
         <div class="innovation-grid" id="innovationGrid">${renderInnovationCards(activeMarketplaceItems)}</div>
       </div>
     </div>`;
 }
+
 
 function renderInnovationCards(items) {
   return items
@@ -13509,8 +13530,9 @@ function renderInnovationCards(items) {
 }
 
 function filterMarketplace() {
-  const type = document.getElementById("mpFilterType")?.value || "All";
-  const college = document.getElementById("mpFilterCollege")?.value || "All";
+  const type = currentMpType;
+  const college = "All";
+
   const search = document.getElementById("mpSearch")?.value.toLowerCase() || "";
   let filtered = marketplaceItems.filter((item) => {
     if (item.archived) return false;
@@ -15245,8 +15267,8 @@ function renderForms() {
   ];
 
   return `
-    ${renderBackNav("landing", "Home")}
     <div class="page-header" style="margin-bottom:24px; text-align:center;">
+
       <span class="m-eyebrow" style="display:inline-block; margin-bottom:12px;">Official Documentation</span>
       <h1 style="color:var(--navy); font-weight:900; font-size:2.8rem; margin:0; letter-spacing:-0.5px;">Institutional Forms</h1>
       <p style="color:var(--gray-500); font-size:1.1rem; margin-top:12px; max-width:600px; margin-left:auto; margin-right:auto;">Access the complete repository of pre-filing documents and official registration forms for all IP categories.</p>
