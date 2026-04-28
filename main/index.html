@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Creator's Bulwark — PSU IP Management System</title>
-  <meta name="description" content="Palawan State University's centralized Intellectual Property Management System for patents, trademarks, copyrights, utility models, and industrial designs." />
+  <meta name="description" content="Palawan State University's centralized Intellectual Property Management System for patents, copyrights, utility models, and industrial designs." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -58,32 +58,6 @@
                 </div>
               </div>
               <div class="nav-item-sub-dropdown">
-                <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-stamp"></i> Trademark <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
-                <div class="sub-dropdown-content">
-                  <div class="nav-item-sub-sub-dropdown">
-                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Trademark <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
-                    <div class="sub-sub-dropdown-content">
-                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('trademark-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
-                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('trademark-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
-                    </div>
-                  </div>
-                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'trademark' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
-                </div>
-              </div>
-              <div class="nav-item-sub-dropdown">
-                <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-copyright"></i> Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
-                <div class="sub-dropdown-content">
-                  <div class="nav-item-sub-sub-dropdown">
-                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
-                    <div class="sub-sub-dropdown-content">
-                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
-                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
-                    </div>
-                  </div>
-                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'copyright' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
-                </div>
-              </div>
-              <div class="nav-item-sub-dropdown">
                 <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-gears"></i> Utility Model <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
                 <div class="sub-dropdown-content">
                   <div class="nav-item-sub-sub-dropdown">
@@ -107,6 +81,19 @@
                     </div>
                   </div>
                   <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'industrial' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
+                </div>
+              </div>
+              <div class="nav-item-sub-dropdown">
+                <a href="javascript:void(0)" class="dropdown-item sub-trigger"><i class="fa-solid fa-copyright"></i> Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
+                <div class="sub-dropdown-content">
+                  <div class="nav-item-sub-sub-dropdown">
+                    <a href="javascript:void(0)" class="dropdown-item sub-trigger-sub"><i class="fa-solid fa-file-circle-plus"></i> Register Copyright <i class="fa-solid fa-chevron-right" style="font-size: 0.6rem; margin-left: auto; opacity: 0.5;"></i></a>
+                    <div class="sub-sub-dropdown-content">
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'upload')"><i class="fa-solid fa-file-arrow-up"></i> Upload Completed Form</a>
+                      <a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'online')"><i class="fa-solid fa-pen-to-square"></i> Fill Out Online Form</a>
+                    </div>
+                  </div>
+                  <a href="javascript:void(0)" onclick="navigateTo('guidelines', false, { serviceId: 'copyright' })"><i class="fa-solid fa-book-open"></i> Guidelines</a>
                 </div>
               </div>
             </div>
@@ -263,7 +250,7 @@
           <div class="hero-content">
             <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> PALAWAN STATE UNIVERSITY</div>
             <h1 class="hero-title">The Creator's<br/><span class="hero-highlight">Bulwark</span></h1>
-            <p class="hero-tagline">A multi-tiered pre-filing system for the PSU community and external partners. Securely manage patents, trademarks, and copyrights through one institutional platform designed for researchers everywhere.</p>
+            <p class="hero-tagline">A multi-tiered pre-filing system for the PSU community and external partners. Securely manage patents and copyrights through one institutional platform designed for researchers everywhere.</p>
             <div class="hero-cta">
               <button class="btn btn-primary btn-lg" onclick="navigateTo('login')"><i class="fa-solid fa-file-circle-plus"></i> Start a Submission</button>
             </div>
@@ -401,7 +388,7 @@
               <h4>Services</h4>
               <ul>
                 <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('patent-form', 'upload')">Patent Filing</a></li>
-                <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('trademark-form', 'upload')">Trademark Registration</a></li>
+
                 <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('copyright-form', 'upload')">Copyright Protection</a></li>
                 <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('utility-form', 'upload')">Utility Model Registration</a></li>
                 <li><a href="javascript:void(0)" onclick="initiateDirectRegistration('industrial-form', 'upload')">Industrial Design Registration</a></li>
@@ -590,34 +577,10 @@
           </div>
 
 
-          <!-- Step 1: Role Selection -->
-          <div id="signup-step-1">
-            <p style="text-align:center; margin-bottom:24px; color:var(--gray-600); font-weight:600;">Select your account type</p>
-            <div class="role-selection-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-              <div class="role-option-card" onclick="selectSignUpRole('psu_member')">
-                <div class="role-icon"><i class="fa-solid fa-building-columns"></i></div>
-                <div class="role-info">
-                  <h4>PSU Community</h4>
-                  <p>Students, faculty, and staff of Palawan State University</p>
-                </div>
-              </div>
-              <div class="role-option-card" onclick="selectSignUpRole('outsider')">
-                <div class="role-icon"><i class="fa-solid fa-user-group"></i></div>
-                <div class="role-info">
-                  <h4>External Users</h4>
-                  <p>Non-PSU researchers, professionals, or visitors</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Step 2: Details (Hidden by default) -->
-          <div id="signup-step-2" style="display:none;">
-            <button class="btn-step-back" onclick="goBackToStep1()">
-              <i class="fa-solid fa-arrow-left"></i> Change Status
-            </button>
+          <!-- Account Details (Step 1 is now removed) -->
+          <div id="signup-step-2">
             <form id="signupForm" onsubmit="handleSignUp(event)">
-              <input type="hidden" id="regType" value="" />
+              <input type="hidden" id="regType" value="applicant" />
               
               <div class="form-group">
                 <label for="regUsername">Username</label>
