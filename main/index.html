@@ -162,6 +162,31 @@
                   <i class="fa-solid fa-circle-user"></i>
                   <span>Account Details</span>
                 </a>
+                <div class="dropdown-item has-submenu" id="profileSettingsLink" data-applicant-only="true">
+                  <div class="dropdown-item-main">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                    <i class="fa-solid fa-chevron-right submenu-arrow"></i>
+                  </div>
+                  <div class="profile-submenu">
+                    <a href="#" class="submenu-item" onclick="event.preventDefault(); navigateTo('user-settings', false, { settingsSection: 'notifications' })">
+                      <i class="fa-solid fa-bell"></i>
+                      <span>Notifications</span>
+                    </a>
+                    <a href="#" class="submenu-item" onclick="event.preventDefault(); navigateTo('user-settings', false, { settingsSection: 'security' })">
+                      <i class="fa-solid fa-shield-halved"></i>
+                      <span>Security</span>
+                    </a>
+                    <a href="#" class="submenu-item" onclick="event.preventDefault(); navigateTo('user-settings', false, { settingsSection: 'privacy' })">
+                      <i class="fa-solid fa-user-lock"></i>
+                      <span>Privacy</span>
+                    </a>
+                    <a href="#" class="submenu-item" onclick="event.preventDefault(); navigateTo('user-settings', false, { settingsSection: 'workspace' })">
+                      <i class="fa-solid fa-folder-open"></i>
+                      <span>Filing Workspace</span>
+                    </a>
+                  </div>
+                </div>
                 <div class="dropdown-item has-submenu" id="profileHelpLink" data-applicant-only="true">
                   <div class="dropdown-item-main">
                     <i class="fa-solid fa-circle-question"></i>
@@ -177,7 +202,7 @@
                       <i class="fa-solid fa-book-open"></i>
                       <span>IP Guidelines</span>
                     </a>
-                    <a href="#" class="submenu-item" onclick="navigateTo('contact-dash')">
+                    <a href="#" class="submenu-item" onclick="event.preventDefault(); navigateTo('contact-dash')">
                       <i class="fa-solid fa-envelope"></i>
                       <span>Contact Us</span>
                     </a>
@@ -747,6 +772,6 @@
 
   </div> <!-- End #app -->
 
-  <script src="app.js?v=49"></script>
+  <script src="app.js?v=54"></script>
 </body>
 </html>

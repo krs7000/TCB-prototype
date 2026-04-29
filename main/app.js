@@ -81,8 +81,8 @@ const mockNotifications = {
       id: 202,
       icon: "fa-triangle-exclamation",
       color: "#ef4444",
-      title: "Urgent: Fee Verification",
-      body: "Payment verification is pending for 3 priority applications.",
+      title: "Urgent: Review Queue",
+      body: "Priority applications are waiting for reviewer action.",
       time: "1 hour ago",
       read: false,
     },
@@ -254,7 +254,7 @@ let submissions = [
     type: "Patent",
     title: "Portable Soil Analyzer",
     applicant: "Juan dela Cruz",
-    status: "Payment Requested",
+    status: "Under Review",
     date: "2026-02-10",
     department: "College of Sciences",
     description: "Handheld device for real-time soil nutrient analysis."
@@ -350,7 +350,7 @@ let submissions = [
     type: "Copyright",
     title: "Local Legends Anthology",
     applicant: "Juan dela Cruz",
-    status: "Payment Requested",
+    status: "Under Review",
     date: "2026-02-15",
     department: "College of Arts",
     description: "Compilation of oral traditions from northern Palawan."
@@ -529,7 +529,7 @@ const marketplaceItems = [
       "A modular bag system that converts from a heavy-duty backpack to a display stall or a lightweight hauler, optimized for the ergonomic needs of itinerant vendors.",
     features: [
       "Waterproof high-denier fabric resistant to wet-market environments.",
-      "Hidden compartments for secure cash handling and receipts.",
+      "Hidden compartments for secure storage of small vendor essentials.",
       "Load-balancing straps that reduce spinal fatigue during 8-hour shifts.",
     ],
     businessPotential:
@@ -1054,6 +1054,7 @@ const DASHBOARD_ACCESS = {
     "messages",
     "submission-detail",
     "user-profile",
+    "user-settings",
     "patent-form",
     "copyright-form",
     "utility-form",
@@ -1065,6 +1066,7 @@ const DASHBOARD_ACCESS = {
     "marketplace-dash",
     "filing-hub",
     "forms-dash",
+    "contact-dash",
   ],
 };
 
@@ -1093,18 +1095,12 @@ const COPYRIGHT_CASE_OVERRIDES = {
     registrationLane: "Copyright",
     officialDutyWork: false,
     letterRequestApproved: false,
-    paymentExempt: false,
-    paymentVerified: false,
-    officialReceiptNumber: "Pending cashier receipt",
     copyrightStage: "technical-review",
   },
   "PSU-COP-2026-005": {
     registrationLane: "ISBN",
     officialDutyWork: true,
     letterRequestApproved: true,
-    paymentExempt: true,
-    paymentVerified: true,
-    officialReceiptNumber: "Fee-waived routing",
     certificateNumber: "NL-COR-2026-0105",
     copyrightStage: "certificate-released",
   },
@@ -1112,9 +1108,6 @@ const COPYRIGHT_CASE_OVERRIDES = {
     registrationLane: "Copyright",
     officialDutyWork: true,
     letterRequestApproved: true,
-    paymentExempt: true,
-    paymentVerified: true,
-    officialReceiptNumber: "Fee-waived routing",
     copyrightStage: "ip-director-action",
   },
 };
@@ -1123,50 +1116,32 @@ const IPOPHL_CASE_OVERRIDES = {
   "PSU-PAT-2026-001": {
     officialDutyWork: false,
     letterRequestApproved: false,
-    paymentExempt: false,
-    paymentVerified: true,
-    officialReceiptNumber: "Official Receipt #2026-0115",
     ipophlStage: "certificate-released",
   },
 
   "PSU-PAT-2026-004": {
     officialDutyWork: false,
     letterRequestApproved: false,
-    paymentExempt: false,
-    paymentVerified: true,
-    officialReceiptNumber: "Official Receipt #2026-0301",
     ipophlStage: "technical-review",
   },
   "PSU-TM-2026-006": {
     officialDutyWork: true,
     letterRequestApproved: true,
-    paymentExempt: true,
-    paymentVerified: true,
-    officialReceiptNumber: "Fee-waived routing",
     ipophlStage: "mis-recording",
   },
   "PSU-PAT-2026-008": {
     officialDutyWork: false,
     letterRequestApproved: false,
-    paymentExempt: false,
-    paymentVerified: false,
-    officialReceiptNumber: "Pending cashier receipt",
     ipophlStage: "technical-review",
   },
   "PSU-UM-2026-009": {
     officialDutyWork: false,
     letterRequestApproved: false,
-    paymentExempt: false,
-    paymentVerified: true,
-    officialReceiptNumber: "Official Receipt #2026-0325",
     ipophlStage: "ip-director-action",
   },
   "PSU-ID-2026-010": {
     officialDutyWork: false,
     letterRequestApproved: false,
-    paymentExempt: false,
-    paymentVerified: false,
-    officialReceiptNumber: "Pending cashier receipt",
     ipophlStage: "technical-review",
   },
 };
@@ -1552,7 +1527,7 @@ const proposalBlueprint = {
   tags: [
     "Requirement Intelligence",
     "Administrative Mitigation Dashboard",
-    "Financial Verification Layer",
+    "Completeness Review Layer",
     "Innovation Marketplace",
     "Role-Based Access Control",
     "Manual IPOPHL relay",
@@ -1568,13 +1543,13 @@ const proposalBlueprint = {
       manual:
         "Paper-dependent intake and fragmented records slow down review and increase incomplete submissions.",
       system:
-        "A centralized Administrative Mitigation Dashboard gives the IP office one queue for submissions, payment checks, and manual review.",
+        "A centralized Administrative Mitigation Dashboard gives the IP office one queue for submissions, document checks, and manual review.",
     },
     {
       manual:
-        "Payment follow-up and submission completeness are handled through separate manual exchanges.",
+        "Requirement follow-up and submission completeness are handled through separate manual exchanges.",
       system:
-        "A conditional payment layer opens only after evaluator review, so applicants upload Proof of Payment only when it is specifically requested.",
+        "A structured follow-up layer keeps required corrections and missing documents inside the same review workspace.",
     },
     {
       manual:
@@ -1597,10 +1572,10 @@ const proposalBlueprint = {
         "Authorized personnel review digital packets, manage the processing queue, and monitor the institution-wide IP pipeline.",
     },
     {
-      icon: "fa-file-invoice-dollar",
-      title: "Financial Verification Layer",
+      icon: "fa-clipboard-check",
+      title: "Completeness Review Layer",
       description:
-        "Proof of Payment is requested only when the evaluator determines it is needed for the next processing step.",
+        "Reviewers track missing requirements and correction requests without sending applicants to a separate process.",
     },
     {
       icon: "fa-store",
@@ -1621,9 +1596,9 @@ const proposalBlueprint = {
         "Forms, technical artifacts, and supporting records are uploaded into one structured submission.",
     },
     {
-      title: "Verify financial readiness",
+      title: "Verify packet readiness",
       description:
-        "Receipt evidence is checked so incomplete packets do not move into the review queue.",
+        "Document completeness is checked so incomplete packets do not move into the review queue.",
     },
     {
       title: "Manual office review",
@@ -1780,7 +1755,6 @@ function statusBadge(status) {
     Pending: "badge-pending",
     "Under Review": "badge-review",
     Validated: "badge-approved",
-    "Payment Requested": "badge-pending",
     Rejected: "badge-rejected",
     Cancelled: "badge-rejected",
     "Awaiting Documents": "badge-review",
@@ -1889,6 +1863,7 @@ function navigateTo(page, isBack = false, params = null) {
     "admin-marketplace",
     "audit-log",
     "user-profile",
+    "user-settings",
     "user-submissions",
     "admin-records",
     "admin-users",
@@ -3332,7 +3307,6 @@ const APPLICANT_VISIBLE_STATUSES = [
   "Pending",
   "Under Review",
   "Validated",
-  "Payment Requested",
 ];
 
 function getRequiredDocumentsForType(formType = currentFormType) {
@@ -3429,91 +3403,6 @@ function getFormTypeKeyFromSubmissionType(type = "") {
     industrial: "industrial",
   };
   return map[normalized] || normalized || currentFormType || "patent";
-}
-
-function getPaymentProofFile(data = wizardData) {
-  return data.depositFile || data.paymentProofFile || null;
-}
-
-function renderConditionalPaymentUploadPanel(
-  data = wizardData,
-  {
-    inputId = "depositInput",
-    onChange = "handleDepositUpload(this)",
-    infoOnly = false,
-  } = {},
-) {
-  const isCopyrightPaymentContext =
-    (data === wizardData && currentFormType === "copyright") ||
-    data?.type === "Copyright";
-  if (isCopyrightPaymentContext) return "";
-
-  const paymentRequested = data.paymentRequested === true;
-  const paymentFile = getPaymentProofFile(data);
-
-  if (!paymentRequested) {
-    return `
-      <div style="padding:18px 20px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.14); border-radius:14px; display:flex; gap:12px; align-items:flex-start;">
-        <i class="fa-solid fa-circle-info" style="color:#2563eb; margin-top:2px;"></i>
-        <div>
-          <div style="font-size:0.9rem; font-weight:700; color:var(--navy);">Upload Proof of Payment</div>
-          <div style="font-size:0.82rem; color:var(--gray-500); line-height:1.6; margin-top:4px;">
-            Hidden by default. This upload appears only when an evaluator requests payment after reviewing your application.
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  const statusMarkup = paymentFile
-    ? `
-      <div style="margin-top:12px; padding:12px 14px; background:rgba(22,163,74,0.06); border:1px solid rgba(22,163,74,0.2); border-radius:10px; display:flex; align-items:center; gap:10px;">
-        <i class="fa-solid fa-circle-check" style="color:var(--green);"></i>
-        <div style="flex:1;">
-          <div style="font-size:0.88rem; font-weight:700; color:var(--navy);">${escapeHtml(paymentFile.name)}</div>
-          <div style="font-size:0.76rem; color:var(--gray-400);">Proof uploaded and awaiting evaluator verification.</div>
-        </div>
-        <span class="badge badge-review" style="font-size:0.66rem;">AWAITING REVIEW</span>
-      </div>
-    `
-    : "";
-
-  if (infoOnly) {
-    return `
-      <div style="padding:18px 20px; background:rgba(255,127,80,0.05); border:1px solid rgba(255,127,80,0.18); border-radius:14px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
-          <div style="display:flex; gap:12px; align-items:flex-start; flex:1;">
-            <i class="fa-solid fa-receipt" style="color:var(--gold-dark); margin-top:2px;"></i>
-            <div>
-              <div style="font-size:0.9rem; font-weight:700; color:var(--navy);">Payment Requested</div>
-              <div style="font-size:0.82rem; color:var(--gray-500); line-height:1.6; margin-top:4px;">
-                The evaluator has requested payment for this application. Upload proof of payment to continue the review cycle.
-              </div>
-            </div>
-          </div>
-        </div>
-        ${statusMarkup}
-      </div>
-    `;
-  }
-
-  return `
-    <div style="border:1.5px dashed var(--gold); border-radius:16px; padding:22px; background:rgba(255,127,80,0.04);">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
-        <div style="flex:1; min-width:280px;">
-          <h4 style="font-size:0.95rem; color:var(--navy); margin:0 0 6px;"><i class="fa-solid fa-receipt" style="color:var(--gold); margin-right:8px;"></i> Upload Proof of Payment</h4>
-          <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px; line-height:1.6;">
-            Payment was requested by the evaluator. Upload the receipt or proof of payment to move this case forward.
-          </p>
-        </div>
-        <button type="button" class="btn ${paymentFile ? "btn-outline-navy" : "btn-primary"} btn-sm" onclick="document.getElementById('${inputId}').click()">
-          <i class="fa-solid fa-${paymentFile ? "arrows-rotate" : "upload"}"></i> ${paymentFile ? "Replace Proof" : "Choose File"}
-        </button>
-      </div>
-      <input type="file" id="${inputId}" style="display:none" accept=".jpg,.jpeg,.png,.pdf" onchange="${onChange}" />
-      ${statusMarkup}
-    </div>
-  `;
 }
 
 function renderRequirementChecklistPanel(
@@ -3642,7 +3531,7 @@ function renderApplicantStatusLegend(activeStatus = "Pending") {
       }).join("")}
       ${
         activeStatus === "Approved"
-          ? `<div style="padding-top:6px; font-size:0.76rem; color:var(--green); font-weight:700;">Approved after validation and any requested payment review.</div>`
+          ? `<div style="padding-top:6px; font-size:0.76rem; color:var(--green); font-weight:700;">Approved after validation and final review.</div>`
           : ""
       }
     </div>
@@ -3774,6 +3663,9 @@ function renderDashboardContent(page) {
       break;
     case "user-profile":
       mc.innerHTML = renderProfile();
+      break;
+    case "user-settings":
+      mc.innerHTML = renderApplicantSettings();
       break;
     case "user-submissions":
       mc.innerHTML = renderUserSubmissions();
@@ -4538,7 +4430,6 @@ function renderUserDashboard() {
   const actionRequired = userSubmissions.filter((s) => s.status === "Awaiting Documents").length;
   const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
   const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
-  const paymentRequested = userSubmissions.filter((s) => s.status === "Payment Requested").length;
   const recent = userSubmissions.filter(s => s.status !== 'Draft').slice(0, 3);
   const unreadMessages = getUnreadChatCount("applicant");
 
@@ -4584,17 +4475,6 @@ function renderUserDashboard() {
     </div>
 
     <div class="dashboard-stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:24px; margin-bottom:40px;">
-      <!-- Payment Card -->
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; --accent: var(--blue);" onclick="goToFilteredSubmissions('Payment Requested')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="width:48px; height:48px; border-radius:12px; background:var(--blue-light); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
-          <i class="fa-solid fa-credit-card"></i>
-        </div>
-        <div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--navy); line-height:1;">${paymentRequested}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:500; margin-top:4px;">Payment</div>
-        </div>
-      </div>
-
       <!-- Rejected Card -->
       <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer; transition: transform 0.2s; --accent: var(--red);" onclick="goToFilteredSubmissions('Rejected')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="width:48px; height:48px; border-radius:12px; background:var(--red-light); color:var(--red); display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
@@ -5006,7 +4886,7 @@ function renderFaq() {
       },
       {
         q: "How long does patent protection last?",
-        a: "Patent protection is granted for a limited period, generally 20 years from the filing date of the application subject to the payment of annual maintenance fees.",
+        a: "Patent protection is granted for a limited period, generally 20 years from the filing date of the application subject to applicable legal requirements.",
       },
       {
         q: "What can be patented?",
@@ -5033,7 +4913,7 @@ function renderFaq() {
       },
       {
         q: "How does the PSU copyright route move?",
-        a: "The packet first goes to the reviewer for completeness checking, then to Admin for recording and payment-slip or fee-waiver routing, then to the cashier and back to Admin for OR recording before the super admin lane endorses filing with the National Library.",
+        a: "The packet first goes to the reviewer for completeness checking, then to Admin for recording before the super admin lane endorses filing with the National Library.",
       },
       {
         q: "How long does copyright last?",
@@ -5491,7 +5371,6 @@ function getRoleSpecificStats(role) {
       s.status === "Pending" ||
       s.status === "Under Review" ||
       s.status === "Validated" ||
-      s.status === "Payment Requested" ||
       s.status === "Awaiting Documents",
   ).length;
   const approvedCount = visibleSubmissions.filter(
@@ -5847,7 +5726,6 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
           <option value="Pending" ${(filterStatus || "") === "Pending" ? "selected" : ""}>Pending</option>
           <option value="Under Review" ${(filterStatus || "") === "Under Review" ? "selected" : ""}>Under Review</option>
           <option value="Validated" ${(filterStatus || "") === "Validated" ? "selected" : ""}>Validated</option>
-          <option value="Payment Requested" ${(filterStatus || "") === "Payment Requested" ? "selected" : ""}>Payment Requested</option>
           <option value="Approved" ${(filterStatus || "") === "Approved" ? "selected" : ""}>Approved</option>
           <option value="Rejected" ${(filterStatus || "") === "Rejected" ? "selected" : ""}>Rejected</option>
           <option value="Awaiting Documents" ${(filterStatus || "") === "Awaiting Documents" ? "selected" : ""}>Awaiting Docs</option>
@@ -6154,14 +6032,6 @@ function changeStatus(id, newStatus) {
 
   const previousStatus = sub.status;
   sub.status = newStatus;
-  if (newStatus === "Payment Requested") {
-    sub.paymentRequested = true;
-    sub.paymentVerified = false;
-  } else if (newStatus === "Validated") {
-    sub.paymentRequested = false;
-  } else if (newStatus === "Approved") {
-    sub.paymentRequested = false;
-  }
   syncSubmissionWorkflowState(sub);
   addAuditLog({
     accountName: getCurrentUser().name,
@@ -6172,10 +6042,6 @@ function changeStatus(id, newStatus) {
   });
   showToast(`${sub.title} marked as ${newStatus}`);
   navigateTo(getDefaultDashboardPage());
-}
-
-function requestPayment(id) {
-  changeStatus(id, "Payment Requested");
 }
 
 function requestDocs(id) {
@@ -6195,7 +6061,6 @@ function requestDocs(id) {
     // If user didn't cancel
     sub.status = "Awaiting Documents";
     sub.statusNote = missing;
-    sub.paymentRequested = false;
     syncSubmissionWorkflowState(sub);
     addAuditLog({
       accountName: getCurrentUser().name,
@@ -6292,7 +6157,7 @@ const COPYRIGHT_OPERATION_FLOW = [
     owner: "Applicant",
     lane: "Author / Applicant",
     description:
-      "Properly filled out application for Copyright, ISSN, ISBN, or ISMN together with other requirements of the National Library; and letter-request approved by the University President through the Quality Assurance Director for the registration of the intellectual property material and payment of basic fees to the National Library in the case of faculty or staff whose work is part of his/her regular official duties. (Other clients must pay basic fees and cost of courier).",
+      "Properly filled out application for Copyright, ISSN, ISBN, or ISMN together with other requirements of the National Library.",
   },
   {
     key: "technical-review",
@@ -6311,49 +6176,20 @@ const COPYRIGHT_OPERATION_FLOW = [
     owner: "Admin",
     lane: "Admin Staff / MIS",
     description:
-      "Record in logbook and encode in database. Prepare payment slip and inform author to pay basic fees at cashier's office. (Note: those with approved letter-request as mentioned in step 1b shall proceed to step 7b).",
-  },
-  {
-    key: "payment-slip-issued",
-    step: 4,
-    title: "Author receives payment slip and pays basic fees to cashier",
-    owner: "Applicant",
-    lane: "Author / Applicant",
-    description:
-      "The applicant receives the payment slip and pays the basic fees to the university cashier.",
-  },
-  {
-    key: "cashier-receipt",
-    step: 5,
-    title:
-      "University Cashier receives payment slip/cash and issues official receipt to author",
-    owner: "University Cashier",
-    lane: "Cashier",
-    description:
-      "The University Cashier receives payment and issues the official receipt. Prepares monthly collection report copy furnished UIP/ITSO office.",
-  },
-  {
-    key: "receipt-submitted",
-    step: 6,
-    title:
-      "Author receives official receipt from cashier and submit photocopy to Admin Staff/MIS",
-    owner: "Applicant",
-    lane: "Author / Applicant",
-    description:
-      "The applicant submits the photocopied official receipt to Admin Staff/MIS after cashier payment.",
+      "Record in logbook and encode in database, then forward the application to the IP Director for action.",
   },
   {
     key: "mis-forwarding",
-    step: 7,
-    title: "Admin Staff/MIS receives photocopied official receipt from author",
+    step: 4,
+    title: "Admin Staff/MIS forwards application",
     owner: "Admin",
     lane: "Admin Staff / MIS",
     description:
-      "Record O.R. in logbook and encode in database. Forward application to IP Director for action.",
+      "Forward application to IP Director for action.",
   },
   {
     key: "ip-director-action",
-    step: 8,
+    step: 5,
     title: "IP Director acts on application for IP registration",
     owner: "Super Admin",
     lane: "IP Director",
@@ -6362,7 +6198,7 @@ const COPYRIGHT_OPERATION_FLOW = [
   },
   {
     key: "certificate-received",
-    step: 9,
+    step: 6,
     title:
       "Admin Staff/MIS receives Certificate of Registration from National Library",
     owner: "Admin",
@@ -6372,7 +6208,7 @@ const COPYRIGHT_OPERATION_FLOW = [
   },
   {
     key: "certificate-released",
-    step: 10,
+    step: 7,
     title: "Author receives Certificate of Registration from Admin Staff",
     owner: "Applicant",
     lane: "Author / Applicant",
@@ -6386,10 +6222,6 @@ const COPYRIGHT_TRACKING_GROUPS = [
   {
     label: "Completeness Checked",
     keys: ["technical-review", "mis-recording"],
-  },
-  {
-    label: "Payment and OR Route",
-    keys: ["payment-slip-issued", "cashier-receipt", "receipt-submitted"],
   },
   { label: "Admin Forwarding", keys: ["mis-forwarding"] },
   {
@@ -6432,34 +6264,8 @@ const PATENT_OPERATION_FLOW = [
     description: "PSU acknowledges receipt of the patent intake packet.",
   },
   {
-    key: "payment-slip-generated",
-    step: 4,
-    title:
-      "Payment Slip Generated (Download) Payment Required: Outsider, Payment Situational: Insider",
-    owner: "PSU",
-    lane: "PSU / IPTTO",
-    description:
-      "Payment slip is generated when payment is required for the applicant route.",
-  },
-  {
-    key: "or-upload",
-    step: 5,
-    title: "OR Upload (Upload)",
-    owner: "Applicant",
-    lane: "Applicant",
-    description: "Applicant uploads the official receipt.",
-  },
-  {
-    key: "payment-ack-psu",
-    step: 6,
-    title: "Payment Acknowledgement (from PSU)",
-    owner: "PSU",
-    lane: "PSU / IPTTO",
-    description: "PSU acknowledges payment and receipt records.",
-  },
-  {
     key: "under-review",
-    step: 7,
+    step: 4,
     title: "Status: Under review",
     owner: "Evaluator",
     lane: "PSU / IPTTO",
@@ -6467,7 +6273,7 @@ const PATENT_OPERATION_FLOW = [
   },
   {
     key: "approved-for-drafting",
-    step: 8,
+    step: 5,
     title: "Status: Approved",
     owner: "PSU",
     lane: "PSU / IPTTO",
@@ -6475,7 +6281,7 @@ const PATENT_OPERATION_FLOW = [
   },
   {
     key: "application-drafting",
-    step: 9,
+    step: 6,
     title: "Status: Application Drafting (From PSU to IPOPHL)",
     owner: "PSU",
     lane: "PSU / IPTTO",
@@ -6483,39 +6289,15 @@ const PATENT_OPERATION_FLOW = [
   },
   {
     key: "application-submitted",
-    step: 10,
+    step: 7,
     title: "Status: Application Submitted (From PSU to IPOPHL)",
     owner: "PSU",
     lane: "PSU / IPTTO",
     description: "The prepared application is submitted to IPOPHL.",
   },
   {
-    key: "ipophil-payment-slip",
-    step: 11,
-    title: "Payment Slip Generate (From IPOPHL website to agent to inventor)",
-    owner: "IPOPHL",
-    lane: "IPOPHL / Agent / Inventor",
-    description: "IPOPHL payment slip is generated and relayed to the inventor.",
-  },
-  {
-    key: "eor-email",
-    step: 12,
-    title: "eOR email (IPOPHL emails PSU to inventor)",
-    owner: "IPOPHL",
-    lane: "IPOPHL / PSU / Inventor",
-    description: "Electronic official receipt email is relayed through PSU.",
-  },
-  {
-    key: "ipophil-payment-ack",
-    step: 13,
-    title: "Payment Acknowledgement (From IPOPHL to PSU to inventor)",
-    owner: "IPOPHL",
-    lane: "IPOPHL / PSU / Inventor",
-    description: "IPOPHL acknowledges payment and PSU relays it to the inventor.",
-  },
-  {
     key: "filing-acknowledgement",
-    step: 14,
+    step: 8,
     title: "Filing Acknowledgement (From IPOPHL to PSU to inventor)",
     owner: "IPOPHL",
     lane: "IPOPHL / PSU / Inventor",
@@ -6523,7 +6305,7 @@ const PATENT_OPERATION_FLOW = [
   },
   {
     key: "formality-report",
-    step: 15,
+    step: 9,
     title: "Status: Formality Report received (IPOPHL to PSU to inventor)",
     owner: "IPOPHL",
     lane: "IPOPHL / PSU / Inventor",
@@ -6535,7 +6317,7 @@ const PATENT_OPERATION_FLOW = [
   },
   {
     key: "publication",
-    step: 16,
+    step: 10,
     title: "Status: Publication (IPOPHL publication at gazette, 18 months after filing)",
     owner: "IPOPHL",
     lane: "IPOPHL",
@@ -6543,7 +6325,7 @@ const PATENT_OPERATION_FLOW = [
   },
   {
     key: "substantial-examination-report",
-    step: 17,
+    step: 11,
     title:
       "Status: Substantial Examination Report received (From IPOPHL to PSU to inventor)",
     owner: "IPOPHL",
@@ -6556,7 +6338,7 @@ const PATENT_OPERATION_FLOW = [
   },
   {
     key: "certificate-registration-withdrawal",
-    step: 18,
+    step: 12,
     title: "Status: Certificate Registration or Withdrawal",
     owner: "IPOPHL",
     lane: "IPOPHL / PSU / Inventor",
@@ -6590,47 +6372,20 @@ const IPOPHL_OPERATION_FLOW = [
     owner: "Admin",
     lane: "Admin Staff / MIS",
     description:
-      "Records the application in the logbook and database, prepares the payment slip, and informs the inventor to pay basic fees at the cashier. Approved letter-request holders proceed directly to Step 7.",
-  },
-  {
-    key: "payment-slip-issued",
-    step: 4,
-    title: "Inventor receives payment slip and pays basic fees",
-    owner: "Applicant",
-    lane: "Inventor / Applicant",
-    description:
-      "The inventor receives the payment slip and pays the basic fees to the university cashier.",
-  },
-  {
-    key: "cashier-receipt",
-    step: 5,
-    title: "University Cashier receives payment and issues receipt",
-    owner: "University Cashier",
-    lane: "Cashier",
-    description:
-      "The University Cashier receives the payment slip/cash and issues an official receipt to the inventor. Prepares monthly collection report copy furnished to UIP/ITSO office.",
-  },
-  {
-    key: "receipt-submitted",
-    step: 6,
-    title: "Inventor submits official receipt copy to Admin Staff/MIS",
-    owner: "Applicant",
-    lane: "Inventor / Applicant",
-    description:
-      "The inventor receives the official receipt from the cashier and submits a photocopy to Admin Staff/MIS.",
+      "Records the application in the logbook and database, then forwards the complete application to the IP Director for action.",
   },
   {
     key: "mis-forwarding",
-    step: 7,
-    title: "Admin Staff/MIS records OR and forwards application",
+    step: 4,
+    title: "Admin Staff/MIS forwards application",
     owner: "Admin",
     lane: "Admin Staff / MIS",
     description:
-      "Records the official receipt in the logbook and database, then forwards the application to the IP Director for action.",
+      "Forwards the application to the IP Director for action.",
   },
   {
     key: "ip-director-action",
-    step: 8,
+    step: 5,
     title: "IP Director acts on application for IP registration",
     owner: "Super Admin",
     lane: "IP Director",
@@ -6639,7 +6394,7 @@ const IPOPHL_OPERATION_FLOW = [
   },
   {
     key: "certificate-received",
-    step: 9,
+    step: 6,
     title: "Admin Staff/MIS receives Certificate from IPOPHL",
     owner: "Admin",
     lane: "Admin Staff / MIS",
@@ -6648,7 +6403,7 @@ const IPOPHL_OPERATION_FLOW = [
   },
   {
     key: "certificate-released",
-    step: 10,
+    step: 7,
     title: "Inventor receives Certificate of Registration",
     owner: "Applicant",
     lane: "Inventor / Applicant",
@@ -6662,10 +6417,6 @@ const IPOPHL_TRACKING_GROUPS = [
   {
     label: "Completeness Checked",
     keys: ["technical-review", "mis-recording"],
-  },
-  {
-    label: "Payment and OR Route",
-    keys: ["payment-slip-issued", "cashier-receipt", "receipt-submitted"],
   },
   { label: "Admin Forwarding", keys: ["mis-forwarding"] },
   {
@@ -6694,9 +6445,6 @@ function normalizePatentStageKey(key) {
     "inventor-submission": "advisory-disclosure",
     "technical-review": "under-review",
     "mis-recording": "acknowledgement-application",
-    "payment-slip-issued": "payment-slip-generated",
-    "cashier-receipt": "or-upload",
-    "receipt-submitted": "payment-ack-psu",
     "mis-forwarding": "application-drafting",
     "ip-director-action": "application-submitted",
     "certificate-received": "substantial-examination-report",
@@ -6708,7 +6456,6 @@ function normalizePatentStageKey(key) {
 function getCopyrightStageKey(submission) {
   if (submission.copyrightStage) return submission.copyrightStage;
   if (submission.status === "Approved") return "certificate-released";
-  if (submission.status === "Payment Requested") return "payment-slip-issued";
   if (submission.status === "Validated") return "ip-director-action";
   if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
     return "technical-review";
@@ -6771,10 +6518,6 @@ function syncSubmissionWorkflowState(submission) {
     submission.copyrightStage = "technical-review";
     return;
   }
-  if (submission.status === "Payment Requested") {
-    submission.copyrightStage = "payment-slip-issued";
-    return;
-  }
   if (submission.status === "Validated") {
     submission.copyrightStage = "ip-director-action";
     return;
@@ -6816,14 +6559,12 @@ function getIPOPHLStageKey(submission) {
     }
     if (submission.status === "Approved") return "certificate-registration-withdrawal";
     if (submission.status === "Validated") return "application-submitted";
-    if (submission.status === "Payment Requested") return "payment-slip-generated";
     if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
       return "under-review";
     return "advisory-disclosure";
   }
   if (submission.ipophlStage) return submission.ipophlStage;
   if (submission.status === "Approved") return "certificate-released";
-  if (submission.status === "Payment Requested") return "payment-slip-issued";
   if (submission.status === "Validated") return "ip-director-action";
   if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
     return "technical-review";
@@ -6849,10 +6590,6 @@ function syncIPOPHLWorkflowState(submission) {
       submission.ipophlStage = "under-review";
       return;
     }
-    if (submission.status === "Payment Requested") {
-      submission.ipophlStage = "payment-slip-generated";
-      return;
-    }
     if (submission.status === "Validated") {
       submission.ipophlStage = "application-submitted";
       return;
@@ -6871,10 +6608,6 @@ function syncIPOPHLWorkflowState(submission) {
     submission.status === "Under Review"
   ) {
     submission.ipophlStage = "technical-review";
-    return;
-  }
-  if (submission.status === "Payment Requested") {
-    submission.ipophlStage = "payment-slip-issued";
     return;
   }
   if (submission.status === "Validated") {
@@ -6908,60 +6641,6 @@ function getIPOPHLTrackingSteps(submission) {
     }
     return { label: step.label, cls, icon };
   });
-}
-
-function getSubmissionPaymentMeta(submission) {
-  if (submission.paymentExempt) {
-    return {
-      theme: "blue",
-      icon: "fa-file-signature",
-      title: "Fee-waived route recorded",
-      detail:
-        "An approved fee-waiver route is on file, so no applicant payment upload is needed for this case.",
-      actionLabel: "",
-    };
-  }
-
-  if (submission.paymentVerified === true) {
-    return {
-      theme: "green",
-      icon: "fa-circle-check",
-      title: "Payment verified",
-      detail: `${submission.officialReceiptNumber || "Proof of payment"} has been verified for this application.`,
-      actionLabel: "Verified",
-    };
-  }
-
-  if (submission.paymentRequested === true && submission.paymentProofUploaded) {
-    return {
-      theme: "blue",
-      icon: "fa-file-invoice-dollar",
-      title: "Proof of payment uploaded",
-      detail:
-        "The applicant has uploaded proof of payment. Admin or Super Admin can now verify it.",
-      actionLabel: "Verify Payment",
-    };
-  }
-
-  if (submission.paymentRequested === true) {
-    return {
-      theme: "red",
-      icon: "fa-receipt",
-      title: "Payment requested",
-      detail:
-        "The evaluator requested payment. The applicant must upload proof of payment before verification can continue.",
-      actionLabel: "",
-    };
-  }
-
-  return {
-    theme: "blue",
-    icon: "fa-circle-info",
-    title: "Payment not requested yet",
-    detail:
-      "Payment is not part of the initial submission. This field stays inactive until an evaluator requests payment.",
-    actionLabel: "",
-  };
 }
 
 function renderCopyrightOperationTimeline(submission) {
@@ -7067,10 +6746,9 @@ function renderPatentFlowReference({ submission = null, activeIndex = null } = {
     <div class="patent-flow-paper">
       <h3>${escapeHtml(heading)}</h3>
       <div class="patent-flow-list">
-        ${renderPatentFlowItems(1, 6, activeIdx, closed, flow)}
-        ${renderPatentProgressGroup(7, 10, activeIdx, closed, flow)}
-        ${renderPatentFlowItems(11, 14, activeIdx, closed, flow)}
-        ${renderPatentProgressGroup(15, 18, activeIdx, closed, flow)}
+        ${renderPatentFlowItems(1, Math.min(6, flow.length), activeIdx, closed, flow)}
+        ${flow.length > 6 ? renderPatentProgressGroup(7, Math.min(10, flow.length), activeIdx, closed, flow) : ""}
+        ${flow.length > 10 ? renderPatentFlowItems(11, flow.length, activeIdx, closed, flow) : ""}
       </div>
     </div>
   `;
@@ -7084,90 +6762,41 @@ function renderIPOPHLOperationTimeline(submission) {
   const activeIdx = getIPOPHLStageIndex(submission);
   const closed =
     submission.status === "Rejected" || submission.status === "Archived";
-  const feeWaived = submission.paymentExempt;
 
   return `
     <div class="workflow-note">
       Evaluator = Technical Expert lane, PITBI Admin = Admin Staff / MIS lane, and Super Admin = IP Director approval authority inside this prototype.
-      ${feeWaived ? "<br><strong>Fee-waived route:</strong> Steps 4\u20136 are bypassed because an approved letter-request is on file." : ""}
     </div>
     <div class="copyright-flow-grid">
       ${getIPOPHLOperationFlow(submission).map((step, idx) => {
-        const isPaymentStep = [3, 4, 5].includes(idx);
         let state = "pending";
         if (closed) {
           state = idx === 0 ? "completed" : "pending";
-        } else if (feeWaived && isPaymentStep) {
-          state = activeIdx > 2 ? "completed" : "pending";
         } else if (idx < activeIdx) {
           state = "completed";
         } else if (idx === activeIdx) {
           state = "active";
         }
-        const skipped = feeWaived && isPaymentStep;
-        const stateLabel = skipped
-          ? state === "completed"
-            ? "Skipped"
-            : "Fee-waived"
-          : state === "completed"
+        const stateLabel = state === "completed"
             ? "Completed"
             : state === "active"
               ? "Current"
               : "Pending";
 
         return `
-          <div class="copyright-flow-card ${state}${skipped ? " skipped" : ""}">
+          <div class="copyright-flow-card ${state}">
             <div class="copyright-flow-meta">
               <span class="copyright-flow-step">Step ${step.step}</span>
               <span class="copyright-stage-pill ${state}">${stateLabel}</span>
             </div>
             <div class="copyright-flow-title">${step.title}</div>
             <div class="copyright-flow-owner">${step.owner} - ${step.lane}</div>
-            <div class="copyright-flow-desc">${skipped ? "This step is bypassed under the approved letter-request route." : step.description}</div>
+            <div class="copyright-flow-desc">${step.description}</div>
           </div>
         `;
       }).join("")}
     </div>
   `;
-}
-
-function togglePaymentStatus(id) {
-  const submission = submissions.find((entry) => entry.id === id);
-  if (!submission) return;
-  const normalizedRole = normalizeRole(currentRole);
-  if (!["admin", "superadmin"].includes(normalizedRole)) {
-    showToast("Only Admin or Super Admin can verify payment.");
-    return;
-  }
-  if (submission.paymentExempt) {
-    showToast("This case uses a fee-waived route.");
-    return;
-  }
-
-  if (submission.paymentVerified) {
-    submission.paymentVerified = false;
-    submission.paymentRequested = true;
-    submission.status = "Payment Requested";
-    submission.officialReceiptNumber = "Pending payment verification";
-    showToast(`${submission.id} payment verification was reverted.`);
-  } else {
-    if (!submission.paymentProofUploaded) {
-      showToast("No proof of payment has been uploaded yet.");
-      return;
-    }
-    submission.paymentVerified = true;
-    submission.paymentRequested = false;
-    submission.status = "Validated";
-    submission.officialReceiptNumber =
-      submission.officialReceiptNumber &&
-      !submission.officialReceiptNumber.includes("Pending")
-        ? submission.officialReceiptNumber
-        : "Official Receipt #2026-0404";
-    showToast(`${submission.id} payment verified.`);
-  }
-
-  syncSubmissionWorkflowState(submission);
-  navigateTo("submission-detail");
 }
 
 // ===== IP SEARCH PAGE =====
@@ -7219,7 +6848,6 @@ function renderSubmissionDetail() {
   const normalizedRole = normalizeRole(currentRole);
   const frozen = s.status === "Approved";
   const certifiedMetadataEditable = frozen && canEditCertifiedRecords();
-  const paymentVerified = s.paymentVerified === true;
   const formTypeKey = getFormTypeKeyFromSubmissionType(s.type);
   const requiredUploadedCount = getUploadedRequiredCount(formTypeKey, s);
   const requiredDocCount = getRequiredDocumentCount(formTypeKey);
@@ -7227,25 +6855,6 @@ function renderSubmissionDetail() {
   const topSecretAccess = s.hasTopSecretAnnex
     ? getDownloadAccess(s, "top_secret")
     : "deny";
-  const paymentMeta = getSubmissionPaymentMeta(s);
-  const paymentStyles =
-    paymentMeta.theme === "green"
-      ? {
-          bg: "rgba(22,163,74,0.06)",
-          border: "rgba(22,163,74,0.2)",
-          color: "var(--green)",
-        }
-      : paymentMeta.theme === "blue"
-        ? {
-            bg: "rgba(59,130,246,0.06)",
-            border: "rgba(59,130,246,0.2)",
-            color: "var(--navy)",
-          }
-        : {
-            bg: "rgba(239,68,68,0.06)",
-            border: "rgba(239,68,68,0.2)",
-            color: "var(--red)",
-          };
   const copyrightStage =
     s.type === "Copyright"
       ? COPYRIGHT_OPERATION_FLOW.find(
@@ -7336,7 +6945,7 @@ function renderSubmissionDetail() {
           <div class="detail-row"><span class="label">Date Filed</span><span class="value">${s.date}</span></div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-paperclip"></i> ${normalizedRole === "applicant" ? "Documents" : "Documents & Payment"}</h3>
+          <h3><i class="fa-solid fa-paperclip"></i> Documents</h3>
           <div style="padding:16px;background:var(--gray-50);border-radius:8px;margin-bottom:12px">
             <div style="font-size:0.76rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:10px;">Required Documents</div>
             <div style="font-size:0.9rem; font-weight:700; color:var(--navy); margin-bottom:12px;">${requiredUploadedCount} of ${requiredDocCount} required files uploaded</div>
@@ -7350,26 +6959,13 @@ function renderSubmissionDetail() {
             
             ${
               normalizeRole(currentRole) === "applicant" &&
-              (s.status === "Pending" || s.status === "Under Review" || s.status === "Validated" || s.status === "Payment Requested" || s.status === "Draft" || s.status === "Awaiting Documents")
+              (s.status === "Pending" || s.status === "Under Review" || s.status === "Validated" || s.status === "Draft" || s.status === "Awaiting Documents")
                 ? `<button class="btn btn-outline-danger btn-sm" onclick="handleCancelSubmission('${s.id}')">
                     <i class="fa-solid ${s.status === "Draft" ? "fa-trash-can" : "fa-ban"}"></i> 
                     ${s.status === "Draft" ? "Discard Draft" : "Cancel Application"}
                    </button>`
                 : ""
             }
-          </div>
-          ${
-            normalizedRole === "applicant" && s.paymentRequested && s.type !== "Copyright"
-              ? `<div style="margin-bottom:12px;">${renderConditionalPaymentUploadPanel(s, {
-                  inputId: `submission-payment-proof-${s.id}`,
-                  onChange: `handleSubmissionPaymentProofUpload('${s.id}', this)`,
-                })}</div>`
-              : ""
-          }
-          <div style="padding:14px;background:${paymentStyles.bg};border:1px solid ${paymentStyles.border};border-radius:8px;display:flex;align-items:center;gap:10px">
-            <i class="fa-solid ${paymentMeta.icon}" style="color:${paymentStyles.color};font-size:1.2rem"></i>
-            <div><div style="font-weight:700;font-size:.9rem;color:${paymentStyles.color}">${paymentMeta.title}</div><div style="font-size:.8rem;color:var(--gray-400)">${paymentMeta.detail}</div></div>
-            ${(normalizedRole === "admin" || normalizedRole === "superadmin") && paymentMeta.actionLabel ? `<button class="btn btn-sm btn-success" style="margin-left:auto" onclick="togglePaymentStatus('${s.id}')"><i class="fa-solid fa-${paymentVerified ? "rotate-left" : "check"}"></i> ${paymentMeta.actionLabel}</button>` : ""}
           </div>
         </div>
       </div>
@@ -7396,11 +6992,6 @@ function renderSubmissionDetail() {
           </div>
           <div style="margin-bottom:16px; padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:10px;">
             ${renderApplicantStatusLegend(s.status)}
-            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--gray-100);">
-              <a href="#" onclick="showPaymentGuideModal()" style="font-size:0.75rem; font-weight:700; color:var(--gold-dark); display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-map-location-dot"></i> View Payment Guide & Map
-              </a>
-            </div>
           </div>
           ${
             copyrightStage
@@ -7429,7 +7020,6 @@ function renderSubmissionDetail() {
               <option ${s.status === "Pending" ? "selected" : ""}>Pending</option>
               <option ${s.status === "Under Review" ? "selected" : ""}>Under Review</option>
               <option ${s.status === "Validated" ? "selected" : ""}>Validated</option>
-              <option ${s.status === "Payment Requested" ? "selected" : ""}>Payment Requested</option>
               <option ${s.status === "Awaiting Documents" ? "selected" : ""}>Awaiting Documents</option>
               <option ${s.status === "Approved" ? "selected" : ""}>Approved</option>
               <option ${s.status === "Rejected" ? "selected" : ""}>Rejected</option>
@@ -7475,7 +7065,7 @@ function renderSubmissionDetail() {
               ? `<div class="timeline">
             ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-receipt" style="color:var(--gold)"></i> Proof of payment verified</div></div>
+            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
             <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${s.applicant}</div></div>
           </div>`
@@ -7484,7 +7074,7 @@ function renderSubmissionDetail() {
               : `<div class="timeline">
             ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-receipt" style="color:var(--gold)"></i> Proof of payment verified</div></div>
+            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
             <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${s.applicant}</div></div>
           </div>`
@@ -7596,7 +7186,7 @@ function renderIpGuidelines(filterId = null) {
         { n: 2, t: "Compilation", d: "Prepare the 'Best Copy' of the work for filing." },
         { n: 3, t: "Review", d: "IP Office verifies author IDs and affiliations." },
         { n: 4, t: "Submission", d: "Send the filing packet for evaluator review and validation." },
-        { n: 5, t: "Certified", d: "Forwarded to the National Library after validation and any requested payment." }
+        { n: 5, t: "Certified", d: "Forwarded to the National Library after validation." }
       ],
       docs: [
         "CR Registration Form (PSU-IPO-CR-01)",
@@ -7630,7 +7220,7 @@ function renderIpGuidelines(filterId = null) {
       </h2>
       <ul style="color:rgba(255,255,255,0.85); font-size:0.92rem; line-height:1.8; padding-left:20px; list-style:none; margin-bottom:20px;">
         <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> This system is a <strong>pre-filing optimization engine</strong>. Verified packets are forwarded to <strong>IPOPHL</strong> or the <strong>National Library</strong>.</li>
-        <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Payment is <strong>conditional</strong> and only requested after evaluator review when needed.</li>
+        <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Follow-up actions stay inside the review workspace when requirements need correction.</li>
         <li><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Review is performed <strong>manually</strong> by PSU IP Office specialists.</li>
       </ul>
     </div>
@@ -9093,11 +8683,6 @@ function renderPatentRepresentativeUploadsStep() {
               <div style="font-size:1.7rem; font-weight:800; color:var(--navy);">${uploadedCount}/${requiredCount}</div>
               <div style="font-size:0.8rem; color:var(--gray-500); margin-top:6px;">Patent requirement files uploaded</div>
             </div>
-            <div style="padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:14px;">
-              <div style="font-size:0.74rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:8px;">Payment Status</div>
-              <div style="font-size:1rem; font-weight:800; color:var(--navy);">${wizardData.paymentRequested ? "Payment Requested" : "Not Requested"}</div>
-              <div style="font-size:0.8rem; color:var(--gray-500); margin-top:6px;">Validation happens before any payment request</div>
-            </div>
           </div>
 
           <div style="margin-bottom:20px;">
@@ -9110,13 +8695,6 @@ function renderPatentRepresentativeUploadsStep() {
 
           <div id="uploadStatus" style="margin-top:20px;">
             ${renderUploadedFiles()}
-          </div>
-
-          <div style="margin-top:20px;">
-            ${renderConditionalPaymentUploadPanel(wizardData, {
-              inputId: "patent-deposit-input",
-              onChange: "handleDepositUpload(this)",
-            })}
           </div>
 
           <div class="patent-editor-grid patent-editor-grid--two" style="margin-top:20px;">
@@ -9271,12 +8849,6 @@ function renderPatentSubmissionList() {
 
   if (files.length) {
     items.push(...files.map((file) => `Attachment: ${file.name}`));
-  }
-
-  if (getPaymentProofFile(wizardData)?.name) {
-    items.push(`Proof of payment: ${getPaymentProofFile(wizardData).name}`);
-  } else if (wizardData.paymentRequested) {
-    items.push("Proof of payment: awaiting applicant upload");
   }
 
   if (wizardData.drawingsCount) {
@@ -10120,70 +9692,6 @@ function renderCopyrightFillFormStep() {
     ${renderCopyrightSubmissionOwnerBody()}
     ${renderCopyrightAuthorWorkBody()}
     ${renderCopyrightDeclarationsUploadsBody()}
-  `;
-}
-
-function renderCopyrightPaymentStep() {
-  return `
-    <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step 3</span>
-      <h2>Payment of Filing Fees</h2>
-      <p>After IPOPHL receives your application, they will send an Electronic Statement of Account (eSOA) to your email. Use the details below to complete payment.</p>
-    </div>
-
-    <div class="patent-gform-card patent-gform-card--sheet">
-      <div class="patent-editor-sheet">
-
-        <div class="patent-editor-section">
-          <div class="patent-paper__section-title"><i class="fa-solid fa-receipt" style="margin-right:6px; color:var(--green);"></i> Filing Fee Schedule</div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
-            <div style="padding:20px; border-radius:14px; background:var(--gray-50); border:1px solid var(--gray-100); text-align:center;">
-              <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:8px;">Small Entity</div>
-              <div style="font-size:2rem; font-weight:900; color:var(--navy);">₱450</div>
-              <div style="font-size:0.8rem; color:var(--gray-500); margin-top:4px;">Individuals, Micro/Small businesses, Non-profits</div>
-            </div>
-            <div style="padding:20px; border-radius:14px; background:var(--gray-50); border:1px solid var(--gray-100); text-align:center;">
-              <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--gray-400); margin-bottom:8px;">Big Entity</div>
-              <div style="font-size:2rem; font-weight:900; color:var(--navy);">₱625</div>
-              <div style="font-size:0.8rem; color:var(--gray-500); margin-top:4px;">Corporations, large institutions, multinational companies</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="patent-editor-section">
-          <div class="patent-paper__section-title"><i class="fa-solid fa-credit-card" style="margin-right:6px; color:var(--gold);"></i> Payment Methods</div>
-          <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
-            ${[
-              { icon: "fa-globe", label: "Online Payment Gateway", sub: "Pay via the official IPOPHL online portal (COPS)." },
-              { icon: "fa-credit-card", label: "Credit / Debit Card", sub: "Visa, Mastercard accepted through IPOPHL's secure payment page." },
-              { icon: "fa-mobile-screen-button", label: "GCash / Maya", sub: "Available via the IPOPHL payment gateway." },
-              { icon: "fa-building-columns", label: "Over-the-Counter (Partner Banks)", sub: "Land Bank of the Philippines and other accredited banks." },
-            ].map(pm => `
-              <div style="display:flex; gap:14px; align-items:center; padding:14px 16px; border-radius:12px; background:var(--gray-50); border:1px solid var(--gray-100);">
-                <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,#6366f1,#4f46e5); display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.9rem; flex-shrink:0;">
-                  <i class="fa-solid ${pm.icon}"></i>
-                </div>
-                <div>
-                  <div style="font-weight:700; color:var(--navy); font-size:0.88rem;">${pm.label}</div>
-                  <div style="font-size:0.78rem; color:var(--gray-500); margin-top:2px;">${pm.sub}</div>
-                </div>
-              </div>
-            `).join("")}
-          </div>
-        </div>
-
-        <div class="patent-editor-section">
-          <div style="padding:16px; border-radius:14px; background:linear-gradient(135deg, rgba(99,102,241,0.06), rgba(79,70,229,0.08)); border:1px solid rgba(99,102,241,0.2);">
-            <div style="font-weight:800; color:#4f46e5; font-size:0.9rem; margin-bottom:8px;"><i class="fa-solid fa-envelope"></i> What Happens Next?</div>
-            <p style="font-size:0.82rem; color:var(--gray-600); line-height:1.7; margin:0;">
-              IPOPHL will send an <strong>Electronic Statement of Account (eSOA)</strong> to your registered email address after reviewing your submitted documents. 
-              Use the details in the eSOA to complete your payment, then proceed to the next step to upload your proof of payment.
-            </p>
-          </div>
-        </div>
-
-      </div>
-    </div>
   `;
 }
 
@@ -11228,7 +10736,7 @@ function renderCopyrightFormSheetPage1() {
 
         ${renderCopyrightSectionBar("INSTRUCTIONS:")}
         <div class="copyright-note-block">
-          <div>1. Fill out the form completely and legibly. Do not leave any field blank. Definition of terms, requirements, and fees are indicated at the back of this form for reference.</div>
+          <div>1. Fill out the form completely and legibly. Do not leave any field blank. Definition of terms and requirements are indicated at the back of this form for reference.</div>
           <div>2. Use N/A for fields that are not applicable. For fields with boxes, use a checkmark (/) to choose the applicable box.</div>
           <div>3. To check whether an author, institution, or other copyright holder already has an ISNI number, search using IPOPHL's copyright database.</div>
         </div>
@@ -11498,14 +11006,6 @@ function renderCopyrightReferencePage3() {
     "For Class N: manually-coded source code in PDF or text format.",
   ];
 
-  const fees = [
-    ["Copyright Enrollment / Recordation (Region)", "PHP 550", "PHP 750"],
-    ["Copyright Enrollment & Recordation (Combo-NCR)", "PHP 700", "PHP 1,050"],
-    ["Discounted rate for 10-49 works of the same class and by the same author", "10-19: PHP 500", "PHP 700"],
-    ["Hardcopy of Original Certificate", "PHP 70", "PHP 50"],
-    ["Mailing/Courier", "Per actual charge", "Per actual charge"],
-  ];
-
   return `
     <div class="copyright-paper-wrap">
       <div class="copyright-paper copyright-paper--reference">
@@ -11549,7 +11049,7 @@ function renderCopyrightReferencePage3() {
           </div>
 
           <div class="copyright-reference-panel">
-            <div class="copyright-reference-title">Application Requirements / Schedule of Fees</div>
+            <div class="copyright-reference-title">Application Requirements</div>
             <ul class="copyright-reference-list">
               ${applicationRequirements.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
             </ul>
@@ -11562,30 +11062,6 @@ function renderCopyrightReferencePage3() {
               <p>D. Adaptation</p>
               <p>E. Collection / Compilation</p>
             </div>
-
-            <div class="copyright-reference-subtitle">Schedule of Fees</div>
-            <table class="copyright-reference-table">
-              <thead>
-                <tr>
-                  <th>Type of Fee</th>
-                  <th>Small Entity</th>
-                  <th>Big Entity</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${fees
-                  .map(
-                    ([label, small, big]) => `
-                      <tr>
-                        <td>${escapeHtml(label)}</td>
-                        <td>${escapeHtml(small)}</td>
-                        <td>${escapeHtml(big)}</td>
-                      </tr>
-                    `,
-                  )
-                  .join("")}
-              </tbody>
-            </table>
           </div>
         </div>
 
@@ -11961,7 +11437,6 @@ function renderPatentFormSheetPage2() {
             <div class="patent-official-check-item">${renderPatentOfficialMark("Copy of general power of attorney", hasAgent)}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Priority document/s (see Priority Claim)", hasPriorityClaim)}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Deed of assignment", wizardData.applicantType && wizardData.applicantType !== "individual")}</div>
-            <div class="patent-official-check-item">${renderPatentOfficialMark("Checklist for the payment of fees", wizardData.paymentRequested || wizardData.paymentProofUploaded || wizardData.paymentVerified)}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Physical data carrier containing Sequence Listing in PDF OCR", false)}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Statement of compliance to requirements of Free and Prior Informed Consent of Indigenous Cultural Community", wizardData.indigenousKnowledge === "yes")}</div>
 
@@ -11995,7 +11470,7 @@ function renderPatentFormSheetPage2() {
           ${renderPatentOfficialMark("Mail to Applicant", mailingPreference === "applicant-mail", { round: true })}
           ${renderPatentOfficialMark("Mail to Agent / Authorized Representative", mailingPreference === "agent-mail", { round: true })}
         </div>
-        <div class="patent-official-note-line">Mailing may be subject to additional mailing fees.</div>
+        <div class="patent-official-note-line">Mailing may be subject to additional delivery requirements.</div>
 
         ${renderPatentOfficialSectionBar("ADDITIONAL INFORMATION", "Mandatory")}
         <div class="patent-official-question-block">
@@ -12032,7 +11507,7 @@ function renderPatentFormSheetPage2() {
         </div>
 
         <div class="patent-official-disclaimer">
-          NOTE: Submission of this Application Form and Payment of the Filing Fees do not mean that the application process is already complete. The application review process involves several stages and IPOPHL may require additional supporting documents, as needed, during said stages. This application is subject to the periods prior to the publication prescribed, if any, in the IP Code and implementing rules to which the Philippines is a signatory. An application shall be deemed complete only upon completion of all stages and requirements, and payment of all required fees.
+          NOTE: Submission of this Application Form does not mean that the application process is already complete. The application review process involves several stages and IPOPHL may require additional supporting documents, as needed, during said stages. This application is subject to the periods prior to the publication prescribed, if any, in the IP Code and implementing rules to which the Philippines is a signatory. An application shall be deemed complete only upon completion of all stages and requirements.
         </div>
 
         ${renderPatentOfficialFooter(2)}
@@ -12774,7 +12249,6 @@ function renderUtilityUploadsStep() {
               ${renderCopyrightChoice("utilityAccompanyingItems", "general-poa", "Copy of general power of attorney", { multiple: true })}
               ${renderCopyrightChoice("utilityAccompanyingItems", "priority-docs", "Priority document/s", { multiple: true })}
               ${renderCopyrightChoice("utilityAccompanyingItems", "deed-assignment", "Deed of assignment", { multiple: true })}
-              ${renderCopyrightChoice("utilityAccompanyingItems", "payment-fees", "Cheques for the payment of fees", { multiple: true })}
               ${renderCopyrightChoice("utilityAccompanyingItems", "sequence-carrier", "Physical data carrier containing sequence listing in PDF OCR", { multiple: true })}
               ${renderCopyrightChoice("utilityAccompanyingItems", "free-prior-informed-consent", "Statement of compliance to Free and Prior Informed Consent requirements", { multiple: true })}
               ${renderCopyrightChoice("utilityAccompanyingItems", "pct-amendments", "PCT Amendments", { multiple: true })}
@@ -12844,7 +12318,6 @@ function renderUtilityUploadsStep() {
           <div style="margin-top:18px;">${renderRequirementChecklistPanel("utility")}</div>
           <div style="margin-top:24px;">${renderDynamicRequirementUploaders("utility")}</div>
           <div id="uploadStatus" style="margin-top:24px;">${uploadedCount > 0 ? renderUploadedFiles() : ""}</div>
-          <div style="margin-top:24px;">${renderConditionalPaymentUploadPanel(wizardData, { infoOnly: true })}</div>
         </div>
       </div>
     </div>
@@ -13190,7 +12663,6 @@ function renderUtilityFormSheetPage2() {
             <div class="patent-official-check-item">${renderPatentOfficialMark("Copy of general power of attorney", selectedItems.has("general-poa"))}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Priority document/s (see Priority Claim)", selectedItems.has("priority-docs"))}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Deed of assignment", selectedItems.has("deed-assignment"))}</div>
-            <div class="patent-official-check-item">${renderPatentOfficialMark("Cheques for the payment of fees", selectedItems.has("payment-fees"))}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Physical data carrier containing Sequence Listing in PDF OCR", selectedItems.has("sequence-carrier"))}</div>
             <div class="patent-official-check-item">${renderPatentOfficialMark("Statement of compliance to requirements of Free and Prior Informed Consent of Indigenous Cultural Community", selectedItems.has("free-prior-informed-consent"))}</div>
 
@@ -13223,7 +12695,7 @@ function renderUtilityFormSheetPage2() {
           ${renderPatentOfficialMark("Mail to Applicant", mailingPreference === "applicant-mail", { round: true })}
           ${renderPatentOfficialMark("Mail to Agent / Authorized Representative", mailingPreference === "agent-mail", { round: true })}
         </div>
-        <div class="patent-official-note-line">Mailings may be subject to additional mailing fees.</div>
+        <div class="patent-official-note-line">Mailings may be subject to additional delivery requirements.</div>
 
         ${renderPatentOfficialSectionBar("ADDITIONAL INFORMATION", "Mandatory")}
         <div class="patent-official-question-block">
@@ -13260,7 +12732,7 @@ function renderUtilityFormSheetPage2() {
         </div>
 
         <div class="patent-official-disclaimer">
-          NOTE: Submission of this Application Form and Payment of the Filing Fees do not mean that the application process is already complete. The application review process involves several stages and IPOPHL may request additional supporting documents, as needed, during said stages. This application is subject to the periods prior to the publication prescribed, if any, in the IP Code and international treaties to which the Philippines is a signatory. An application shall be deemed complete only upon completion of all stages and requirements, and payment of all required fees.
+          NOTE: Submission of this Application Form does not mean that the application process is already complete. The application review process involves several stages and IPOPHL may request additional supporting documents, as needed, during said stages. This application is subject to the periods prior to the publication prescribed, if any, in the IP Code and international treaties to which the Philippines is a signatory. An application shall be deemed complete only upon completion of all stages and requirements.
         </div>
 
         ${renderGuidedOfficialFooter(
@@ -13770,7 +13242,6 @@ function renderIndustrialUploadsStep() {
           <div style="margin-top:18px;">${renderRequirementChecklistPanel("industrial")}</div>
           <div style="margin-top:24px;">${renderDynamicRequirementUploaders("industrial")}</div>
           <div id="uploadStatus" style="margin-top:24px;">${uploadedCount > 0 ? renderUploadedFiles() : ""}</div>
-          <div style="margin-top:24px;">${renderConditionalPaymentUploadPanel(wizardData, { infoOnly: true })}</div>
         </div>
       </div>
     </div>
@@ -14473,16 +13944,7 @@ function renderStep2() {
 function renderStep3() {
   const uploadedCount = getUploadedRequiredCount(currentFormType, wizardData);
   const totalRequired = getRequiredDocumentCount(currentFormType);
-  const showPaymentControls = currentFormType !== "copyright";
-  const currentStatus = wizardData.paymentRequested
-    ? "Payment Requested"
-    : "Pending";
-  const paymentFile = getPaymentProofFile(wizardData);
-  const paymentLabel = wizardData.paymentRequested
-    ? paymentFile
-      ? "Proof uploaded"
-      : "Awaiting upload"
-    : "Not requested";
+  const currentStatus = "Pending";
   return `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="margin:0;">Required Documents and Steps</h3>
@@ -14504,14 +13966,6 @@ function renderStep3() {
         <div style="font-size:1.1rem; font-weight:800; color:var(--navy);">${currentStatus}</div>
         <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Visible to the applicant throughout submission</div>
       </div>
-      ${
-        showPaymentControls
-          ? `<div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
-              <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Payment Step</div>
-              <div style="font-size:1.1rem; font-weight:800; color:var(--navy);">${paymentLabel}</div>
-            </div>`
-          : ""
-      }
     </div>
 
     <div style="border:1.5px solid var(--gray-100); background:white; border-radius:20px; padding:24px;">
@@ -14525,9 +13979,6 @@ function renderStep3() {
       ${uploadedCount > 0 ? renderUploadedFiles() : ""}
     </div>
 
-      <div style="margin-top:24px;">
-        ${showPaymentControls ? renderConditionalPaymentUploadPanel(wizardData) : ""}
-      </div>
     </div>
   `;
 }
@@ -14560,9 +14011,8 @@ function renderStep4Review() {
       ${wizardData.desc ? `<div class="review-item" style="margin-top:12px"><span class="label">Description</span><span class="value" style="white-space:pre-wrap;line-height:1.6">${wizardData.desc.substring(0, 400)}${wizardData.desc.length > 400 ? "…" : ""}</span></div>` : ""}
     </div>
     <div class="review-section"><h4><i class="fa-solid fa-paperclip" style="color:var(--gold);margin-right:6px"></i>Documents</h4>
-      <p style="color:var(--gray-500);font-size:.9rem; margin-bottom:14px;">Required uploads are summarized below. Proof of payment stays hidden unless an evaluator requests it later in the review flow.</p>
+      <p style="color:var(--gray-500);font-size:.9rem; margin-bottom:14px;">Required uploads are summarized below for final review.</p>
       <div style="margin-bottom:16px;">${renderRequirementChecklistPanel(currentFormType, { compact: true })}</div>
-      ${renderConditionalPaymentUploadPanel(wizardData, { infoOnly: true })}
     </div>
     <div style="padding:16px 20px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;margin-top:4px;font-size:.85rem;color:#92400e;display:flex;gap:10px;align-items:flex-start">
       <i class="fa-solid fa-person-chalkboard" style="color:#d97706;margin-top:2px"></i>
@@ -15458,7 +14908,7 @@ window.showCancellationDocumentModal = function(id, finalReason) {
           ${renderCancellationChecklistItem(`Others, please state: ${finalReason}`, !oppositionChecked && !negotiationChecked)}
           <div style="margin-top:14px; padding:14px; background:rgba(59,130,246,0.06); border-radius:12px; border:1px solid rgba(59,130,246,0.15);">
             <div style="font-size:.76rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#1d4ed8; margin-bottom:8px;">Applicant Statement</div>
-            <div>I/We will pay the corresponding suspension of examination fee.</div>
+            <div>I/We request suspension of examination for the reason stated above.</div>
             <div style="margin-top:8px;">I/We hope for your kind consideration and approval.</div>
           </div>`
               : `
@@ -15475,7 +14925,7 @@ window.showCancellationDocumentModal = function(id, finalReason) {
             ${renderCancellationChecklistItem("Certified and verified copies of documents supporting my petition", true)}
             ${renderCancellationChecklistItem("Other supporting documents, if any", false)}
           </div>
-          <div style="margin-top:14px;">Full payment of the required fee(s): <span style="display:inline-block; min-width:140px; border-bottom:1px solid var(--gray-300);">&nbsp;</span></div>`
+          <div style="margin-top:14px;">Supporting records submitted: <span style="display:inline-block; min-width:140px; border-bottom:1px solid var(--gray-300);">&nbsp;</span></div>`
           }
         </div>
       </div>
@@ -15588,9 +15038,6 @@ window.initiateDirectRegistration = function(typeId, method) {
 function createSubmissionWizardSeed() {
   return {
     requirementUploads: {},
-    paymentRequested: false,
-    paymentVerified: false,
-    paymentProofUploaded: false,
     certificateDelivery: "pickup",
     privacyAgreement: "agree",
   };
@@ -15750,56 +15197,6 @@ window.handleRequirementUpload = function(key, input, formType = currentFormType
   showToast(`Uploaded ${files.length > 1 ? `${files.length} files` : file.name} for the selected requirement.`, "success");
 };
 
-function handleDepositUpload(input) {
-  if (!input.files.length) return;
-  captureWizardData();
-  const f = input.files[0];
-  wizardData.depositFile = {
-    name: f.name,
-    size: f.size,
-    type: f.type,
-  };
-  wizardData.paymentProofUploaded = true;
-  wizardData.paymentVerified = false;
-  refreshWizard();
-  showToast("Proof of payment uploaded. Awaiting evaluator verification.", "success");
-  return;
-  status.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(22,163,74,0.06);border:1px solid rgba(22,163,74,0.2);border-radius:8px">
-    <i class="fa-solid fa-circle-check" style="color:var(--green);font-size:1.2rem"></i>
-    <div style="flex:1">
-      <div style="font-size:.9rem;font-weight:600;color:var(--navy)">${f.name}</div>
-      <div style="font-size:.8rem;color:var(--gray-400)">${(f.size / 1024).toFixed(1)} KB — Proof of payment uploaded</div>
-    </div>
-    <span class="badge badge-approved" style="font-size:.65rem">VERIFIED</span>
-  </div>`;
-}
-
-window.handleSubmissionPaymentProofUpload = function(id, input) {
-  if (!input?.files?.length) return;
-  const submission = submissions.find((entry) => entry.id === id);
-  if (!submission) return;
-  if (!getAssignedReviewerId(submission)) {
-    showToast(
-      "This case must remain Pending until it is assigned or taken by a specialist.",
-    );
-    return;
-  }
-  const file = input.files[0];
-  submission.depositFile = {
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    uploadedAt: new Date().toISOString(),
-  };
-  submission.paymentRequested = true;
-  submission.paymentProofUploaded = true;
-  submission.paymentVerified = false;
-  submission.status = "Payment Requested";
-  syncSubmissionWorkflowState(submission);
-  showToast("Proof of payment uploaded and sent for verification.", "success");
-  navigateTo("submission-detail");
-};
-
 function submitForm() {
   captureWizardData();
 
@@ -15852,9 +15249,6 @@ function submitForm() {
         (currentFormType === "industrial"
           ? `${typeLabel} intake generated through the Advisory Service Sheet and required drawing upload workflow.`
           : `${typeLabel} intake generated through the Advisory Service Sheet and IP Disclosure workflow.`),
-      paymentRequested: false,
-      paymentProofUploaded: false,
-      paymentVerified: false,
       frozen: false,
       formStyle: `PSU ${typeLabel} Intake`,
       filingMethod: "Guided Online Form",
@@ -15913,9 +15307,6 @@ function submitForm() {
     status: "Pending",
     date: new Date().toISOString().split("T")[0],
     description: wizardData.desc || wizardData.description || wizardData.title || "Newly submitted application.",
-    paymentRequested: false,
-    paymentProofUploaded: false,
-    paymentVerified: false,
     frozen: false,
     requirementUploads: { ...ensureRequirementUploads(wizardData) },
     files: [...(wizardData.files || [])],
@@ -16823,7 +16214,6 @@ function exportCSV() {
 function getTrackingSteps(status) {
   const stepOrder = [
     "Submitted",
-    "Payment Verified",
     "Under Review",
     "Forwarded to IPOPHL",
     "Registered",
@@ -16831,10 +16221,9 @@ function getTrackingSteps(status) {
   const statusMap = {
     Pending: 0,
     "Awaiting Documents": 0,
-    "Under Review": 2,
-    Validated: 3,
-    "Payment Requested": 1,
-    Approved: 4,
+    "Under Review": 1,
+    Validated: 2,
+    Approved: 3,
     Rejected: -1,
     Archived: -1,
   };
@@ -16889,7 +16278,6 @@ function getStatusCounts() {
     Pending: 0,
     "Under Review": 0,
     Validated: 0,
-    "Payment Requested": 0,
     Approved: 0,
     Rejected: 0,
     "Awaiting Documents": 0,
@@ -16912,7 +16300,6 @@ function renderUserSubmissions() {
     { id: "Pending", label: "Submitted" },
     { id: "Under Review", label: "Under Review" },
     { id: "ActionRequired", label: "Action Required" },
-    { id: "Payment Requested", label: "For Payment" },
     { id: "Approved", label: "Approved" },
     { id: "Rejected", label: "Rejected" },
   ];
@@ -17065,8 +16452,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
         const currentStepObj = flow[stageIdx] || (flow.length ? flow[0] : null);
 
         const frozen = s.status === "Approved";
-        const needsAction =
-          s.status === "Awaiting Documents" || s.status === "Payment Requested";
+        const needsAction = s.status === "Awaiting Documents";
 
         return `
       <div class="case-card ${needsAction ? "needs-action" : ""}" style="margin-bottom:20px; background:white; border-radius:12px; border:1px solid var(--gray-200); overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -17175,7 +16561,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                     needsAction
                       ? `
                     <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="viewSubmission('${s.id}')">
-                      <i class="fa-solid fa-upload"></i> ${s.status === "Payment Requested" ? (isCR ? "View Details" : "Upload Proof of Payment") : "Upload Requirements"}
+                      <i class="fa-solid fa-upload"></i> Upload Requirements
                     </button>
                   `
                       : ""
@@ -17192,6 +16578,109 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
     console.error("renderUserSubmissionsTable Error:", err);
     return `<div class="error-msg show">Error loading submissions: ${err.message}</div>`;
   }
+}
+
+function renderApplicantSettingsToggle(label, description, checked = false, options = {}) {
+  const locked = options.locked === true;
+  return `
+    <label style="display:flex; justify-content:space-between; gap:18px; align-items:flex-start; padding:16px 0; border-bottom:1px solid var(--gray-100);">
+      <span style="display:block;">
+        <span style="display:flex; align-items:center; gap:8px; font-size:0.95rem; font-weight:800; color:var(--navy);">
+          ${escapeHtml(label)}
+          ${locked ? '<span class="badge badge-approved" style="font-size:0.62rem;">LOCKED</span>' : ""}
+        </span>
+        <span style="display:block; font-size:0.82rem; color:var(--gray-500); line-height:1.55; margin-top:4px;">${escapeHtml(description)}</span>
+      </span>
+      <input type="checkbox" ${checked ? "checked" : ""} ${locked ? "disabled" : ""} style="width:20px; height:20px; margin-top:2px; accent-color:var(--gold-dark); flex-shrink:0;">
+    </label>
+  `;
+}
+
+function renderApplicantSettingsAction(icon, label, description, buttonLabel, toast, variant = "btn-outline-navy") {
+  return `
+    <div style="display:flex; justify-content:space-between; gap:18px; align-items:center; padding:16px 0; border-bottom:1px solid var(--gray-100);">
+      <div style="display:flex; gap:12px; align-items:flex-start;">
+        <span style="width:34px; height:34px; border-radius:10px; background:var(--gray-50); color:var(--gold-dark); display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <i class="fa-solid ${icon}"></i>
+        </span>
+        <span>
+          <span style="display:block; font-size:0.95rem; font-weight:800; color:var(--navy);">${escapeHtml(label)}</span>
+          <span style="display:block; font-size:0.82rem; color:var(--gray-500); line-height:1.55; margin-top:4px;">${escapeHtml(description)}</span>
+        </span>
+      </div>
+      <button class="btn ${variant} btn-sm" type="button" onclick="showToast('${escapeHtml(toast)}')">${escapeHtml(buttonLabel)}</button>
+    </div>
+  `;
+}
+
+function renderApplicantSettings() {
+  const user = getCurrentUser();
+  const params = typeof currentParams === "object" && currentParams ? currentParams : {};
+  const selectedSection = params.settingsSection || "notifications";
+  const sectionNames = {
+    notifications: "Notifications",
+    security: "Security",
+    privacy: "Privacy",
+    workspace: "Filing Workspace",
+  };
+  const sectionPanels = {
+    notifications: `
+      <div class="detail-panel">
+        <h3><i class="fa-solid fa-bell" style="color:var(--gold); margin-right:8px;"></i> Notifications</h3>
+        ${renderApplicantSettingsToggle("Case status updates", "Receive alerts when a filing moves to a new review stage.", true)}
+        ${renderApplicantSettingsToggle("Evaluator messages", "Receive alerts for new case chat messages and clarifications.", true)}
+        ${renderApplicantSettingsToggle("Requirement follow-ups", "Receive alerts when a reviewer requests missing or corrected documents.", true)}
+        ${renderApplicantSettingsToggle("Marketplace inquiries", "Receive alerts when someone asks about a published innovation.", true)}
+        ${renderApplicantSettingsToggle("News and announcements", "Receive PSU IP office notices and public advisory updates.", false)}
+      </div>
+    `,
+    security: `
+      <div class="detail-panel">
+        <h3><i class="fa-solid fa-shield-halved" style="color:var(--gold); margin-right:8px;"></i> Security</h3>
+        ${renderApplicantSettingsToggle("Two-factor authentication", "Require an extra verification step during sign-in.", true)}
+        ${renderApplicantSettingsAction("fa-key", "Change password", "Update the password for ${user.email}.", "Change", "Password settings opened")}
+        ${renderApplicantSettingsAction("fa-laptop", "Active sessions", "Review browsers and devices currently signed in.", "Review", "Active sessions reviewed")}
+        ${renderApplicantSettingsAction("fa-envelope-circle-check", "Recovery email", "Keep a backup email for account recovery.", "Update", "Recovery email settings opened")}
+      </div>
+    `,
+    privacy: `
+      <div class="detail-panel">
+        <h3><i class="fa-solid fa-user-lock" style="color:var(--gold); margin-right:8px;"></i> Privacy</h3>
+        ${renderApplicantSettingsToggle("Profile visible for marketplace inquiries", "Allow approved marketplace records to show your applicant profile name.", true)}
+        ${renderApplicantSettingsToggle("Hide phone number from public listings", "Keep your contact number visible only to authorized PSU staff.", true)}
+        ${renderApplicantSettingsToggle("Share contact after approved inquiry", "Allow PSU staff to share contact details after a marketplace inquiry is approved.", false)}
+        ${renderApplicantSettingsToggle("New filing forms stay blank", "Name, date, contact, and identity fields are entered manually for every new filing.", true, { locked: true })}
+      </div>
+    `,
+    workspace: `
+      <div class="detail-panel">
+        <h3><i class="fa-solid fa-folder-open" style="color:var(--gold); margin-right:8px;"></i> Filing Workspace</h3>
+        ${renderApplicantSettingsToggle("Compact case cards", "Show denser case cards in My Cases.", false)}
+        ${renderApplicantSettingsToggle("Show completed stages first", "Keep completed stages expanded in the case tracker.", true)}
+        ${renderApplicantSettingsToggle("Remember last opened service", "Return to the last viewed filing service in Forms.", false)}
+        ${renderApplicantSettingsAction("fa-download", "Download account data", "Export profile details, case references, and message metadata.", "Export", "Account export prepared")}
+        ${renderApplicantSettingsAction("fa-pen-to-square", "Request profile correction", "Send an identity correction request to the PSU IP office.", "Request", "Profile correction request started")}
+      </div>
+    `,
+  };
+  const currentSectionName = sectionNames[selectedSection] || sectionNames.notifications;
+  const currentPanel = sectionPanels[selectedSection] || sectionPanels.notifications;
+  return `
+    ${renderBackNav("user-profile", "Profile")}
+    <div class="page-header">
+      <h1>Applicant Settings</h1>
+      <p>Viewing ${currentSectionName} settings.</p>
+    </div>
+
+    <div class="detail-layout">
+      ${currentPanel}
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; flex-wrap:wrap;">
+      <button class="btn btn-outline-navy" onclick="navigateTo('user-profile')"><i class="fa-solid fa-arrow-left"></i> Back to Profile</button>
+      <button class="btn btn-primary" onclick="showToast('Applicant settings saved')"><i class="fa-solid fa-save"></i> Save Settings</button>
+    </div>
+  `;
 }
 
 function renderProfile() {
@@ -17240,7 +16729,7 @@ function renderProfile() {
               <span style="font-size:0.85rem; color:var(--gray-500);">Last Password Reset</span>
               <span style="font-size:0.85rem; font-weight:600; color:var(--navy);">3 months ago</span>
             </div>
-            <button class="btn btn-outline-navy btn-sm" style="width:100%; margin-top:8px;">Update Security Settings</button>
+            <button class="btn btn-outline-navy btn-sm" style="width:100%; margin-top:8px;" onclick="navigateTo('user-settings', false, { settingsSection: 'security' })">Update Security Settings</button>
           </div>
         </div>
       </div>
@@ -18637,16 +18126,6 @@ function animateStats() {
 }
 
 
-
-function isCopyrightFeeWaivedRoute() {
-  return (
-    currentFormType === "copyright" &&
-    wizardData.officialDuty === "Yes" &&
-    wizardData.letterRequest === "Approved"
-  );
-}
-
-
 function renderForms() {
   const categories = [
     {
@@ -19106,31 +18585,10 @@ function getFormTypeKeyFromSubmissionType(type) {
 
 function normalizeSubmissionWorkflowDefaults() {
   submissions = submissions.map((submission) => {
-    const paymentStageActive =
-      ["payment-slip-issued", "cashier-receipt", "receipt-submitted"].includes(
-        submission.ipophlStage,
-      ) ||
-      ["payment-slip-issued", "cashier-receipt", "receipt-submitted"].includes(
-        submission.copyrightStage,
-      );
-
     return {
       ...submission,
       formType: submission.formType || getFormTypeKeyFromSubmissionType(submission.type),
       requirementUploads: submission.requirementUploads || {},
-      paymentRequested:
-        submission.paymentExempt
-          ? false
-          : (submission.paymentRequested ??
-              (submission.status === "Payment Requested" ||
-                paymentStageActive ||
-                (submission.paymentVerified === false &&
-                  (submission.officialReceiptNumber || "")
-                    .toLowerCase()
-                    .includes("pending")))),
-      paymentProofUploaded:
-        submission.paymentProofUploaded ?? Boolean(submission.paymentProofFile),
-      paymentProofFile: submission.paymentProofFile || null,
     };
   });
 }
@@ -19147,61 +18605,4 @@ document.addEventListener("DOMContentLoaded", () => {
     navigateTo("landing");
   }
 });
-
-window.showPaymentGuideModal = function() {
-  const overlay = document.getElementById('modalOverlay');
-  const modalBody = document.getElementById('modalBody');
-  const modalTitle = document.getElementById('modalTitle');
-
-  modalTitle.innerText = "PSU Campus Map";
-  modalTitle.style.display = "block";
-
-  modalBody.innerHTML = `
-    <div style="padding: 0 10px;">
-      <p style="color: var(--gray-500); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.6;">
-        To complete your submission, please follow these steps to pay the filing fee:
-      </p>
-      
-      <div style="display: grid; gap: 16px; margin-bottom: 24px;">
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">1</div>
-          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Visit the <strong>PSU Cashier's Office</strong> located at the Administration Building.</div>
-        </div>
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">2</div>
-          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Present your <strong>Application Reference Number</strong> or the printed payment slip.</div>
-        </div>
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">3</div>
-          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Secure your <strong>Official Receipt (OR)</strong> and take a clear photo or scan of it.</div>
-        </div>
-        <div style="display: flex; gap: 12px; align-items: flex-start;">
-          <div style="width: 24px; height: 24px; background: var(--gold-light); color: var(--gold-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0;">4</div>
-          <div style="font-size: 0.88rem; color: var(--navy); font-weight: 600;">Upload the receipt in your dashboard to proceed with the evaluation.</div>
-        </div>
-      </div>
-
-      <div style="margin-top: 24px; border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden; background: white;">
-        <div style="padding: 12px 16px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 0.8rem; font-weight: 700; color: var(--navy);"><i class="fa-solid fa-map-location-dot" style="margin-right: 6px;"></i> PSU Campus Map Guide</span>
-          <span style="font-size: 0.72rem; color: var(--gray-500);">Administration Bldg. (Cashier)</span>
-        </div>
-        <div style="padding: 10px; background: white; text-align: center;">
-          <img src="images/psu-map-real.png" alt="PSU Campus Map" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" />
-        </div>
-      </div>
-
-      <div style="margin-top: 20px; padding: 12px; background: rgba(59,130,246,0.05); border-radius: 10px; display: flex; gap: 10px; align-items: center;">
-        <i class="fa-solid fa-clock" style="color: #2563eb; font-size: 0.9rem;"></i>
-        <div style="font-size: 0.8rem; color: #1e40af; line-height: 1.4;">
-          <strong>Cashier Hours:</strong> Monday - Friday, 8:00 AM - 5:00 PM (No Noon Break)
-        </div>
-      </div>
-    </div>
-  `;
-
-  overlay.classList.add('active');
-};
-
-
 
