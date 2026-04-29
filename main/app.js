@@ -3072,6 +3072,13 @@ function getRequiredDocumentsForType(formType = currentFormType) {
   if (formType === "copyright") {
     // Deep copy to allow modifying objects inside the array safely
     let copyDocs = docs.map(doc => ({ ...doc }));
+    const copyOfWorkIndex = copyDocs.findIndex(d => d.key === "copy-of-work");
+    if (copyOfWorkIndex !== -1 && typeof getCopyrightCopyWorkRequirementMeta === "function") {
+      copyDocs[copyOfWorkIndex] = {
+        ...copyDocs[copyOfWorkIndex],
+        ...getCopyrightCopyWorkRequirementMeta(),
+      };
+    }
     
     // If online method, remove the manual registration form upload requirement
     if (typeof submissionMethod !== 'undefined' && submissionMethod === 'online') {
@@ -3168,6 +3175,11 @@ function renderConditionalPaymentUploadPanel(
     infoOnly = false,
   } = {},
 ) {
+  const isCopyrightPaymentContext =
+    (data === wizardData && currentFormType === "copyright") ||
+    data?.type === "Copyright";
+  if (isCopyrightPaymentContext) return "";
+
   const paymentRequested = data.paymentRequested === true;
   const paymentFile = getPaymentProofFile(data);
 
@@ -6894,7 +6906,7 @@ function renderSubmissionDetail() {
             }
           </div>
           ${
-            normalizedRole === "applicant" && s.paymentRequested
+            normalizedRole === "applicant" && s.paymentRequested && s.type !== "Copyright"
               ? `<div style="margin-bottom:12px;">${renderConditionalPaymentUploadPanel(s, {
                   inputId: `submission-payment-proof-${s.id}`,
                   onChange: `handleSubmissionPaymentProofUpload('${s.id}', this)`,
@@ -7433,6 +7445,336 @@ function renderCopyrightChoice(
   `;
 }
 
+const COPYRIGHT_CLASSIFICATION_GROUPS = {
+  copyOrPhoto: {
+    value: "copy-or-photo",
+    label:
+      "Electronic copy or photo of the work in JPG or PDF format. For 3-Dimensional objects, photographs of all sides of the work.",
+  },
+  performanceRecording: {
+    value: "performance-recording",
+    label:
+      "Electronic copy of the music sheet, labanotation (for Class E), or audiovisual or sound recording, broadcast, or audiovisual recording in MP3, WAV, MPEG-4, AVI, or other prescribed formats.",
+  },
+  sourceCode: {
+    value: "source-code-only",
+    label:
+      "Manually-coded source codes in PDF or text format only. A reasonable amount of redactions on submitted codes may be made to protect trade secrets. An executable copy of the computer program is not acceptable.",
+  },
+};
+
+const COPYRIGHT_CLASSIFICATIONS = [
+  { value: "A", label: "Class A - Books, writings", claimGroup: "copyOrPhoto" },
+  { value: "B", label: "Class B - Periodicals/newspapers", claimGroup: "copyOrPhoto" },
+  { value: "C", label: "Class C - Lectures/speeches", claimGroup: "copyOrPhoto" },
+  { value: "D", label: "Class D - Letters/emails", claimGroup: "copyOrPhoto" },
+  { value: "E", label: "Class E - Dramatic/choreographic works", claimGroup: "performanceRecording" },
+  { value: "F", label: "Class F - Musical compositions", claimGroup: "performanceRecording" },
+  { value: "G", label: "Class G - Artworks", claimGroup: "copyOrPhoto" },
+  { value: "H", label: "Class H - Ornamental designs/applied art", claimGroup: "copyOrPhoto" },
+  { value: "I", label: "Class I - Maps, plans, sketches", claimGroup: "copyOrPhoto" },
+  { value: "J", label: "Class J - Scientific/technical drawings", claimGroup: "copyOrPhoto" },
+  { value: "K", label: "Class K - Photographs", claimGroup: "copyOrPhoto" },
+  { value: "L", label: "Class L - Audiovisual works", claimGroup: "performanceRecording" },
+  { value: "M", label: "Class M - Advertisements/packaging designs", claimGroup: "copyOrPhoto" },
+  { value: "N", label: "Class N - Computer programs", claimGroup: "sourceCode" },
+  { value: "O", label: "Class O - Other literary/scientific/artistic works", claimGroup: "copyOrPhoto" },
+  { value: "P", label: "Class P - Sound recordings", claimGroup: "performanceRecording" },
+  { value: "Q", label: "Class Q - Broadcast recordings", claimGroup: "performanceRecording" },
+  { value: "R", label: "Class R - Audiovisual performance", claimGroup: "performanceRecording" },
+];
+
+function getCopyrightClassificationMeta(value = wizardData.copyrightWorkClassification) {
+  return COPYRIGHT_CLASSIFICATIONS.find((entry) => entry.value === value) || null;
+}
+
+function getCopyrightClassificationLabel(value = wizardData.copyrightWorkClassification) {
+  return getCopyrightClassificationMeta(value)?.label || "";
+}
+
+function getCopyrightAuthorshipClaimOptionsForClassification(
+  value = wizardData.copyrightWorkClassification,
+) {
+  const meta = getCopyrightClassificationMeta(value);
+  if (!meta) return [];
+  const claim = COPYRIGHT_CLASSIFICATION_GROUPS[meta.claimGroup];
+  return claim ? [claim] : [];
+}
+
+function getCopyrightCopyWorkRequirementMeta(
+  value = wizardData?.copyrightWorkClassification,
+) {
+  const meta = getCopyrightClassificationMeta(value);
+  if (!meta) {
+    return {
+      description:
+        "Select a Classification of Works above so the accepted copy-of-work format can be shown.",
+      accept: ".pdf,.jpg,.jpeg,.png,.txt,.mp3,.wav,.mp4,.mpeg,.mpeg4,.avi,.mov",
+      acceptLabel: "Select classification first",
+      multiple: true,
+    };
+  }
+
+  if (meta.claimGroup === "copyOrPhoto") {
+    return {
+      description:
+        "Electronic copy or photo of the work in JPG or PDF format. For 3-Dimensional objects, upload photographs of all sides of the work.",
+      accept: ".pdf,.jpg,.jpeg",
+      acceptLabel: "JPG or PDF",
+      multiple: true,
+    };
+  }
+
+  if (meta.claimGroup === "performanceRecording") {
+    return {
+      description:
+        "Electronic copy of the music sheet, labanotation (for Class E), or audiovisual, sound, broadcast, or audiovisual performance recording.",
+      accept: ".pdf,.jpg,.jpeg,.mp3,.wav,.mp4,.mpeg,.mpeg4,.avi,.mov",
+      acceptLabel: "PDF, JPG, MP3, WAV, MPEG-4, AVI",
+      multiple: true,
+    };
+  }
+
+  return {
+    description:
+      "Manually-coded source codes in PDF or text format only. Redactions may be made to protect trade secrets. Executable program files are not acceptable.",
+    accept: ".pdf,.txt",
+    acceptLabel: "PDF or TXT only",
+    multiple: true,
+  };
+}
+
+function renderCopyrightClassificationSelect() {
+  const selected = wizardData.copyrightWorkClassification || "";
+  const options = [
+    `<option value="">Select classification</option>`,
+    ...COPYRIGHT_CLASSIFICATIONS.map(
+      (item) =>
+        `<option value="${escapeHtml(item.value)}" ${selected === item.value ? "selected" : ""}>${escapeHtml(item.label)}</option>`,
+    ),
+  ].join("");
+
+  return renderPatentEditorFieldShell(
+    "Classification of Works",
+    `<select class="patent-editor-field__control patent-editor-field__control--select" id="copyright-work-classification" required onchange="captureWizardData(); refreshWizard()">${options}</select>`,
+    true,
+  );
+}
+
+function renderCopyrightClassificationGate() {
+  const selectedLabel = getCopyrightClassificationLabel();
+  const claimOptions = getCopyrightAuthorshipClaimOptionsForClassification();
+
+  return `
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Classification of Works</div>
+          ${renderCopyrightClassificationSelect()}
+          <div class="patent-editor-inline-group">
+            <span class="patent-editor-inline-group__label">Related Authorship Claim</span>
+            ${
+              claimOptions.length
+                ? `<div class="patent-choice-grid">${claimOptions
+                    .map((claim) =>
+                      renderCopyrightChoice("copyrightAuthorshipClaims", claim.value, claim.label, {
+                        multiple: true,
+                      }),
+                    )
+                    .join("")}</div>`
+                : `<div class="patent-preview-note"><i class="fa-solid fa-circle-info"></i> Select a classification to show the related authorship claim.</div>`
+            }
+          </div>
+          ${
+            selectedLabel
+              ? `<div class="patent-preview-note"><i class="fa-solid fa-tag"></i> Selected: ${escapeHtml(selectedLabel)}</div>`
+              : ""
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCopyrightAuthorshipClaimChoices() {
+  const claimOptions = getCopyrightAuthorshipClaimOptionsForClassification();
+  if (!claimOptions.length) {
+    return `<div class="patent-preview-note"><i class="fa-solid fa-circle-info"></i> Select a classification of works first to show the related authorship claim.</div>`;
+  }
+
+  return `
+    <div class="patent-choice-grid">
+      ${claimOptions
+        .map((claim) =>
+          renderCopyrightChoice("copyrightAuthorshipClaims", claim.value, claim.label, {
+            multiple: true,
+          }),
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function getCopyrightSelectedAuthorshipClaimText() {
+  const selectedClaims = getWizardArray("copyrightAuthorshipClaims");
+  const claimOptions = getCopyrightAuthorshipClaimOptionsForClassification();
+  const selectedText = claimOptions
+    .filter((claim) => selectedClaims.includes(claim.value))
+    .map((claim) => claim.label);
+  return selectedText.join("; ");
+}
+
+function renderCopyrightPublicationIdentifierPreviewRows() {
+  const type = wizardData.copyrightReferenceType || "";
+  if (!type) return "";
+
+  const typeLabel = getCopyrightReferenceTypeLabel(type);
+  const referenceNoLabel = type === "other"
+    ? wizardData.copyrightOtherReferenceType || "Reference Number"
+    : `${typeLabel} Number`;
+  const common =
+    renderCopyrightOfficialField("Identifier Type", typeLabel) +
+    renderCopyrightOfficialField(referenceNoLabel, wizardData.copyrightWorkReference);
+
+  if (type === "isbn") {
+    return renderCopyrightOfficialRow(
+      common +
+        renderCopyrightOfficialField("NBDB / ISBN Status", wizardData.copyrightIsbnStatus) +
+        renderCopyrightOfficialField("NBDB Author / Publisher Name", wizardData.copyrightNbdbName),
+      "copyright-grid--4",
+    );
+  }
+
+  if (type === "issn") {
+    return renderCopyrightOfficialRow(
+      common +
+        renderCopyrightOfficialField("ID / Company ID Reference", wizardData.copyrightIssnIdReference) +
+        renderCopyrightOfficialField("Account Type", wizardData.applicantTypeGroup || "Individual"),
+      "copyright-grid--4",
+    );
+  }
+
+  if (type === "ismn") {
+    return renderCopyrightOfficialRow(
+      common +
+        renderCopyrightOfficialField("Publisher Name to Use", wizardData.copyrightIsmnPublisherName) +
+        renderCopyrightOfficialField("Publisher Name", wizardData.copyrightPublisherName),
+      "copyright-grid--4",
+    );
+  }
+
+  return renderCopyrightOfficialRow(
+    common +
+      renderCopyrightOfficialField("Reference Type", wizardData.copyrightOtherReferenceType) +
+      renderCopyrightOfficialField("Notes", ""),
+    "copyright-grid--4",
+  );
+}
+
+function getCopyrightReferenceTypeLabel(value = wizardData.copyrightReferenceType) {
+  const labels = {
+    isbn: "ISBN",
+    issn: "ISSN",
+    ismn: "ISMN",
+    other: "Other reference number",
+  };
+  return labels[value] || "No publication identifier";
+}
+
+function renderCopyrightReferenceGuidance() {
+  const type = wizardData.copyrightReferenceType || "";
+  if (type === "isbn") {
+    return `
+      <div class="patent-preview-note">
+        <i class="fa-solid fa-book"></i>
+        For first-time applicants, make sure you are registered with NBDB as an Author or Publisher. There is no need to register again if you previously obtained an ISBN.
+      </div>
+      <div class="patent-editor-inline-group">
+        <span class="patent-editor-inline-group__label">NBDB / ISBN Status</span>
+        <div class="patent-choice-grid patent-choice-grid--two">
+          ${renderCopyrightChoice("copyrightIsbnStatus", "first-time", "First-time applicant")}
+          ${renderCopyrightChoice("copyrightIsbnStatus", "previous-isbn", "Previously obtained an ISBN")}
+        </div>
+      </div>
+      <div class="patent-editor-grid patent-editor-grid--two">
+        ${renderPatentEditorInput("NBDB Author / Publisher Name", "copyright-nbdb-name", wizardData.copyrightNbdbName, { placeholder: "Registered author or publisher name" })}
+        ${renderPatentEditorInput("ISBN Number", "copyright-work-reference", wizardData.copyrightWorkReference, { placeholder: "If already issued" })}
+      </div>
+    `;
+  }
+
+  if (type === "issn") {
+    const accountText =
+      wizardData.applicantTypeGroup === "Institution"
+        ? "For institutional accounts, prepare a company ID."
+        : "For individual accounts, prepare a valid ID.";
+    return `
+      <div class="patent-preview-note">
+        <i class="fa-solid fa-newspaper"></i>
+        ISSN requirement: ${escapeHtml(accountText)}
+      </div>
+      <div class="patent-editor-grid patent-editor-grid--two">
+        ${renderPatentEditorInput("ISSN Number", "copyright-work-reference", wizardData.copyrightWorkReference, { placeholder: "If already issued" })}
+        ${renderPatentEditorInput("ID / Company ID Reference", "copyright-issn-id-reference", wizardData.copyrightIssnIdReference, { placeholder: wizardData.applicantTypeGroup === "Institution" ? "Company ID reference" : "Valid ID reference" })}
+      </div>
+    `;
+  }
+
+  if (type === "ismn") {
+    return `
+      <div class="patent-preview-note">
+        <i class="fa-solid fa-music"></i>
+        ISMN requirement: supply only the name of the publisher you would like to use.
+      </div>
+      <div class="patent-editor-grid patent-editor-grid--two">
+        ${renderPatentEditorInput("Publisher Name to Use", "copyright-ismn-publisher-name", wizardData.copyrightIsmnPublisherName || wizardData.copyrightPublisherName, { placeholder: "Publisher name" })}
+        ${renderPatentEditorInput("ISMN Number", "copyright-work-reference", wizardData.copyrightWorkReference, { placeholder: "If already issued" })}
+      </div>
+    `;
+  }
+
+  if (type === "other") {
+    return `
+      <div class="patent-editor-grid patent-editor-grid--two">
+        ${renderPatentEditorInput("Reference Type", "copyright-other-reference-type", wizardData.copyrightOtherReferenceType, { placeholder: "ISRC, ISWC, ISAN, etc." })}
+        ${renderPatentEditorInput("Reference Number", "copyright-work-reference", wizardData.copyrightWorkReference, { placeholder: "Reference number" })}
+      </div>
+    `;
+  }
+
+  return `<div class="patent-preview-note"><i class="fa-solid fa-circle-info"></i> Select ISBN, ISSN, ISMN, or another reference type if the work already has a publication identifier.</div>`;
+}
+
+function renderCopyrightPublicationIdentifierSection() {
+  const selectedType = wizardData.copyrightReferenceType || "";
+  const referenceTypeOptions = [
+    ["", "No identifier / Not applicable"],
+    ["isbn", "ISBN"],
+    ["issn", "ISSN"],
+    ["ismn", "ISMN"],
+    ["other", "Other reference number"],
+  ]
+    .map(
+      ([value, label]) =>
+        `<option value="${escapeHtml(value)}" ${selectedType === value ? "selected" : ""}>${escapeHtml(label)}</option>`,
+    )
+    .join("");
+
+  return `
+    <div class="patent-editor-section">
+      <div class="patent-paper__section-title">Publication Identifier</div>
+      <div class="patent-editor-grid patent-editor-grid--two">
+        ${renderPatentEditorFieldShell(
+          "Identifier Type",
+          `<select class="patent-editor-field__control patent-editor-field__control--select" id="copyright-reference-type" onchange="captureWizardData(); refreshWizard()">${referenceTypeOptions}</select>`,
+        )}
+        ${renderPatentEditorInput("Selected Identifier", "copyright-reference-type-display", getCopyrightReferenceTypeLabel(), { disabled: true })}
+      </div>
+      ${renderCopyrightReferenceGuidance()}
+    </div>
+  `;
+}
+
 function renderPatentCountryOptions(selectedValue) {
   const options = [
     "Philippines",
@@ -7445,11 +7787,13 @@ function renderPatentCountryOptions(selectedValue) {
     "Australia",
   ];
 
-  return options
-    .map(
+  return [
+    `<option value="" ${selectedValue ? "" : "selected"}>Select country</option>`,
+    ...options.map(
       (option) =>
         `<option value="${option}" ${selectedValue === option ? "selected" : ""}>${option}</option>`,
-    )
+    ),
+  ]
     .join("");
 }
 
@@ -7563,6 +7907,10 @@ function getPatentIntakeServiceDefault() {
   if (currentFormType === "utility") return "utility";
   if (currentFormType === "industrial") return "industrial";
   return "patent";
+}
+
+function getLockedAdvisoryServiceAvailed() {
+  return [getPatentIntakeServiceDefault()];
 }
 
 function getPatentProgressPercent() {
@@ -7721,11 +8069,19 @@ function renderPatentCheckbox(name, value, label, { defaultChecked = false } = {
   `;
 }
 
+function renderLockedAdvisoryServiceChoice(value, label) {
+  const checked = getPatentIntakeServiceDefault() === value;
+  return `
+    <label class="patent-choice patent-choice--check ${checked ? "checked" : ""}" aria-disabled="true">
+      <input type="checkbox" name="advisoryServiceAvailed" value="${value}" ${checked ? "checked" : ""} disabled tabindex="-1" />
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `;
+}
+
 function renderPatentAdvisorySheetStep() {
-  const user = getCurrentUser();
-  const nameParts = getPatentUserNameParts();
-  const today = getPatentTodayValue();
   const typeLabel = getPatentIntakeTypeLabel();
+  wizardData.advisoryServiceAvailed = getLockedAdvisoryServiceAvailed();
 
   return `
     <div class="patent-gform-card">
@@ -7750,7 +8106,7 @@ function renderPatentAdvisorySheetStep() {
           <div class="patent-paper__section-title">Client Information</div>
           <div class="patent-editor-grid patent-editor-grid--two">
             ${renderPatentEditorInput("Name of Company / Business / Government Agency / School", "advisory-company", wizardData.advisoryCompany || wizardData.applicantCompany || "", { placeholder: "Leave blank for individual clients" })}
-            ${renderPatentEditorInput("Date", "advisory-date", wizardData.advisoryDate || today, { type: "date" })}
+            ${renderPatentEditorInput("Date", "advisory-date", wizardData.advisoryDate || "", { type: "date" })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--three">
             ${renderPatentEditorInput("Position / Designation", "advisory-position", wizardData.advisoryPosition || wizardData.applicantPosition || "", { placeholder: "Position or designation" })}
@@ -7764,16 +8120,16 @@ function renderPatentAdvisorySheetStep() {
             ${renderPatentEditorInput("Age", "advisory-age", wizardData.advisoryAge || "", { type: "number", placeholder: "Age" })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--three">
-            ${renderPatentEditorInput("Last Name", "advisory-last-name", wizardData.advisoryLastName || wizardData.applicantLastName || nameParts.last, { placeholder: "Surname" })}
-            ${renderPatentEditorInput("First Name", "advisory-first-name", wizardData.advisoryFirstName || wizardData.applicantFirstName || nameParts.first, { placeholder: "Given name" })}
-            ${renderPatentEditorInput("Middle Name", "advisory-middle-name", wizardData.advisoryMiddleName || wizardData.applicantMiddleName || nameParts.middle, { placeholder: "Optional" })}
+            ${renderPatentEditorInput("Last Name", "advisory-last-name", wizardData.advisoryLastName || wizardData.applicantLastName || "", { placeholder: "Surname" })}
+            ${renderPatentEditorInput("First Name", "advisory-first-name", wizardData.advisoryFirstName || wizardData.applicantFirstName || "", { placeholder: "Given name" })}
+            ${renderPatentEditorInput("Middle Name", "advisory-middle-name", wizardData.advisoryMiddleName || wizardData.applicantMiddleName || "", { placeholder: "Optional" })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--one">
             ${renderPatentEditorInput("Address", "advisory-address", wizardData.advisoryAddress || wizardData.applicantAddress || "", { placeholder: "Complete address", fullWidth: true })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--two">
             ${renderPatentEditorInput("Contact No.", "advisory-contact", wizardData.advisoryContact || wizardData.applicantContact || wizardData.contact || "", { placeholder: "Mobile or landline" })}
-            ${renderPatentEditorInput("Email Address", "advisory-email", wizardData.advisoryEmail || wizardData.applicantEmail || user.email || "", { type: "email", placeholder: "name@example.com" })}
+            ${renderPatentEditorInput("Email Address", "advisory-email", wizardData.advisoryEmail || wizardData.applicantEmail || "", { type: "email", placeholder: "name@example.com" })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--one">
             ${renderPatentEditorInput("Title of Material / Technology / Invention", "advisory-title", wizardData.advisoryTitle || wizardData.title || "", { placeholder: "Exact invention title", fullWidth: true })}
@@ -7783,11 +8139,11 @@ function renderPatentAdvisorySheetStep() {
         <div class="patent-editor-section">
           <div class="patent-paper__section-title">Service Availed</div>
           <div class="patent-choice-grid">
-            ${renderPatentCheckbox("advisoryServiceAvailed", "copyright", "Copyright / Related Rights", { defaultChecked: getPatentIntakeServiceDefault() === "copyright" })}
-            ${renderPatentCheckbox("advisoryServiceAvailed", "trademark", "Trademark")}
-            ${renderPatentCheckbox("advisoryServiceAvailed", "patent", "Patent", { defaultChecked: getPatentIntakeServiceDefault() === "patent" })}
-            ${renderPatentCheckbox("advisoryServiceAvailed", "utility", "Utility Model", { defaultChecked: getPatentIntakeServiceDefault() === "utility" })}
-            ${renderPatentCheckbox("advisoryServiceAvailed", "industrial", "Industrial Design", { defaultChecked: getPatentIntakeServiceDefault() === "industrial" })}
+            ${renderLockedAdvisoryServiceChoice("copyright", "Copyright / Related Rights")}
+            ${renderLockedAdvisoryServiceChoice("trademark", "Trademark")}
+            ${renderLockedAdvisoryServiceChoice("patent", "Patent")}
+            ${renderLockedAdvisoryServiceChoice("utility", "Utility Model")}
+            ${renderLockedAdvisoryServiceChoice("industrial", "Industrial Design")}
           </div>
         </div>
 
@@ -7795,7 +8151,7 @@ function renderPatentAdvisorySheetStep() {
           <div class="patent-paper__section-title">Signature Names</div>
           <div class="patent-editor-grid patent-editor-grid--two">
             ${renderPatentEditorInput("Technical Advisor Name", "advisory-technical-advisor", wizardData.advisoryTechnicalAdvisor || "", { placeholder: "Optional, may be completed by PSU" })}
-            ${renderPatentEditorInput("Client Printed Name", "advisory-client-signature", wizardData.advisoryClientSignature || getPatentAdvisoryFullName(), { placeholder: "Name shown under client signature line" })}
+            ${renderPatentEditorInput("Client Printed Name", "advisory-client-signature", wizardData.advisoryClientSignature || "", { placeholder: "Name shown under client signature line" })}
           </div>
         </div>
       </div>
@@ -7804,9 +8160,7 @@ function renderPatentAdvisorySheetStep() {
 }
 
 function renderPatentDisclosureStep() {
-  const advisoryName = getPatentAdvisoryFullName();
-  const disclosureDate =
-    wizardData.disclosureDate || wizardData.advisoryDate || getPatentTodayValue();
+  const disclosureDate = wizardData.disclosureDate || "";
 
   return `
     <div class="patent-gform-card">
@@ -7820,15 +8174,15 @@ function renderPatentDisclosureStep() {
         <div class="patent-editor-section">
           <div class="patent-paper__section-title">General Information</div>
           <div class="patent-editor-grid patent-editor-grid--two">
-            ${renderPatentEditorInput("Name of Inventor(s)", "disclosure-inventors", wizardData.disclosureInventors || advisoryName, { placeholder: "List inventor names" })}
-            ${renderPatentEditorInput("Job Title / Position", "disclosure-job-title", wizardData.disclosureJobTitle || wizardData.advisoryPosition || "", { placeholder: "Job title or position" })}
+            ${renderPatentEditorInput("Name of Inventor(s)", "disclosure-inventors", wizardData.disclosureInventors || "", { placeholder: "List inventor names" })}
+            ${renderPatentEditorInput("Job Title / Position", "disclosure-job-title", wizardData.disclosureJobTitle || "", { placeholder: "Job title or position" })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--two">
-            ${renderPatentEditorInput("College / Unit / Department", "disclosure-college", wizardData.disclosureCollege || wizardData.college || wizardData.dept || "", { placeholder: "College, unit, or department" })}
-            ${renderPatentEditorInput("Contact Details", "disclosure-contact", wizardData.disclosureContact || wizardData.advisoryContact || wizardData.advisoryEmail || "", { placeholder: "Phone and/or email" })}
+            ${renderPatentEditorInput("College / Unit / Department", "disclosure-college", wizardData.disclosureCollege || "", { placeholder: "College, unit, or department" })}
+            ${renderPatentEditorInput("Contact Details", "disclosure-contact", wizardData.disclosureContact || "", { placeholder: "Phone and/or email" })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--two">
-            ${renderPatentEditorInput("Title of Invention", "disclosure-title", wizardData.disclosureTitle || wizardData.advisoryTitle || wizardData.title || "", { placeholder: "Exact invention title" })}
+            ${renderPatentEditorInput("Title of Invention", "disclosure-title", wizardData.disclosureTitle || "", { placeholder: "Exact invention title" })}
             ${renderPatentEditorInput("Date of Disclosure", "disclosure-date", disclosureDate, { type: "date" })}
           </div>
         </div>
@@ -7837,8 +8191,8 @@ function renderPatentDisclosureStep() {
           <div class="patent-paper__section-title">Technical Disclosure</div>
           <div class="patent-editor-grid patent-editor-grid--one">
             ${renderPatentEditorTextarea("Background and Problem Statement", "disclosure-background", wizardData.disclosureBackground || "", { placeholder: "Describe the existing problem, limitation, or gap that led to this invention.", fullWidth: true })}
-            ${renderPatentEditorTextarea("Description of the Intellectual Property", "disclosure-description", wizardData.disclosureDescription || wizardData.description || "", { placeholder: "Provide a clear and complete description of the invention, its parts, and how it works.", fullWidth: true })}
-            ${renderPatentEditorTextarea("Novel Features", "disclosure-novel-features", wizardData.disclosureNovelFeatures || wizardData.novelty || "", { placeholder: "Identify what is original, new, and different from existing inventions.", fullWidth: true })}
+            ${renderPatentEditorTextarea("Description of the Intellectual Property", "disclosure-description", wizardData.disclosureDescription || "", { placeholder: "Provide a clear and complete description of the invention, its parts, and how it works.", fullWidth: true })}
+            ${renderPatentEditorTextarea("Novel Features", "disclosure-novel-features", wizardData.disclosureNovelFeatures || "", { placeholder: "Identify what is original, new, and different from existing inventions.", fullWidth: true })}
             ${renderPatentEditorTextarea("Inventiveness and Advantages", "disclosure-advantages", wizardData.disclosureAdvantages || "", { placeholder: "Describe distinctive aspects and advantages over existing solutions.", fullWidth: true })}
             ${renderPatentEditorTextarea("Potential Applications and Uses", "disclosure-applications", wizardData.disclosureApplications || "", { placeholder: "State practical, commercial, or societal applications.", fullWidth: true })}
           </div>
@@ -7902,7 +8256,7 @@ function renderPatentDisclosureStep() {
         <div class="patent-editor-section">
           <div class="patent-paper__section-title">Ownership Declaration Signatories</div>
           <div class="patent-editor-grid patent-editor-grid--three">
-            ${renderPatentEditorInput("Creator / Representative 1", "disclosure-creator-1", wizardData.disclosureCreator1 || advisoryName, { placeholder: "Name" })}
+            ${renderPatentEditorInput("Creator / Representative 1", "disclosure-creator-1", wizardData.disclosureCreator1 || "", { placeholder: "Name" })}
             ${renderPatentEditorInput("Creator / Representative 2", "disclosure-creator-2", wizardData.disclosureCreator2 || "", { placeholder: "Name" })}
             ${renderPatentEditorInput("Creator / Representative 3", "disclosure-creator-3", wizardData.disclosureCreator3 || "", { placeholder: "Name" })}
           </div>
@@ -8077,8 +8431,6 @@ function renderPatentFilingDetailsStep() {
 }
 
 function renderPatentApplicantInventorStep() {
-  const currentUser = getCurrentUser();
-
   return `
     <div class="patent-gform-card">
       <span class="patent-gform-kicker">Section 2</span>
@@ -8116,7 +8468,7 @@ function renderPatentApplicantInventorStep() {
             ${renderPatentEditorSelect(
               "Country of Residence",
               "patent-app-country",
-              wizardData.applicantCountry || "Philippines",
+              wizardData.applicantCountry || "",
               [{ value: "", label: "Select country" }].concat(
                 [
                   "Philippines",
@@ -8134,7 +8486,7 @@ function renderPatentApplicantInventorStep() {
 
           <div class="patent-editor-grid patent-editor-grid--three">
             ${renderPatentEditorInput("Contact Number", "patent-app-contact", wizardData.applicantContact, { placeholder: "Mobile or landline" })}
-            ${renderPatentEditorInput("Email Address", "patent-app-email", wizardData.applicantEmail || currentUser.email || "", { type: "email", placeholder: "name@example.com" })}
+            ${renderPatentEditorInput("Email Address", "patent-app-email", wizardData.applicantEmail || "", { type: "email", placeholder: "name@example.com" })}
             ${renderPatentEditorInput("Nationality", "patent-app-nationality", wizardData.applicantNationality, { placeholder: "e.g. Filipino" })}
           </div>
         </div>
@@ -8167,7 +8519,7 @@ function renderPatentApplicantInventorStep() {
             ${renderPatentEditorSelect(
               "Country of Residence",
               "patent-inv-country",
-              wizardData.inventorCountry || "Philippines",
+              wizardData.inventorCountry || "",
               [{ value: "", label: "Select country" }].concat(
                 [
                   "Philippines",
@@ -8244,7 +8596,7 @@ function renderPatentRepresentativeUploadsStep() {
             ${renderPatentEditorSelect(
               "Country of Residence",
               "patent-agent-country",
-              wizardData.agentCountry || "Philippines",
+              wizardData.agentCountry || "",
               [{ value: "", label: "Select country" }].concat(
                 [
                   "Philippines",
@@ -8320,15 +8672,7 @@ function renderPatentRepresentativeUploadsStep() {
             ${renderPatentEditorInput(
               "Signature Over Printed Name",
               "patent-signature-name",
-              wizardData.signaturePrintedName ||
-                [
-                  wizardData.applicantFirstName,
-                  wizardData.applicantMiddleName,
-                  wizardData.applicantLastName,
-                ]
-                  .filter(Boolean)
-                  .join(" ")
-                  .trim(),
+              wizardData.signaturePrintedName || "",
               { placeholder: "Printed name for the declaration block" },
             )}
           </div>
@@ -8521,16 +8865,13 @@ function getPatentSelectedValues(name, fallback = []) {
 function renderPatentAdvisoryServiceSheetPaper() {
   const clientType = wizardData.advisoryClientType || "";
   const sex = wizardData.advisorySex || "";
-  const serviceValues = getPatentSelectedValues("advisoryServiceAvailed", [
-    getPatentIntakeServiceDefault(),
-  ]);
+  const serviceValues = getLockedAdvisoryServiceAvailed();
   const hasService = (value) => serviceValues.includes(value);
   const company =
     wizardData.advisoryCompany || wizardData.applicantCompany || "";
   const title =
     wizardData.advisoryTitle || wizardData.disclosureTitle || wizardData.title || "";
-  const clientSignature =
-    wizardData.advisoryClientSignature || getPatentAdvisoryFullName();
+  const clientSignature = wizardData.advisoryClientSignature || "";
 
   return `
     <div class="psu-form-paper psu-advisory-paper">
@@ -9099,8 +9440,8 @@ function renderCopyrightEditorHeader(title, subtitle) {
 function getCopyrightFormSteps() {
   return [
     "Advisory Sheet",
-    "BCRR Form 2025-1",
     "Upload Requirements",
+    "BCRR Form 2025-1",
     "Preview & Submit",
   ];
 }
@@ -9126,7 +9467,7 @@ function renderCopyrightGoogleForm(
         <div class="patent-gform-card patent-gform-card--hero">
           <span class="patent-gform-kicker">${wizardData.applicantTypeGroup === 'Institution' ? 'BCRR FORM 2025-2' : 'BCRR FORM 2025-1'}</span>
           <h1>${wizardData.applicantTypeGroup === 'Institution' ? 'Institutional Copyright Registration' : 'Fillable Copyright Form'}</h1>
-          <p>Complete the Advisory Service Sheet first, fill out the Copyright Registry Enrollment Form, then review the paper-style preview before submission.</p>
+          <p>Complete the Advisory Service Sheet first, choose the work classification while uploading requirements, then fill out the Copyright Registry Enrollment Form before the final preview.</p>
           <div class="patent-gform-meta">
             <span><i class="fa-solid fa-copyright"></i> ${steps.length} guided sections</span>
             <span><i class="fa-solid fa-file-lines"></i> Advisory + BCRR previews</span>
@@ -9185,6 +9526,7 @@ function renderCopyrightGoogleForm(
             <span class="patent-gform-side-label">How This Works</span>
             <ul class="patent-gform-note-list">
               <li>The first section mirrors the PSU Advisory Service Sheet.</li>
+              <li>The upload section uses the selected Classification of Works to guide the copy-of-work file format.</li>
               <li>The BCRR fields map to the enrollment form sections in your screenshots.</li>
               <li>The last step composes the advisory and registry-style previews for final checking.</li>
               <li>Required uploads still follow the system checklist before submission is allowed.</li>
@@ -9198,11 +9540,11 @@ function renderCopyrightGoogleForm(
 
 function renderCopyrightGoogleStep() {
   if (currentWizardStep === 1) return renderPatentAdvisorySheetStep();
-  if (currentWizardStep === 2) {
+  if (currentWizardStep === 2) return renderCopyrightVerificationUploadStep();
+  if (currentWizardStep === 3) {
     if (wizardData.applicantTypeGroup === 'Institution') return renderCopyrightSupplementalStep();
     return renderCopyrightFillFormStep();
   }
-  if (currentWizardStep === 3) return renderCopyrightVerificationUploadStep();
   return renderCopyrightPreviewStep();
 }
 
@@ -9293,7 +9635,7 @@ function renderCopyrightFillFormStep() {
   // Combines all form sections into one scrollable step
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step 2 - BCRR FORM 2025-1</span>
+      <span class="patent-gform-kicker">Step 3 - BCRR FORM 2025-1</span>
       <h2>Complete the Fillable Copyright Form</h2>
       <p>Fill in all fields below. These map directly to the BCRR Form sections and will populate the final preview.</p>
     </div>
@@ -9368,7 +9710,15 @@ function renderCopyrightPaymentStep() {
 }
 
 function renderCopyrightVerificationUploadStep() {
-  return renderStep3();
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 2 - Upload Requirements</span>
+      <h2>Upload the Copyright Requirements</h2>
+      <p>Select the Classification of Works first. The copy-of-work upload requirement will update to the correct format for that class.</p>
+    </div>
+    ${renderCopyrightClassificationGate()}
+    ${renderStep3()}
+  `;
 }
 
 // Body helpers used by renderCopyrightFillFormStep (call full step minus intro card)
@@ -9552,7 +9902,7 @@ function renderCopyrightAuthorWorkStep() {
             ${renderPatentEditorInput("Municipality / City", "copyright-owner-city", wizardData.copyrightOwnerCity, { placeholder: "City / Municipality" })}
             ${renderPatentEditorInput("Province / State", "copyright-owner-province", wizardData.copyrightOwnerProvince, { placeholder: "Province / State" })}
             ${renderPatentEditorInput("Region", "copyright-owner-region", wizardData.copyrightOwnerRegion, { placeholder: "Region" })}
-            ${renderPatentEditorSelect("Country", "copyright-owner-country", wizardData.copyrightOwnerCountry || "Philippines", [
+            ${renderPatentEditorSelect("Country", "copyright-owner-country", wizardData.copyrightOwnerCountry || "", [
               { value: "", label: "Select country" },
               { value: "Philippines", label: "Philippines" },
               { value: "United States", label: "United States" },
@@ -9621,7 +9971,7 @@ function renderCopyrightAuthorWorkStep() {
           <div class="patent-editor-grid patent-editor-grid--four">
             ${renderPatentEditorInput("Municipality / City", "copyright-author-city", wizardData.copyrightAuthorCity, { placeholder: "City / Municipality" })}
             ${renderPatentEditorInput("Region", "copyright-author-region", wizardData.copyrightAuthorRegion, { placeholder: "Region" })}
-            ${renderPatentEditorSelect("Country", "copyright-author-country", wizardData.copyrightAuthorCountry || "Philippines", [
+            ${renderPatentEditorSelect("Country", "copyright-author-country", wizardData.copyrightAuthorCountry || "", [
               { value: "", label: "Select country" },
               { value: "Philippines", label: "Philippines" },
               { value: "United States", label: "United States" },
@@ -9643,21 +9993,10 @@ function renderCopyrightAuthorWorkStep() {
             ${renderPatentEditorInput("Title of the Work", "copyright-work-title", wizardData.copyrightWorkTitle || wizardData.title, { placeholder: "Title of work / creation / broadcast / performance", fullWidth: true, required: true })}
             ${renderPatentEditorInput("Date of Creation / Performance", "copyright-work-date", wizardData.copyrightWorkDate, { type: "date", required: true })}
           </div>
-          <div class="patent-editor-grid patent-editor-grid--three">
-            ${renderPatentEditorInput("ISBN / ISSN / ISRC / ISWC / ISAN", "copyright-work-reference", wizardData.copyrightWorkReference, { placeholder: "If applicable" })}
+          ${renderCopyrightPublicationIdentifierSection()}
+          <div class="patent-editor-grid patent-editor-grid--two">
             ${renderPatentEditorInput("Place of Creation / Performance", "copyright-work-place", wizardData.copyrightWorkPlace, { placeholder: "City & Country" })}
-            ${renderPatentEditorSelect("Classification of the Work", "copyright-work-classification", wizardData.copyrightWorkClassification || "", [
-              { value: "", label: "Select class" },
-              { value: "A", label: "A - Books and articles" },
-              { value: "F", label: "F - Musical compositions" },
-              { value: "G", label: "G - Visual artworks" },
-              { value: "K", label: "K - Photographic works" },
-              { value: "L", label: "L - Audiovisual works" },
-              { value: "N", label: "N - Computer programs" },
-              { value: "P", label: "P - Sound recordings" },
-              { value: "Q", label: "Q - Broadcast" },
-              { value: "R", label: "R - Audiovisual performance" },
-            ], { required: true })}
+            ${renderPatentEditorInput("Classification of the Work", "copyright-work-classification-display", getCopyrightClassificationLabel(), { disabled: true, placeholder: "Selected above" })}
           </div>
 
           <div class="patent-editor-inline-group">
@@ -9677,20 +10016,7 @@ function renderCopyrightAuthorWorkStep() {
 
           <div class="patent-editor-inline-group">
             <span class="patent-editor-inline-group__label">Authorship Claim</span>
-            <div class="patent-choice-grid">
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "text", "Text", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "sound-recording", "Sound recording", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "choreography", "Choreographic work", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "musical", "Musical composition", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "script", "Script", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "source-code", "Source code", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "lyrics", "Lyrics", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "audiovisual", "Audiovisual work", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "architectural", "Architectural work", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "photos", "Photographs", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "drawings", "Drawings", { multiple: true })}
-              ${renderCopyrightChoice("copyrightAuthorshipClaims", "artwork", "Artwork (2D / 3D)", { multiple: true })}
-            </div>
+            ${renderCopyrightAuthorshipClaimChoices()}
           </div>
         </div>
       </div>
@@ -9832,8 +10158,8 @@ function renderCopyrightDeclarationsUploadsStep() {
           </div>
 
           <div class="patent-editor-grid patent-editor-grid--two">
-            ${renderPatentEditorInput("Applicant's Signature Over Printed Name", "copyright-signature-name", wizardData.copyrightSignatureName || wizardData.name, { placeholder: "Printed name for signature block", required: true })}
-            ${renderPatentEditorInput("Signature Date", "copyright-signature-date", wizardData.copyrightSignatureDate || new Date().toISOString().split("T")[0], { type: "date", required: true })}
+            ${renderPatentEditorInput("Applicant's Signature Over Printed Name", "copyright-signature-name", wizardData.copyrightSignatureName || "", { placeholder: "Printed name for signature block", required: true })}
+            ${renderPatentEditorInput("Signature Date", "copyright-signature-date", wizardData.copyrightSignatureDate || "", { type: "date", required: true })}
           </div>
         </div>
       </div>
@@ -10171,19 +10497,7 @@ function renderCopyrightSectionBar(title, note = "") {
 }
 
 function renderCopyrightOwnerPrintedName() {
-  return (
-    wizardData.copyrightSignatureName ||
-    [
-      wizardData.copyrightOwnerFirstName,
-      wizardData.copyrightOwnerMiddleName,
-      wizardData.copyrightOwnerSurname,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim() ||
-    wizardData.name ||
-    " "
-  );
+  return wizardData.copyrightSignatureName || " ";
 }
 
 function renderCopyrightFormSheetBundle() {
@@ -10601,7 +10915,7 @@ function renderCopyrightFormSheetPage2() {
         ${renderCopyrightOfficialRow(
           renderCopyrightOfficialField("Title of the Work/Creation/Broadcast/Performance", wizardData.copyrightWorkTitle || wizardData.title, { span: 2 }) +
           renderCopyrightOfficialField("Date of Creation/Broadcast/Performance", wizardData.copyrightWorkDate) +
-          renderCopyrightOfficialField("Classification of the Work", wizardData.copyrightWorkClassification),
+          renderCopyrightOfficialField("Classification of the Work", getCopyrightClassificationLabel(wizardData.copyrightWorkClassification) || wizardData.copyrightWorkClassification),
           "copyright-grid--4",
         )}
         ${renderCopyrightOfficialRow(
@@ -10616,23 +10930,15 @@ function renderCopyrightFormSheetPage2() {
             ["lyrics", "Lyrics"],
           ], { multiple: true }), { raw: true, span: 2, valueClass: "copyright-cell__value--choices" }) +
           renderCopyrightOfficialField("Place of Creation/Broadcast/Performance", wizardData.copyrightWorkPlace) +
-          renderCopyrightOfficialField("Reference No. (ISBN/ISSN/ISRC/ISWC/ISAN)", wizardData.copyrightWorkReference),
+          renderCopyrightOfficialField(
+            `${getCopyrightReferenceTypeLabel(wizardData.copyrightReferenceType)}${wizardData.copyrightReferenceType ? " No." : ""}`,
+            wizardData.copyrightWorkReference,
+          ),
           "copyright-grid--4",
         )}
+        ${renderCopyrightPublicationIdentifierPreviewRows()}
         ${renderCopyrightOfficialRow(
-          renderCopyrightOfficialField("Authorship Claim", renderCopyrightOfficialMarks("copyrightAuthorshipClaims", [
-            ["text", "Text"],
-            ["sound-recording", "Sound recording"],
-            ["choreography", "Choreographic work"],
-            ["musical", "Musical composition"],
-            ["script", "Script"],
-            ["source-code", "Source code"],
-            ["lyrics", "Lyrics"],
-            ["audiovisual", "Audiovisual work"],
-            ["architectural", "Architectural work"],
-            ["photos", "Photographs"],
-            ["drawings", "Drawings"],
-          ], { multiple: true }), { raw: true, span: 4, valueClass: "copyright-cell__value--choices" }),
+          renderCopyrightOfficialField("Authorship Claim", getCopyrightSelectedAuthorshipClaimText(), { span: 4 }),
           "copyright-grid--4",
         )}
 
@@ -10700,26 +11006,10 @@ function renderCopyrightFormSheetPage2() {
 }
 
 function renderCopyrightReferencePage3() {
-  const classificationRows = [
-    ["A", "Books, pamphlets, articles and other writings", "Text"],
-    ["B", "Periodicals and newspapers", "Text"],
-    ["C", "Lectures, sermons, addresses", "Text"],
-    ["D", "Letters / notices", "Text"],
-    ["E", "Dramatic or dramatico-musical works", "Text / Artwork"],
-    ["F", "Musical compositions", "Musical composition / musical arrangement"],
-    ["G", "Works of drawing, painting, architecture, sculpture and similar works", "Artwork (2D or 3D)"],
-    ["H", "Original ornamental designs or models", "Artwork"],
-    ["I", "Illustrations, maps, plans, sketches", "Artwork"],
-    ["J", "Drawings or plastic works of a scientific or technical character", "Text / Artwork"],
-    ["K", "Photographic works", "Photographs"],
-    ["L", "Audiovisual works and cinematographic works", "Audiovisual recording"],
-    ["M", "Pictorial illustrations and advertising materials", "Artwork"],
-    ["N", "Computer programs", "Hard-coded source code"],
-    ["O", "Other literary, scholarly, scientific and artistic works", "Text / Artwork"],
-    ["P", "Sound recordings", "Sound recording"],
-    ["Q", "Broadcast records", "Broadcast"],
-    ["R", "Audiovisual performance", "Performance"],
-  ];
+  const classificationRows = COPYRIGHT_CLASSIFICATIONS.map((item) => {
+    const claim = COPYRIGHT_CLASSIFICATION_GROUPS[item.claimGroup]?.label || "";
+    return [item.value, item.label.replace(/^Class [A-R] - /, ""), claim];
+  });
 
   const applicationRequirements = [
     "Filled out and signed BCRR Form 2025-1.",
@@ -10830,7 +11120,6 @@ function renderCopyrightReferencePage3() {
 function captureCopyrightGoogleData() {
   captureAdvisoryServiceSheetData();
 
-  const currentUser = getCurrentUser();
   const countries = ["Philippines", "United States", "Japan", "Singapore", "Australia"];
   const getValue = (id, fallback = "") =>
     document.getElementById(id)?.value || wizardData[fallback] || "";
@@ -10907,7 +11196,12 @@ function captureCopyrightGoogleData() {
     ["copyright-author-contact", "copyrightAuthorContact"],
     ["copyright-work-title", "copyrightWorkTitle"],
     ["copyright-work-date", "copyrightWorkDate"],
+    ["copyright-reference-type", "copyrightReferenceType"],
     ["copyright-work-reference", "copyrightWorkReference"],
+    ["copyright-nbdb-name", "copyrightNbdbName"],
+    ["copyright-issn-id-reference", "copyrightIssnIdReference"],
+    ["copyright-ismn-publisher-name", "copyrightIsmnPublisherName"],
+    ["copyright-other-reference-type", "copyrightOtherReferenceType"],
     ["copyright-work-place", "copyrightWorkPlace"],
     ["copyright-work-classification", "copyrightWorkClassification"],
     ["copyright-author-death-date", "copyrightAuthorDeathDate"],
@@ -10945,6 +11239,10 @@ function captureCopyrightGoogleData() {
     document.querySelector('input[name="copyrightOwnerAlsoAuthor"]:checked')?.value ||
     wizardData.copyrightOwnerAlsoAuthor ||
     "yes";
+  wizardData.copyrightIsbnStatus =
+    document.querySelector('input[name="copyrightIsbnStatus"]:checked')?.value ||
+    wizardData.copyrightIsbnStatus ||
+    "";
 
   wizardData.copyrightAuthorNameType =
     document.querySelector('input[name="copyrightAuthorNameType"]:checked')?.value ||
@@ -10961,6 +11259,14 @@ function captureCopyrightGoogleData() {
 
   wizardData.copyrightDisclaimers = getCheckedArray("copyrightDisclaimers", "copyrightDisclaimers");
   wizardData.copyrightAuthorshipClaims = getCheckedArray("copyrightAuthorshipClaims", "copyrightAuthorshipClaims");
+  const allowedAuthorshipClaims = getCopyrightAuthorshipClaimOptionsForClassification(
+    wizardData.copyrightWorkClassification,
+  ).map((claim) => claim.value);
+  if (allowedAuthorshipClaims.length) {
+    wizardData.copyrightAuthorshipClaims = wizardData.copyrightAuthorshipClaims.filter((claim) =>
+      allowedAuthorshipClaims.includes(claim),
+    );
+  }
 
   wizardData.copyrightAuthorDeceased =
     document.querySelector('input[name="copyrightAuthorDeceased"]:checked')?.value ||
@@ -10997,10 +11303,10 @@ function captureCopyrightGoogleData() {
     "agree";
 
   if (!countries.includes(wizardData.copyrightOwnerCountry)) {
-    wizardData.copyrightOwnerCountry = wizardData.copyrightOwnerCountry || "Philippines";
+    wizardData.copyrightOwnerCountry = "";
   }
   if (!countries.includes(wizardData.copyrightAuthorCountry)) {
-    wizardData.copyrightAuthorCountry = wizardData.copyrightAuthorCountry || "Philippines";
+    wizardData.copyrightAuthorCountry = "";
   }
 
   wizardData.copyrightOwnerBusinessRegistration = getCheckedArray("copyrightOwnerBusinessRegistration", "copyrightOwnerBusinessRegistration");
@@ -11037,12 +11343,12 @@ function captureCopyrightGoogleData() {
     .trim();
 
   wizardData.name =
-    ownerName || authorName || getPatentAdvisoryFullName() || wizardData.copyrightSignatureName || currentUser.name;
+    ownerName || authorName || getPatentAdvisoryFullName() || wizardData.copyrightSignatureName || wizardData.name || "";
   wizardData.email =
     wizardData.copyrightOwnerEmail ||
     wizardData.copyrightAuthorEmail ||
     wizardData.advisoryEmail ||
-    currentUser.email ||
+    wizardData.email ||
     "";
   wizardData.contact =
     wizardData.copyrightOwnerContact ||
@@ -11050,7 +11356,7 @@ function captureCopyrightGoogleData() {
     wizardData.advisoryContact ||
     "";
   wizardData.dept =
-    wizardData.copyrightOwnerInstitutionName || wizardData.advisoryCompany || currentUser.dept || "Copyright Filing";
+    wizardData.copyrightOwnerInstitutionName || wizardData.advisoryCompany || wizardData.dept || "Copyright Filing";
   wizardData.title =
     wizardData.copyrightWorkTitle || wizardData.advisoryTitle || wizardData.title || "Untitled Copyright Work";
   wizardData.worktype =
@@ -11060,10 +11366,8 @@ function captureCopyrightGoogleData() {
     wizardData.copyrightDerivativeType ||
     wizardData.copyrightWorkPlace ||
     wizardData.title;
-  wizardData.copyrightSignatureName =
-    wizardData.copyrightSignatureName || ownerName || authorName || currentUser.name;
-  wizardData.copyrightSignatureDate =
-    wizardData.copyrightSignatureDate || new Date().toISOString().split("T")[0];
+  wizardData.copyrightSignatureName = wizardData.copyrightSignatureName || "";
+  wizardData.copyrightSignatureDate = wizardData.copyrightSignatureDate || "";
 
   syncRequirementUploadsToFiles("copyright");
 }
@@ -11139,16 +11443,7 @@ function renderPatentFormSheetPage2() {
   const totalSheets = Object.values(sheetCounts)
     .map((value) => Number.parseInt(value || "0", 10) || 0)
     .reduce((sum, value) => sum + value, 0);
-  const applicantPrintedName =
-    wizardData.signaturePrintedName ||
-    [
-      wizardData.applicantFirstName,
-      wizardData.applicantMiddleName,
-      wizardData.applicantLastName,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+  const applicantPrintedName = wizardData.signaturePrintedName || "";
   const mailingPreference = wizardData.certificateDelivery || "pickup";
   const otherDocumentLabel =
     (wizardData.supportingNotes || "").trim() || "____________________________";
@@ -11403,7 +11698,7 @@ function renderGuidedPartyEditorSection({
         ${renderPatentEditorFieldShell(
           "Country of Residence",
           `<select class="patent-editor-field__control patent-editor-field__control--select" id="${idBase}-country">${renderPatentCountryOptions(
-            wizardData[`${keyBase}Country`] || "Philippines",
+            wizardData[`${keyBase}Country`] || "",
           )}</select>`,
         )}
       </div>
@@ -11812,7 +12107,12 @@ function renderUtilityRouteApplicantStep() {
             ${renderPatentEditorSelect(
               "Certified Copy Attached?",
               "utility-priority-certified",
-              wizardData.utilityPriorityCertifiedCopy,
+              wizardData.utilityPriorityCertifiedCopy || "",
+              [
+                { value: "", label: "Select answer" },
+                { value: "yes", label: "Yes" },
+                { value: "no", label: "No" },
+              ],
               { fullWidth: true },
             )}
           </div>
@@ -11973,7 +12273,7 @@ function renderUtilityUploadsStep() {
           <div class="patent-editor-grid patent-editor-grid--three">
             ${renderPatentEditorInput("Figure Number", "utility-figure-number", wizardData.utilityFigureNumber, { placeholder: "If any" })}
             ${renderPatentEditorInput("Total Number of Claims", "utility-claims-total", wizardData.utilityClaimsTotal, { placeholder: "If any" })}
-            ${renderPatentEditorInput("Printed Name for Signature", "utility-signature-name", wizardData.signaturePrintedName || getPartyPrintedName("utilityApplicant"), { placeholder: "Defaults to applicant name" })}
+            ${renderPatentEditorInput("Printed Name for Signature", "utility-signature-name", wizardData.signaturePrintedName || "", { placeholder: "Printed name for signature block" })}
           </div>
 
           <div class="patent-editor-inline-group">
@@ -12373,8 +12673,7 @@ function renderUtilityFormSheetPage2() {
     .map((value) => Number.parseInt(value || "0", 10) || 0)
     .reduce((sum, value) => sum + value, 0);
   const mailingPreference = wizardData.certificateDelivery || "pickup";
-  const applicantPrintedName =
-    wizardData.signaturePrintedName || getPartyPrintedName("utilityApplicant");
+  const applicantPrintedName = wizardData.signaturePrintedName || "";
 
   return `
     <div class="patent-paper-wrap patent-paper-wrap--official">
@@ -12497,8 +12796,6 @@ function renderUtilityFormSheetPage2() {
 }
 
 function captureUtilityGoogleData() {
-  const currentUser = getCurrentUser();
-
   wizardData.utilityApplicationRoute =
     document.querySelector('input[name="utilityApplicationRoute"]:checked')?.value ||
     wizardData.utilityApplicationRoute ||
@@ -12667,10 +12964,9 @@ function captureUtilityGoogleData() {
     wizardData.signaturePrintedName ||
     "";
 
-  wizardData.utilityApplicantCountry =
-    wizardData.utilityApplicantCountry || "Philippines";
-  wizardData.utilityMakerCountry = wizardData.utilityMakerCountry || "Philippines";
-  wizardData.utilityAgentCountry = wizardData.utilityAgentCountry || "Philippines";
+  wizardData.utilityApplicantCountry = wizardData.utilityApplicantCountry || "";
+  wizardData.utilityMakerCountry = wizardData.utilityMakerCountry || "";
+  wizardData.utilityAgentCountry = wizardData.utilityAgentCountry || "";
   wizardData.field = wizardData.field || "";
   wizardData.drawingsCount =
     wizardData.utilityDrawingsSheets || wizardData.drawingsCount || "";
@@ -12689,21 +12985,19 @@ function captureUtilityGoogleData() {
     wizardData.claims || wizardData.utilityClaimsTotal || "";
   wizardData.abstract = wizardData.abstract || wizardData.title || "";
 
-  wizardData.name =
-    getPartyPrintedName("utilityApplicant") || currentUser.name || "Applicant";
-  wizardData.email = wizardData.utilityApplicantEmail || currentUser.email || "";
+  wizardData.name = getPartyPrintedName("utilityApplicant") || wizardData.name || "";
+  wizardData.email = wizardData.utilityApplicantEmail || wizardData.email || "";
   wizardData.contact = wizardData.utilityApplicantContact || "";
   wizardData.dept =
     wizardData.utilityApplicantOrganization ||
-    currentUser.dept ||
+    wizardData.dept ||
     "Utility Model Filing";
   wizardData.description =
     wizardData.utilityOtherDocuments ||
     wizardData.utilityNaturePurpose ||
     wizardData.title ||
     "";
-  wizardData.signaturePrintedName =
-    wizardData.signaturePrintedName || wizardData.name;
+  wizardData.signaturePrintedName = wizardData.signaturePrintedName || "";
 
   syncRequirementUploadsToFiles("utility");
 }
@@ -12985,7 +13279,7 @@ function renderIndustrialUploadsStep() {
           <div class="patent-editor-grid patent-editor-grid--three">
             ${renderPatentEditorInput("Number of Views", "industrial-views-count", wizardData.industrialViewsCount, { placeholder: "e.g. 7" })}
             ${renderPatentEditorInput("Number of Embodiments", "industrial-embodiments-count", wizardData.industrialEmbodimentsCount, { placeholder: "Optional" })}
-            ${renderPatentEditorInput("Printed Name for Signature", "industrial-signature-name", wizardData.signaturePrintedName || getPartyPrintedName("industrialApplicant"), { placeholder: "Defaults to applicant name" })}
+            ${renderPatentEditorInput("Printed Name for Signature", "industrial-signature-name", wizardData.signaturePrintedName || "", { placeholder: "Printed name for signature block" })}
           </div>
           <div class="patent-editor-grid patent-editor-grid--one">
             ${renderPatentEditorTextarea("Internal Notes / Remarks", "industrial-supporting-notes", wizardData.supportingNotes, { placeholder: "Optional notes for the design filing packet.", fullWidth: true })}
@@ -13152,7 +13446,7 @@ function renderIndustrialFormSheetPage2() {
           <div class="patent-official-checklist-col">
             ${renderGuidedChecklistMetric("Views submitted", wizardData.industrialViewsCount, "views")}
             ${renderGuidedChecklistMetric("Embodiments", wizardData.industrialEmbodimentsCount, "sets")}
-            ${renderGuidedChecklistMetric("Signature name", wizardData.signaturePrintedName || getPartyPrintedName("industrialApplicant"))}
+            ${renderGuidedChecklistMetric("Signature name", wizardData.signaturePrintedName)}
             ${wizardData.supportingNotes ? `<div class="patent-official-checklist-note">${escapeHtml(wizardData.supportingNotes)}</div>` : ""}
           </div>
         </div>
@@ -13168,8 +13462,6 @@ function renderIndustrialFormSheetPage2() {
 }
 
 function captureIndustrialGoogleData() {
-  const currentUser = getCurrentUser();
-
   wizardData.industrialApplicationRoute =
     document.querySelector('input[name="industrialApplicationRoute"]:checked')?.value ||
     wizardData.industrialApplicationRoute ||
@@ -13291,28 +13583,27 @@ function captureIndustrialGoogleData() {
     "";
 
   wizardData.industrialApplicantCountry =
-    wizardData.industrialApplicantCountry || "Philippines";
+    wizardData.industrialApplicantCountry || "";
   wizardData.industrialDesignerCountry =
-    wizardData.industrialDesignerCountry || "Philippines";
+    wizardData.industrialDesignerCountry || "";
   wizardData.industrialAgentCountry =
-    wizardData.industrialAgentCountry || "Philippines";
+    wizardData.industrialAgentCountry || "";
 
   wizardData.name =
-    getPartyPrintedName("industrialApplicant") || currentUser.name || "Applicant";
+    getPartyPrintedName("industrialApplicant") || wizardData.name || "";
   wizardData.email =
-    wizardData.industrialApplicantEmail || currentUser.email || "";
+    wizardData.industrialApplicantEmail || wizardData.email || "";
   wizardData.contact = wizardData.industrialApplicantContact || "";
   wizardData.dept =
     wizardData.industrialApplicantOrganization ||
-    currentUser.dept ||
+    wizardData.dept ||
     "Industrial Design Filing";
   wizardData.description =
     wizardData.industrialViewsExplanation ||
     wizardData.desc ||
     wizardData.title ||
     "";
-  wizardData.signaturePrintedName =
-    wizardData.signaturePrintedName || wizardData.name;
+  wizardData.signaturePrintedName = wizardData.signaturePrintedName || "";
 
   syncRequirementUploadsToFiles("industrial");
 }
@@ -13491,7 +13782,7 @@ function renderWizardStep() {
 }
 
 function renderStep1() {
-  const user = getCurrentUser();
+  const selectedCollege = wizardData.college || "";
   return `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="margin:0;">Applicant Information</h3>
@@ -13501,12 +13792,12 @@ function renderStep1() {
     <div class="form-row">
       <div class="form-group">
         <label>Full Name *</label>
-        <input type="text" id="wiz-name" value="${wizardData.name || user.name}" placeholder="Enter full name" required style="background:var(--gray-50);" />
+        <input type="text" id="wiz-name" value="${wizardData.name || ""}" placeholder="Enter full name" required style="background:var(--gray-50);" />
         <small style="color:var(--gray-400); font-size:0.75rem; margin-top:4px; display:block;">Primary applicant or lead researcher.</small>
       </div>
       <div class="form-group">
         <label>Institutional Email *</label>
-        <input type="email" id="wiz-email" value="${wizardData.email || user.email}" placeholder="your.email@psu.edu.ph" required disabled style="background:var(--gray-100); cursor:not-allowed;" />
+        <input type="email" id="wiz-email" value="${wizardData.email || ""}" placeholder="your.email@psu.edu.ph" required style="background:var(--gray-50);" />
         <small style="color:var(--gray-400); font-size:0.75rem; margin-top:4px; display:block;">Used for all official PITBI correspondence.</small>
       </div>
     </div>
@@ -13516,11 +13807,11 @@ function renderStep1() {
         <label>Unit / College *</label>
         <select id="wiz-college" required>
           <option value="">Select College</option>
-          <option value="College of Engineering" ${(wizardData.college || user.dept || '').includes('Engineering') ? 'selected' : ''}>College of Engineering</option>
-          <option value="College of Sciences" ${(wizardData.college || user.dept || '').includes('Sciences') ? 'selected' : ''}>College of Sciences</option>
-          <option value="College of Agriculture" ${(wizardData.college || user.dept || '').includes('Agriculture') ? 'selected' : ''}>College of Agriculture</option>
-          <option value="College of Arts" ${(wizardData.college || user.dept || '').includes('Arts') ? 'selected' : ''}>College of Arts</option>
-          <option value="Research Office" ${(wizardData.college || user.dept || '').includes('Research') ? 'selected' : ''}>Research Office</option>
+          <option value="College of Engineering" ${selectedCollege.includes('Engineering') ? 'selected' : ''}>College of Engineering</option>
+          <option value="College of Sciences" ${selectedCollege.includes('Sciences') ? 'selected' : ''}>College of Sciences</option>
+          <option value="College of Agriculture" ${selectedCollege.includes('Agriculture') ? 'selected' : ''}>College of Agriculture</option>
+          <option value="College of Arts" ${selectedCollege.includes('Arts') ? 'selected' : ''}>College of Arts</option>
+          <option value="Research Office" ${selectedCollege.includes('Research') ? 'selected' : ''}>Research Office</option>
         </select>
       </div>
       <div class="form-group">
@@ -13704,6 +13995,7 @@ function renderStep2() {
 function renderStep3() {
   const uploadedCount = getUploadedRequiredCount(currentFormType, wizardData);
   const totalRequired = getRequiredDocumentCount(currentFormType);
+  const showPaymentControls = currentFormType !== "copyright";
   const currentStatus = wizardData.paymentRequested
     ? "Payment Requested"
     : "Pending";
@@ -13742,10 +14034,14 @@ function renderStep3() {
         <div style="font-size:1.1rem; font-weight:800; color:var(--navy);">${currentStatus}</div>
         <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Visible to the applicant throughout submission</div>
       </div>
-      <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
-        <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Payment Step</div>
-        <div style="font-size:1.1rem; font-weight:800; color:var(--navy);">${paymentLabel}</div>
-      </div>
+      ${
+        showPaymentControls
+          ? `<div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
+              <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Payment Step</div>
+              <div style="font-size:1.1rem; font-weight:800; color:var(--navy);">${paymentLabel}</div>
+            </div>`
+          : ""
+      }
     </div>
 
     <div style="border:1.5px solid var(--gray-100); background:white; border-radius:20px; padding:24px;">
@@ -13760,7 +14056,7 @@ function renderStep3() {
     </div>
 
       <div style="margin-top:24px;">
-        ${renderConditionalPaymentUploadPanel(wizardData)}
+        ${showPaymentControls ? renderConditionalPaymentUploadPanel(wizardData) : ""}
       </div>
     </div>
   `;
@@ -13861,9 +14157,7 @@ function captureAdvisoryServiceSheetData() {
 
   captureRadio("advisoryClientType", "advisoryClientType");
   captureRadio("advisorySex", "advisorySex");
-  captureChecks("advisoryServiceAvailed", "advisoryServiceAvailed", [
-    getPatentIntakeServiceDefault(),
-  ]);
+  wizardData.advisoryServiceAvailed = getLockedAdvisoryServiceAvailed();
   [
     ["advisoryCompany", "advisory-company"],
     ["advisoryDate", "advisory-date"],
@@ -13880,10 +14174,7 @@ function captureAdvisoryServiceSheetData() {
     ["advisoryClientSignature", "advisory-client-signature"],
   ].forEach(([key, id]) => captureValue(key, id, wizardData[key] || ""));
 
-  wizardData.advisoryServiceAvailed = getPatentSelectedValues(
-    "advisoryServiceAvailed",
-    [getPatentIntakeServiceDefault()],
-  );
+  wizardData.advisoryServiceAvailed = getLockedAdvisoryServiceAvailed();
 }
 
 function validateWizardStep() {
@@ -13916,7 +14207,6 @@ function captureWizardData() {
   }
 
   if (isPatentIntakeFlow()) {
-    const currentUser = getCurrentUser();
     const captureValue = (key, id, fallback = "") => {
       const el = document.getElementById(id);
       if (el) wizardData[key] = el.value || fallback;
@@ -13938,9 +14228,7 @@ function captureWizardData() {
 
     captureRadio("advisoryClientType", "advisoryClientType");
     captureRadio("advisorySex", "advisorySex");
-    captureChecks("advisoryServiceAvailed", "advisoryServiceAvailed", [
-      getPatentIntakeServiceDefault(),
-    ]);
+    wizardData.advisoryServiceAvailed = getLockedAdvisoryServiceAvailed();
     [
       ["advisoryCompany", "advisory-company"],
       ["advisoryDate", "advisory-date"],
@@ -14092,7 +14380,7 @@ function captureWizardData() {
     wizardData.applicantCountry =
       document.getElementById("patent-app-country")?.value ||
       wizardData.applicantCountry ||
-      "Philippines";
+      "";
     wizardData.applicantContact =
       document.getElementById("patent-app-contact")?.value ||
       wizardData.applicantContact ||
@@ -14100,7 +14388,6 @@ function captureWizardData() {
     wizardData.applicantEmail =
       document.getElementById("patent-app-email")?.value ||
       wizardData.applicantEmail ||
-      currentUser.email ||
       "";
     wizardData.applicantNationality =
       document.getElementById("patent-app-nationality")?.value ||
@@ -14142,7 +14429,7 @@ function captureWizardData() {
     wizardData.inventorCountry =
       document.getElementById("patent-inv-country")?.value ||
       wizardData.inventorCountry ||
-      "Philippines";
+      "";
     wizardData.inventorContact =
       document.getElementById("patent-inv-contact")?.value ||
       wizardData.inventorContact ||
@@ -14203,7 +14490,7 @@ function captureWizardData() {
     wizardData.agentCountry =
       document.getElementById("patent-agent-country")?.value ||
       wizardData.agentCountry ||
-      "Philippines";
+      "";
     wizardData.agentContact =
       document.getElementById("patent-agent-contact")?.value ||
       wizardData.agentContact ||
@@ -14239,13 +14526,13 @@ function captureWizardData() {
       .join(" ")
       .trim();
     wizardData.email =
-      wizardData.advisoryEmail || wizardData.applicantEmail || currentUser.email || "";
+      wizardData.advisoryEmail || wizardData.applicantEmail || wizardData.email || "";
     wizardData.contact = wizardData.advisoryContact || wizardData.applicantContact || "";
     wizardData.dept =
       wizardData.disclosureCollege ||
       wizardData.advisoryCompany ||
       wizardData.applicantCompany ||
-      currentUser.dept ||
+      wizardData.dept ||
       "";
     wizardData.description =
       wizardData.disclosureDescription ||
@@ -14254,25 +14541,22 @@ function captureWizardData() {
       wizardData.title ||
       "";
     wizardData.applicantFirstName =
-      wizardData.applicantFirstName || wizardData.advisoryFirstName || "";
+      wizardData.applicantFirstName || "";
     wizardData.applicantMiddleName =
-      wizardData.applicantMiddleName || wizardData.advisoryMiddleName || "";
+      wizardData.applicantMiddleName || "";
     wizardData.applicantLastName =
-      wizardData.applicantLastName || wizardData.advisoryLastName || "";
+      wizardData.applicantLastName || "";
     wizardData.applicantCompany =
-      wizardData.applicantCompany || wizardData.advisoryCompany || "";
+      wizardData.applicantCompany || "";
     wizardData.applicantPosition =
-      wizardData.applicantPosition || wizardData.advisoryPosition || "";
+      wizardData.applicantPosition || "";
     wizardData.applicantAddress =
-      wizardData.applicantAddress || wizardData.advisoryAddress || "";
+      wizardData.applicantAddress || "";
     wizardData.applicantContact =
-      wizardData.applicantContact || wizardData.advisoryContact || "";
+      wizardData.applicantContact || "";
     wizardData.applicantEmail =
-      wizardData.applicantEmail || wizardData.advisoryEmail || currentUser.email || "";
-    wizardData.advisoryServiceAvailed =
-      getPatentSelectedValues("advisoryServiceAvailed", [
-        getPatentIntakeServiceDefault(),
-      ]);
+      wizardData.applicantEmail || "";
+    wizardData.advisoryServiceAvailed = getLockedAdvisoryServiceAvailed();
     syncRequirementUploadsToFiles(currentFormType);
     return;
   }
@@ -14294,7 +14578,7 @@ function captureWizardData() {
       document.getElementById("wiz-email")?.value || wizardData.email || "";
     wizardData.college =
       document.getElementById("wiz-college")?.value || wizardData.college || "";
-    wizardData.dept = wizardData.college || wizardData.dept || getCurrentUser().dept || "";
+    wizardData.dept = wizardData.college || wizardData.dept || "";
     wizardData.applicantId =
       document.getElementById("wiz-id")?.value || wizardData.applicantId || "";
     wizardData.contact =
@@ -15087,8 +15371,8 @@ function submitForm() {
       type: typeLabel,
       title: wizardData.title || `Untitled ${typeLabel} Application`,
       applicant: wizardData.name || applicantName || "Unnamed Applicant",
-      department: wizardData.dept || wizardData.applicantCompany || getCurrentUser().dept || `${typeLabel} Filing`,
-      email: wizardData.email || wizardData.applicantEmail || getCurrentUser().email || "",
+      department: wizardData.dept || wizardData.applicantCompany || `${typeLabel} Filing`,
+      email: wizardData.email || wizardData.applicantEmail || "",
       contact: wizardData.contact || wizardData.applicantContact || "",
       status: "Pending",
       date: new Date().toISOString().split("T")[0],
@@ -15152,9 +15436,9 @@ function submitForm() {
     id: refNum,
     type: typeMap[currentFormType],
     title: wizardData.title || `${typeMap[currentFormType]} Submission`,
-    applicant: wizardData.name || getCurrentUser().name,
-    department: wizardData.college || getCurrentUser().dept || "PSU Applicant",
-    email: wizardData.email || getCurrentUser().email || "",
+    applicant: wizardData.name || "Unnamed Applicant",
+    department: wizardData.college || wizardData.dept || "PSU Applicant",
+    email: wizardData.email || "",
     contact: wizardData.contact || "",
     status: "Pending",
     date: new Date().toISOString().split("T")[0],
@@ -16398,7 +16682,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                     needsAction
                       ? `
                     <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="viewSubmission('${s.id}')">
-                      <i class="fa-solid fa-upload"></i> ${s.status === "Payment Requested" ? "Upload Proof of Payment" : "Upload Requirements"}
+                      <i class="fa-solid fa-upload"></i> ${s.status === "Payment Requested" ? (isCR ? "View Details" : "Upload Proof of Payment") : "Upload Requirements"}
                     </button>
                   `
                       : ""
