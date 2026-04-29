@@ -9452,6 +9452,18 @@ function getCopyrightProgressPercent() {
   return Math.max(stepSize, Math.min(100, currentWizardStep * stepSize));
 }
 
+function renderCopyrightFirstTimeApplicantNote() {
+  return `
+    <div style="background:#fff7ed; border:1px solid #ffedd5; padding:20px; border-radius:14px; margin-bottom:24px; display:flex; gap:14px; align-items:flex-start;">
+      <i class="fa-solid fa-triangle-exclamation" style="color:#f97316; margin-top:3px; font-size:1.05rem;"></i>
+      <div>
+        <h4 style="color:#c2410c; margin:0 0 8px; font-size:1rem; font-weight:800;">First-time Applicants Note</h4>
+        <p style="color:#c2410c; font-size:0.95rem; line-height:1.55; margin:0;">You must be registered in the NBDB (National Book Development Board) as an Author or Publisher. If you are not yet registered, please register with NBDB before continuing.</p>
+      </div>
+    </div>
+  `;
+}
+
 function renderCopyrightGoogleForm(
   backTarget = "filing-hub",
   backLabel = "Filing Hub",
@@ -9491,6 +9503,7 @@ function renderCopyrightGoogleForm(
               .join("")}
           </div>
 
+          ${currentWizardStep === 1 ? renderCopyrightFirstTimeApplicantNote() : ""}
           ${renderCopyrightGoogleStep()}
 
           <div class="patent-gform-actions">
@@ -14013,15 +14026,7 @@ function renderStep3() {
       </div>
     </div>
     
-    ${currentFormType === 'copyright' ? `
-      <div style="background:#fff7ed; border:1px solid #ffedd5; padding:16px; border-radius:12px; margin-bottom:24px; display:flex; gap:12px; align-items:start;">
-        <i class="fa-solid fa-triangle-exclamation" style="color:#f97316; margin-top:3px;"></i>
-        <div>
-          <h4 style="color:#c2410c; margin-bottom:4px; font-size:0.9rem;">First-time Applicants Note</h4>
-          <p style="color:#c2410c; font-size:0.85rem; margin:0;">You must be registered in the NBDB (National Book Development Board) as an Author or Publisher. If you are not yet registered, please register with NBDB before continuing.</p>
-        </div>
-      </div>
-    ` : ''}
+    ${currentFormType === 'copyright' ? renderCopyrightFirstTimeApplicantNote() : ''}
 
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:28px;">
       <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
