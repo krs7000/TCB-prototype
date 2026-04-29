@@ -137,6 +137,7 @@ const mockNotifications = {
       body: "Your patent application has been certified by the IP Office.",
       time: "2 hours ago",
       read: false,
+      submissionId: "PSU-PAT-2026-001",
     },
     {
       id: 5,
@@ -149,6 +150,7 @@ const mockNotifications = {
       read: false,
       type: "marketplace-approval",
       requestId: "MKT-REQ-001",
+      submissionId: "PSU-PAT-2026-155",
     },
     {
       id: 2,
@@ -158,6 +160,7 @@ const mockNotifications = {
       body: "Admin Garcia requests additional docs for PSU-COP-2026-002.",
       time: "Yesterday",
       read: false,
+      submissionId: "PSU-COP-2026-002",
     },
     {
       id: 3,
@@ -167,15 +170,17 @@ const mockNotifications = {
       body: "Missing documents detected for Palawan Biodiversity Database.",
       time: " Just now",
       read: false,
+      submissionId: "PSU-COP-2026-014",
     },
     {
       id: 4,
       icon: "fa-circle-info",
       color: "#3b82f6",
       title: "System Maintenance",
-      body: "Scheduled maintenance on April 10, 2026 from 2-4 AM.",
+      body: "We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
       time: "3 days ago",
       read: true,
+      announcementId: 3,
     }
   ]
 };
@@ -1240,6 +1245,12 @@ function getSystemSecurityKeys() {
   };
 }
 
+function verifyEncryptionKey(value) {
+  const enteredKey = String(value || "").trim();
+  const { primary, backup } = getSystemSecurityKeys();
+  return enteredKey === primary || enteredKey === backup;
+}
+
 function getDisplaySecurityKey(type) {
   const keys = getSystemSecurityKeys();
   const value = keys[type];
@@ -1269,7 +1280,9 @@ function getAssignedReviewerId(submission) {
 function shouldDefaultToPending(submission) {
   if (!submission) return false;
   if (getAssignedReviewerId(submission)) return false;
-  return !["Draft", "Archived", "Cancelled"].includes(submission.status);
+  return !["Draft", "Archived", "Cancelled", "Approved", "Rejected"].includes(
+    submission.status,
+  );
 }
 
 function normalizeUnassignedSubmissionStatus(submission) {
@@ -1453,6 +1466,21 @@ function canArchiveSubmission(submission = null, role = currentRole) {
   return true;
 }
 
+function canUnarchiveSubmission(submission = null, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  return (
+    (normalizedRole === "superadmin" || normalizedRole === "admin") &&
+    Boolean(submission) &&
+    isSubmissionArchived(submission)
+  );
+}
+
+function getSubmissionRestoreStatus(submission) {
+  const previousStatus = String(submission?.archivedFromStatus || "").trim();
+  if (previousStatus && previousStatus !== "Archived") return previousStatus;
+  return getAssignedReviewerId(submission) ? "Under Review" : "Pending";
+}
+
 function canUploadDocuments(submission, role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === "applicant") return isOwnSubmission(submission, role);
@@ -1493,15 +1521,14 @@ function canManageTargetUser(user, role = currentRole) {
 
 function getManageableRoleOptions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === "superadmin") return ["superadmin", "reviewer", "applicant"];
-  if (normalizedRole === "admin") return ["reviewer", "applicant"];
+  if (normalizedRole === "superadmin" || normalizedRole === "admin") return ["reviewer"];
   return [];
 }
 
 function getCreatableRoleOptions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === "superadmin" || normalizedRole === "admin") {
-    return ["reviewer", "applicant"];
+    return ["reviewer"];
   }
   return [];
 }
@@ -2163,6 +2190,179 @@ function renderNotificationActions(notification) {
     </div>`;
 }
 
+function closeNotificationDropdown() {
+  notifOpen = false;
+  document.getElementById("notifDropdown")?.classList.remove("open");
+  document.getElementById("notifBell")?.classList.remove("active");
+}
+
+function findNotificationById(notificationId, role = currentRole) {
+  return getCurrentRoleNotifications(role).find(
+    (notification) => String(notification.id) === String(notificationId),
+  );
+}
+
+function getNotificationSubmissionId(notification) {
+  if (!notification) return "";
+  const directId = notification.submissionId || notification.recordId || "";
+  if (directId) return directId;
+  if (notification.caseId && !isChatNotification(notification)) return notification.caseId;
+  const combined = `${notification.title || ""} ${notification.body || ""}`;
+  return combined.match(/PSU-[A-Z]+-\d{4}-\d{3}/)?.[0] || "";
+}
+
+function isChatNotification(notification) {
+  return (
+    notification?.type === "case-message" ||
+    notification?.icon === "fa-comment-dots" ||
+    String(notification?.title || "").toLowerCase().includes("new message")
+  );
+}
+
+function markNotificationRead(notification) {
+  if (!notification) return;
+  notification.read = true;
+  renderNotifications();
+}
+
+function openSubmissionFromNotification(submissionId, notification = null) {
+  const submission = submissions.find((item) => item.id === submissionId);
+  if (!submission || !getVisibleSubmissions(currentRole).some((item) => item.id === submissionId)) {
+    showNotificationDetail(notification, {
+      note: submissionId
+        ? `Reference ${submissionId} is not available in your current submissions list.`
+        : "",
+    });
+    return;
+  }
+
+  selectedSubmissionId = submission.id;
+  navigateTo("submission-detail");
+}
+
+function showNotificationDetail(notification, options = {}) {
+  if (!notification) return;
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const submissionId = getNotificationSubmissionId(notification);
+  modalTitle.textContent = "Notification Details";
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div class="notification-detail-modal">
+      <div class="notification-detail-icon" style="background:${notification.color}15; color:${notification.color}">
+        <i class="fa-solid ${notification.icon}"></i>
+      </div>
+      <div class="notification-detail-content">
+        <h2>${escapeHtml(notification.title)}</h2>
+        <p>${escapeHtml(notification.body)}</p>
+        <div class="notification-detail-time">${escapeHtml(notification.time || "Just now")}</div>
+        ${submissionId ? `<div class="notification-detail-ref"><strong>Reference:</strong> ${escapeHtml(submissionId)}</div>` : ""}
+        ${options.note ? `<div class="notification-detail-note"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(options.note)}</div>` : ""}
+      </div>
+      <div class="detail-actions" style="justify-content:flex-end; margin-top:22px;">
+        <button class="btn btn-outline-navy" onclick="closeModal()">Close</button>
+        ${
+          submissionId && getVisibleSubmissions(currentRole).some((item) => item.id === submissionId)
+            ? `<button class="btn btn-primary" onclick="closeModal(); openSubmissionFromNotification('${submissionId}')"><i class="fa-solid fa-arrow-right"></i> Open Submission</button>`
+            : ""
+        }
+      </div>
+    </div>
+  `;
+  modalOverlay.classList.add("active");
+}
+
+function showMarketplaceApprovalNotice(requestId) {
+  const request = marketplaceApprovalRequests.find((item) => item.id === requestId);
+  if (!request) {
+    showToast("Marketplace approval request not found.");
+    return;
+  }
+
+  const match = findCertifiedRecord(request.recordId);
+  const record = match?.record || null;
+  const listing = request.listingId
+    ? marketplaceItems.find((item) => item.id === request.listingId)
+    : null;
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const statusBadgeHtml =
+    request.status === "accepted"
+      ? '<span class="badge badge-approved"><i class="fa-solid fa-check"></i> Accepted</span>'
+      : request.status === "declined"
+        ? '<span class="badge badge-rejected"><i class="fa-solid fa-xmark"></i> Declined</span>'
+        : '<span class="badge badge-pending"><i class="fa-solid fa-clock"></i> Pending Approval</span>';
+
+  modalTitle.textContent = "Marketplace Approval Request";
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div class="notification-detail-modal marketplace-request-modal">
+      <div class="notification-detail-icon" style="background:#f9731615; color:#f97316">
+        <i class="fa-solid fa-store"></i>
+      </div>
+      <div class="notification-detail-content">
+        <div style="margin-bottom:10px;">${statusBadgeHtml}</div>
+        <h2>${escapeHtml(record?.title || request.recordId)}</h2>
+        <p>Admin requests your approval to publish this certified IP record in the public marketplace.</p>
+        <div class="notification-detail-ref"><strong>Reference:</strong> ${escapeHtml(request.recordId)}</div>
+        ${
+          record
+            ? `<div class="notification-detail-record">
+                <div><strong>Type</strong><span>${escapeHtml(record.type)}</span></div>
+                <div><strong>Owner</strong><span>${escapeHtml(record.applicant)}</span></div>
+                <div><strong>Department</strong><span>${escapeHtml(record.department)}</span></div>
+              </div>`
+            : ""
+        }
+      </div>
+      <div class="detail-actions" style="justify-content:flex-end; margin-top:22px;">
+        <button class="btn btn-outline-navy" onclick="closeModal()">Close</button>
+        ${
+          request.status === "pending"
+            ? `<button class="btn btn-secondary" onclick="declineMarketplaceApproval('${request.id}'); showMarketplaceApprovalNotice('${request.id}')"><i class="fa-solid fa-xmark"></i> Decline</button>
+               <button class="btn btn-primary" onclick="acceptMarketplaceApproval('${request.id}'); showMarketplaceApprovalNotice('${request.id}')"><i class="fa-solid fa-check"></i> Accept</button>`
+            : listing
+              ? `<button class="btn btn-primary" onclick="closeModal(); showInnovationDetail(${listing.id})"><i class="fa-solid fa-store"></i> View Listing</button>`
+              : ""
+        }
+      </div>
+    </div>
+  `;
+  modalOverlay.classList.add("active");
+}
+
+window.openNotificationContent = function(notificationId) {
+  const notification = findNotificationById(notificationId);
+  if (!notification) return;
+  markNotificationRead(notification);
+  closeNotificationDropdown();
+
+  if (notification.type === "marketplace-approval" && notification.requestId) {
+    showMarketplaceApprovalNotice(notification.requestId);
+    return;
+  }
+
+  if (notification.announcementId) {
+    showAnnouncementModal(notification.announcementId);
+    return;
+  }
+
+  if (notification.caseId && isChatNotification(notification)) {
+    openCaseChat(notification.caseId);
+    return;
+  }
+
+  const submissionId = getNotificationSubmissionId(notification);
+  if (submissionId) {
+    openSubmissionFromNotification(submissionId, notification);
+    return;
+  }
+
+  showNotificationDetail(notification);
+};
+
 function renderNotifications() {
   const list = document.getElementById("notifList");
   if (!list) return;
@@ -2185,12 +2385,9 @@ function renderNotifications() {
   list.innerHTML = roleNotifs
     .map(
       (n) => {
-        const clickAction = n.caseId
-          ? `openCaseChat('${n.caseId}')`
-          : `showToast(${JSON.stringify(`Notification: ${n.title}`)})`;
         const actions = renderNotificationActions(n);
         return `
-    <div class="notif-item ${n.read ? "" : "unread"}" onclick="${clickAction}">
+    <div class="notif-item ${n.read ? "" : "unread"}" onclick="event.stopPropagation(); openNotificationContent('${n.id}')" role="button" tabindex="0" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); openNotificationContent('${n.id}'); }">
       <div class="notif-icon" style="background:${n.color}15; color:${n.color}">
         <i class="fa-solid ${n.icon}"></i>
       </div>
@@ -2965,7 +3162,6 @@ function renderSidebar() {
       { page: "admin-records", icon: "fa-folder-open", text: "IP Records" },
       { page: "admin-marketplace", icon: "fa-store", text: "Market Listing" },
       { page: "admin-users", icon: "fa-users", text: "User Manager" },
-      { page: "create-account", icon: "fa-user-plus", text: "Create Account" },
       { page: "audit-log", icon: "fa-clipboard-list", text: "Audit Log" },
       { page: "admin-settings", icon: "fa-gear", text: "System Config" },
       { page: "admin-announcements", icon: "fa-bullhorn", text: "Announcements" },
@@ -4270,6 +4466,7 @@ function pushChatNotification(receiverId, submission, preview) {
     body: `${getCurrentUser().name}: ${preview || "Attachment sent"}`,
     time: "Just now",
     read: false,
+    type: "case-message",
     caseId: submission.id,
   });
 }
@@ -5681,6 +5878,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
             ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
             ${normalizeRole(currentRole) === "reviewer" && !canTakeSubmission(s) && !isAssignedReviewerSubmission(s) ? `<button class="btn btn-sm btn-secondary" disabled title="Evaluator: ${getAssignedReviewerName(s)}"><i class="fa-solid fa-lock"></i> Read Only</button>` : ""}
             ${canArchiveSubmission(s) ? `<button class="btn btn-sm btn-secondary" title="Archive" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
+            ${canUnarchiveSubmission(s) ? `<button class="btn btn-sm btn-primary" title="Unarchive" onclick="unarchiveSubmission('${s.id}')"><i class="fa-solid fa-box-open"></i> Unarchive</button>` : ""}
           </div></td></tr>`,
                 )
                 .join("")
@@ -5695,12 +5893,15 @@ let adminFilterType = "All",
 let adminCaseView = "active";
 let adminCaseScope = "all";
 let adminMarketplaceView = "active";
+let adminRecordsTypeFilter = "All";
 let announcementCategoryFilter = "All";
 let securityKeyVisibility = {
   primary: false,
   backup: false,
 };
 let integrityFreezeUnlocked = false;
+let unlockedCertifiedRecordId = null;
+let unlockedCertifiedRecordType = null;
 let certifiedDemoRecords = [
   {
     id: "PSU-PAT-2026-155",
@@ -6015,16 +6216,40 @@ function archiveSubmission(id) {
     showToast(`${getRoleMeta().label} cannot archive cases.`);
     return;
   }
+  const previousStatus = submission.status;
+  submission.archivedFromStatus = previousStatus;
   submission.status = "Archived";
   syncSubmissionWorkflowState(submission);
   addAuditLog({
     accountName: getCurrentUser().name,
     action: "Archived Case",
     record: submission.id,
-    details: `Archived ${submission.title}.`,
+    details: `Archived ${submission.title}. Previous status: ${previousStatus}.`,
     module: submission.type,
   });
   showToast(`${submission.id} archived successfully.`);
+  navigateTo(getDefaultDashboardPage());
+}
+
+function unarchiveSubmission(id) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return;
+  if (!canUnarchiveSubmission(submission)) {
+    showToast(`${getRoleMeta().label} cannot unarchive cases.`);
+    return;
+  }
+  const restoredStatus = getSubmissionRestoreStatus(submission);
+  submission.status = restoredStatus;
+  delete submission.archivedFromStatus;
+  syncSubmissionWorkflowState(submission);
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Unarchived Case",
+    record: submission.id,
+    details: `Restored ${submission.title} to ${restoredStatus}.`,
+    module: submission.type,
+  });
+  showToast(`${submission.id} unarchived successfully.`);
   navigateTo(getDefaultDashboardPage());
 }
 
@@ -7039,14 +7264,14 @@ function renderSubmissionDetail() {
   const archived = isSubmissionArchived(s);
   const showInternalOperationalFlow =
     normalizedRole === "superadmin" || normalizedRole === "admin";
+  const showCopyrightOperationalFlow =
+    showInternalOperationalFlow && s.type === "Copyright";
   const timelineTitle =
     normalizedRole === "reviewer"
       ? "Activity Timeline"
-      : showInternalOperationalFlow && s.type === "Copyright"
+      : showCopyrightOperationalFlow
         ? "Copyright Operational Flow"
-        : showInternalOperationalFlow && IPOPHL_TYPES.has(s.type)
-          ? "IPOPHL Operational Flow"
-          : "Activity Timeline";
+        : "Activity Timeline";
 
   return `
     ${renderBackNav()}
@@ -7187,7 +7412,7 @@ function renderSubmissionDetail() {
               : ""
           }
           ${
-            ipophlStageObj && normalizedRole !== "reviewer"
+            ipophlStageObj && normalizedRole !== "reviewer" && !showInternalOperationalFlow
               ? `<div style="padding:12px 14px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.18); border-radius:10px; margin-bottom:16px;">
             <div style="font-size:.78rem; font-weight:700; color:#1d4ed8; text-transform:uppercase; letter-spacing:.08em;">Current IPOPHL Step</div>
             <div style="font-size:.95rem; font-weight:700; color:var(--navy); margin-top:4px;">Step ${ipophlStageObj.step}: ${ipophlStageObj.title}</div>
@@ -7222,13 +7447,14 @@ function renderSubmissionDetail() {
                     : ""
           }
           ${
-            (reviewerCanAdvance || reviewerCanTake || canArchiveSubmission(s)) && !frozen
+            (reviewerCanAdvance || reviewerCanTake || canArchiveSubmission(s) || canUnarchiveSubmission(s)) && !frozen
               ? `<div class="detail-actions">
             ${
               reviewerCanTake
                 ? `<button class="btn btn-primary btn-sm" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>`
                 : `
             ${canArchiveSubmission(s) ? `<button class="btn btn-secondary btn-sm" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
+            ${canUnarchiveSubmission(s) ? `<button class="btn btn-primary btn-sm" onclick="unarchiveSubmission('${s.id}')"><i class="fa-solid fa-box-open"></i> Unarchive</button>` : ""}
             `
             }
           </div>` 
@@ -7253,11 +7479,9 @@ function renderSubmissionDetail() {
             <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${s.applicant}</div></div>
           </div>`
-              : showInternalOperationalFlow && s.type === "Copyright"
+              : showCopyrightOperationalFlow
               ? renderCopyrightOperationTimeline(s)
-              : showInternalOperationalFlow && IPOPHL_TYPES.has(s.type)
-                ? renderIPOPHLOperationTimeline(s)
-                : `<div class="timeline">
+              : `<div class="timeline">
             ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-receipt" style="color:var(--gold)"></i> Proof of payment verified</div></div>
@@ -16171,6 +16395,11 @@ window.publishCertifiedRecordToMarketplace = function(recordId) {
     renderDashboardContent("admin-records");
     return;
   }
+  if (latestRequest?.status === "declined") {
+    showToast("Applicant declined marketplace publication. You cannot request again.");
+    renderDashboardContent("admin-records");
+    return;
+  }
 
   createMarketplaceApprovalRequest(match.record);
 
@@ -16336,7 +16565,7 @@ function renderMarketplace() {
 
     <div class="marketplace-layout no-sidebar">
       <div>
-        <div class="search-box" style="margin-bottom: 32px;">
+        <div class="search-box marketplace-search">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="mpSearch" placeholder="Search by title, inventor, or description..." oninput="filterMarketplace()" />
         </div>
@@ -16481,6 +16710,19 @@ window.toggleInterest = function(id) {
 
 
 function closeModal() {
+  if (unlockedCertifiedRecordId || unlockedCertifiedRecordType) {
+    const recordId = unlockedCertifiedRecordId || `${unlockedCertifiedRecordType} IP Records`;
+    integrityFreezeUnlocked = false;
+    unlockedCertifiedRecordId = null;
+    unlockedCertifiedRecordType = null;
+    addAuditLog({
+      accountName: getCurrentUser().name,
+      action: "Locked IP Record",
+      record: recordId,
+      details: "Certified IP record was automatically frozen again after the modal closed.",
+      module: "IP Records",
+    });
+  }
   document.getElementById("modalOverlay").classList.remove("active", "marketplace-detail-overlay");
   const modalCard = document.querySelector("#modalOverlay .modal-card");
   if (modalCard) modalCard.classList.remove("xl", "marketplace-detail-modal");
@@ -17088,22 +17330,71 @@ function renderProfile() {
 }
 
 function renderAdminRecords() {
-  const approved = getCertifiedAdminRecords();
   return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties - metadata is read-only for integrity.</p></div>
-    <div style="padding:12px 18px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
-      <i class="fa-solid fa-shield-halved" style="color:#6366f1; font-size:1.1rem;"></i>
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; width:100%; flex-wrap:wrap;">
-        <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> - All records below have been certified and their metadata is <strong>frozen for protection</strong>. Certified records can be viewed and published to the marketplace, but cannot be edited.</p>
+    <div class="ip-records-security-banner">
+      <i class="fa-solid fa-shield-halved"></i>
+      <div class="ip-records-security-copy">
+        <p><strong>Certified Records Archive</strong> - All records below have been certified and their metadata is <strong>frozen for protection</strong>. Certified records can be viewed and published to the marketplace, but cannot be edited.</p>
       </div>
+      ${renderCertifiedRecordUnlockControls()}
     </div>
-    <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th><th>Actions</th></tr></thead><tbody>
-      ${approved
-        .map(
-          (s) => {
-            const marketplaceListing = findMarketplaceListingByRecordId(s.id);
-            const marketplaceRequest = getLatestMarketplaceApprovalRequest(s.id);
+    ${renderAdminRecordsTable()}`;
+}
 
-            return `<tr>
+function renderCertifiedRecordUnlockControls() {
+  return `<div class="ip-records-unlock-controls">
+    <div class="certified-record-type-entry">
+      <select id="certifiedRecordUnlockType" aria-label="Select IP type to unlock">
+        <option value="" ${!unlockedCertifiedRecordType ? "selected" : ""}>IP Type to unlock</option>
+        <option value="Patent" ${unlockedCertifiedRecordType === "Patent" ? "selected" : ""}>Patent</option>
+        <option value="Copyright" ${unlockedCertifiedRecordType === "Copyright" ? "selected" : ""}>Copyright</option>
+        <option value="Industrial Design" ${unlockedCertifiedRecordType === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
+        <option value="Utility Model" ${unlockedCertifiedRecordType === "Utility Model" ? "selected" : ""}>Utility Model</option>
+      </select>
+    </div>
+    <div class="certified-archive-key-entry">
+      <input id="certifiedArchiveEncryptionKey" type="password" placeholder="Encryption Key" autocomplete="off" onkeydown="if(event.key === 'Enter') unlockCertifiedRecordFromArchive()" />
+      <div id="certifiedArchiveKeyError" class="error-msg certified-record-key-error">Invalid Encryption Key.</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="unlockCertifiedRecordFromArchive()"><i class="fa-solid fa-unlock-keyhole"></i> Unlock & View</button>
+  </div>`;
+}
+
+function getSortedCertifiedAdminRecords() {
+  const records = getCertifiedAdminRecords();
+  return records.sort((a, b) => compareText(a.id, b.id));
+}
+
+function getFilteredCertifiedAdminRecords() {
+  const records = getSortedCertifiedAdminRecords();
+  if (!adminRecordsTypeFilter || adminRecordsTypeFilter === "All") return records;
+  return records.filter((record) => record.type === adminRecordsTypeFilter);
+}
+
+function renderAdminRecordsTable() {
+  const approved = getFilteredCertifiedAdminRecords();
+  return `<div class="table-container" id="adminRecordsTable">
+      <div class="table-header">
+        <h3>Certified Records <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${approved.length} record${approved.length !== 1 ? "s" : ""})</span></h3>
+        <select class="filter-select" aria-label="Filter IP records by type" onchange="setAdminRecordsTypeFilter(this.value)">
+          <option value="All" ${adminRecordsTypeFilter === "All" ? "selected" : ""}>All IP Types</option>
+          <option value="Patent" ${adminRecordsTypeFilter === "Patent" ? "selected" : ""}>Patent</option>
+          <option value="Copyright" ${adminRecordsTypeFilter === "Copyright" ? "selected" : ""}>Copyright</option>
+          <option value="Utility Model" ${adminRecordsTypeFilter === "Utility Model" ? "selected" : ""}>Utility Model</option>
+          <option value="Industrial Design" ${adminRecordsTypeFilter === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
+        </select>
+      </div>
+      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th><th>Actions</th></tr></thead><tbody>
+        ${
+          approved.length === 0
+            ? `<tr><td colspan="8" style="text-align:center;padding:48px;color:var(--gray-400);">No certified ${escapeHtml(adminRecordsTypeFilter)} records available.</td></tr>`
+            : approved
+              .map(
+                (s) => {
+              const marketplaceListing = findMarketplaceListingByRecordId(s.id);
+              const marketplaceRequest = getLatestMarketplaceApprovalRequest(s.id);
+
+              return `<tr>
         <td>${escapeHtml(s.id)}</td>
         <td>${typeBadge(s.type)}</td>
         <td>${escapeHtml(s.title)}</td>
@@ -17112,23 +17403,29 @@ function renderAdminRecords() {
         <td>${statusBadge(s.status)}</td>
         <td><span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Read-only</span></td>
         <td><div class="action-btns">
-          <button class="btn btn-sm btn-outline-navy" onclick="viewCertifiedRecord('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
           ${
             !marketplaceListing
               ? marketplaceRequest?.status === "pending"
-                ? `<button class="btn btn-sm btn-secondary" disabled><i class="fa-solid fa-clock"></i> Pending</button>`
+                ? `<span class="table-action-note"><i class="fa-solid fa-clock"></i> Marketplace request pending</span>`
                 : marketplaceRequest?.status === "declined"
-                  ? `<button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-rotate-right"></i> Request Again</button>`
+                  ? `<span class="table-action-note"><i class="fa-solid fa-ban"></i> Marketplace declined</span>`
                   : `<button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-store"></i> Add to Marketplace</button>`
-              : ""
+              : `<span class="table-action-note"><i class="fa-solid fa-store"></i> Listed</span>`
           }
         </div></td>
       </tr>`;
-          },
-        )
-        .join("")}
+                },
+              )
+              .join("")
+        }
     </tbody></table></div></div>`;
 }
+
+window.setAdminRecordsTypeFilter = function(typeValue) {
+  adminRecordsTypeFilter = typeValue;
+  const container = document.getElementById("adminRecordsTable");
+  if (container) container.outerHTML = renderAdminRecordsTable();
+};
 
 function canEditCertifiedRecords() {
   return false;
@@ -17156,12 +17453,32 @@ function findCertifiedRecord(id) {
 }
 
 window.viewCertifiedRecord = function(id) {
+  if (unlockedCertifiedRecordId && unlockedCertifiedRecordId !== id) {
+    integrityFreezeUnlocked = false;
+    unlockedCertifiedRecordId = null;
+  }
+
   const match = findCertifiedRecord(id);
   if (!match) {
     showToast("Certified record not found.");
     return;
   }
   const record = match.record;
+  const recordUnlocked =
+    integrityFreezeUnlocked &&
+    (unlockedCertifiedRecordId === record.id ||
+      unlockedCertifiedRecordType === record.type);
+  const canUnlockCertifiedRecord = ["superadmin", "admin"].includes(
+    normalizeRole(currentRole),
+  );
+  if (!recordUnlocked) {
+    const typeSelect = document.getElementById("certifiedRecordUnlockType");
+    const keyInput = document.getElementById("certifiedArchiveEncryptionKey");
+    if (typeSelect) typeSelect.value = record.type;
+    keyInput?.focus();
+    showToast("Select the IP Type and enter the Encryption Key to unlock and view records.");
+    return;
+  }
   const marketplaceListing = findMarketplaceListingByRecordId(record.id);
   const marketplaceRequest = getLatestMarketplaceApprovalRequest(record.id);
   const marketplaceStatus = marketplaceListing
@@ -17176,7 +17493,7 @@ window.viewCertifiedRecord = function(id) {
     : marketplaceRequest?.status === "pending"
       ? '<button class="btn btn-secondary" disabled><i class="fa-solid fa-clock"></i> Awaiting Applicant</button>'
       : marketplaceRequest?.status === "declined"
-        ? `<button class="btn btn-primary" onclick="publishCertifiedRecordToMarketplace('${record.id}')"><i class="fa-solid fa-rotate-right"></i> Request Again</button>`
+        ? '<button class="btn btn-secondary" disabled><i class="fa-solid fa-ban"></i> Declined by Applicant</button>'
         : `<button class="btn btn-primary" onclick="publishCertifiedRecordToMarketplace('${record.id}')"><i class="fa-solid fa-store"></i> Add to Marketplace</button>`;
   document.getElementById("modalTitle").textContent = "Certified IP Record";
   document.getElementById("modalBody").innerHTML = `
@@ -17188,15 +17505,158 @@ window.viewCertifiedRecord = function(id) {
       <div class="detail-row"><span class="label">Department</span><span class="value">${escapeHtml(record.department)}</span></div>
       <div class="detail-row"><span class="label">Date Filed</span><span class="value">${escapeHtml(record.date || "Not recorded")}</span></div>
       <div class="detail-row"><span class="label">Status</span><span class="value">${statusBadge(record.status)}</span></div>
-      <div class="detail-row"><span class="label">Integrity</span><span class="value">${integrityFreezeUnlocked ? '<span class="badge badge-review"><i class="fa-solid fa-unlock"></i> Unlocked</span>' : '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span>'}</span></div>
+      <div class="detail-row"><span class="label">Integrity</span><span class="value">${recordUnlocked ? '<span class="badge badge-review"><i class="fa-solid fa-unlock"></i> Unlocked</span>' : '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span>'}</span></div>
       <div class="detail-row"><span class="label">Marketplace</span><span class="value">${marketplaceStatus}</span></div>
       <div class="detail-row"><span class="label">Description</span><span class="value">${escapeHtml(record.description || "No description recorded.")}</span></div>
     </div>
     <div class="detail-actions" style="justify-content:flex-end; margin-top:18px;">
       <button class="btn btn-outline-navy" onclick="closeModal()">Close</button>
+      ${
+        canUnlockCertifiedRecord
+          ? `<button class="btn btn-secondary" onclick="lockCertifiedIPRecord('${record.id}')"><i class="fa-solid fa-lock"></i> Lock IP</button>`
+          : ""
+      }
       ${marketplaceAction}
     </div>`;
   document.getElementById("modalOverlay").classList.add("active");
+};
+
+function showUnlockedCertifiedTypeRecords(type) {
+  const records = getSortedCertifiedAdminRecords().filter(
+    (record) => record.type === type,
+  );
+  if (records.length === 0) {
+    showToast(`No certified ${type} records available.`);
+    return;
+  }
+
+  document.getElementById("modalTitle").textContent = `${type} Records Unlocked`;
+  document.getElementById("modalBody").innerHTML = `
+    <div class="detail-panel" style="box-shadow:none; border:1px solid var(--gray-100);">
+      <h3><i class="fa-solid fa-unlock"></i> Select a certified ${escapeHtml(type)} record to view</h3>
+      <div class="table-responsive" style="margin-top:14px;">
+        <table class="data-table">
+          <thead><tr><th>Reference</th><th>Title</th><th>Owner</th><th>Action</th></tr></thead>
+          <tbody>
+            ${records
+              .map(
+                (record) => `<tr>
+                  <td>${escapeHtml(record.id)}</td>
+                  <td>${escapeHtml(record.title)}</td>
+                  <td>${escapeHtml(record.applicant)}</td>
+                  <td><button class="btn btn-sm btn-outline-navy" onclick="viewCertifiedRecord('${record.id}')"><i class="fa-solid fa-eye"></i> Open Record</button></td>
+                </tr>`,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="detail-actions" style="justify-content:flex-end; margin-top:18px;">
+      <button class="btn btn-secondary" onclick="closeModal()"><i class="fa-solid fa-lock"></i> Lock IP Type</button>
+    </div>`;
+  document.getElementById("modalOverlay").classList.add("active");
+}
+
+window.unlockCertifiedRecordFromArchive = function() {
+  const typeSelect = document.getElementById("certifiedRecordUnlockType");
+  const keyInput = document.getElementById("certifiedArchiveEncryptionKey");
+  const keyError = document.getElementById("certifiedArchiveKeyError");
+  const selectedType = typeSelect?.value;
+  const records = getCertifiedAdminRecords().filter(
+    (record) => record.type === selectedType,
+  );
+  if (!selectedType) {
+    typeSelect?.focus();
+    showToast("Select an IP type to unlock.");
+    return;
+  }
+  if (records.length === 0) {
+    showToast(`No certified ${selectedType} records available.`);
+    return;
+  }
+  if (!verifyEncryptionKey(keyInput?.value)) {
+    keyInput?.classList.add("input-error");
+    keyError?.classList.add("show");
+    keyInput?.focus();
+    addAuditLog({
+      accountName: getCurrentUser().name,
+      action: "Failed IP Record Unlock",
+      record: `${selectedType} IP Records`,
+      details: `Admin entered an invalid encryption key while unlocking ${selectedType} records.`,
+      module: "IP Records",
+    });
+    showToast("Invalid Encryption Key.");
+    return;
+  }
+
+  keyInput?.classList.remove("input-error");
+  keyError?.classList.remove("show");
+  integrityFreezeUnlocked = true;
+  unlockedCertifiedRecordId = null;
+  unlockedCertifiedRecordType = selectedType;
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Unlocked IP Records",
+    record: `${selectedType} IP Records`,
+    details: `${selectedType} certified records were unlocked from the archive header for admin review.`,
+    module: "IP Records",
+  });
+  showToast(`${selectedType} records unlocked.`);
+  showUnlockedCertifiedTypeRecords(selectedType);
+};
+
+window.unlockCertifiedIPRecord = function(id) {
+  const match = findCertifiedRecord(id);
+  if (!match) {
+    showToast("Certified record not found.");
+    return;
+  }
+
+  const keyInput = document.getElementById("certifiedRecordEncryptionKey");
+  const keyError = document.getElementById("certifiedRecordKeyError");
+  if (!verifyEncryptionKey(keyInput?.value)) {
+    keyInput?.classList.add("input-error");
+    keyError?.classList.add("show");
+    keyInput?.focus();
+    addAuditLog({
+      accountName: getCurrentUser().name,
+      action: "Failed IP Record Unlock",
+      record: id,
+      details: "Admin entered an invalid encryption key for a certified IP record.",
+      module: "IP Records",
+    });
+    showToast("Invalid Encryption Key.");
+    return;
+  }
+
+  integrityFreezeUnlocked = true;
+  unlockedCertifiedRecordId = id;
+  unlockedCertifiedRecordType = null;
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Unlocked IP Record",
+    record: id,
+    details: "Certified IP record was temporarily unfrozen for admin review.",
+    module: "IP Records",
+  });
+  showToast("IP record temporarily unlocked.");
+  viewCertifiedRecord(id);
+};
+
+window.lockCertifiedIPRecord = function(id) {
+  integrityFreezeUnlocked = false;
+  unlockedCertifiedRecordId = null;
+  unlockedCertifiedRecordType = null;
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Locked IP Record",
+    record: id,
+    details: "Certified IP record was manually frozen again.",
+    module: "IP Records",
+  });
+  showToast("IP record frozen and locked.");
+  closeModal();
 };
 
 window.editCertifiedRecord = function(id) {
@@ -17306,10 +17766,7 @@ function legacyEditUserRole(userId) {
     <div class="form-group"><label>Current Role</label><input type="text" value="${u.role}" disabled style="background:var(--gray-50)" /></div>
     <div class="form-group"><label>Assign Role</label>
       <select id="newRoleSelect" onchange="toggleSpecialistSettings(this.value)">
-        <option value="superadmin" ${u.role === "superadmin" ? "selected" : ""}>Super Admin</option>
-        <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option>
-        <option value="specialist" ${u.role === "specialist" || u.role === "Reviewer" ? "selected" : ""}>Reviewer</option>
-        <option value="applicant" ${u.role === "applicant" ? "selected" : ""}>Applicant</option>
+        <option value="specialist" selected>Specialist</option>
       </select>
     </div>
     
@@ -17528,7 +17985,7 @@ function legacyRenderCreateAccount() {
         <div class="form-group" id="dept-group"><label>Department *</label>
           <select id="newUserDept"><option value="">Select Department</option><option>IT Office</option><option>IP Office</option><option>Research Office</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option></select></div>
         <div class="form-group" id="role-group"><label>Assign Role *</label>
-          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option value="reviewer">Specialist</option><option value="applicant">Applicant</option></select></div>
+          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option value="reviewer">Specialist</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Temporary Password *</label><input type="password" id="newUserPass" placeholder="Min 8 characters" /></div>
