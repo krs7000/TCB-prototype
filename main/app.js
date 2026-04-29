@@ -20,13 +20,25 @@ let pendingSignupData = null; // Holds signup data during OTP verification
 let pendingParams = {};
 let pendingAction = null; // Stores action to perform after login/signup
 let currentMpType = "All";
+let landingMpType = "All";
+let dismissedTopAlertId = null;
+
+function updateMarketplaceTypeButtons(selector, type) {
+  document.querySelectorAll(selector).forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.type === type);
+  });
+}
 
 window.setMpType = function(type) {
   currentMpType = type;
-  document.querySelectorAll('.mp-type-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.type === type);
-  });
+  updateMarketplaceTypeButtons("#main-content .mp-type-btn, #marketplacePublicContent .mp-type-btn", type);
   filterMarketplace();
+};
+
+window.setLandingMpType = function(type) {
+  landingMpType = type;
+  updateMarketplaceTypeButtons("#featured-marketplace-section .mp-type-btn", type);
+  filterLandingMarketplace();
 };
 
 const ROLE_ALIASES = {
@@ -188,7 +200,7 @@ let announcements = [
   {
     id: 3,
     title: "System Maintenance Notice",
-    content: "The Creator's Bulwark will undergo scheduled maintenance on April 20th, from 2:00 AM to 4:00 AM. Access may be intermittent during this time.",
+    content: "We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
     date: "2026-04-13",
     category: "Alert",
     image: "images/IPTTO-logo.jpg"
@@ -1487,6 +1499,14 @@ function getManageableRoleOptions(role = currentRole) {
   return [];
 }
 
+function getCreatableRoleOptions(role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === "superadmin" || normalizedRole === "admin") {
+    return ["reviewer", "applicant"];
+  }
+  return [];
+}
+
 function getVisibleAuditLogs(role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === "superadmin") return auditLogs;
@@ -1932,6 +1952,10 @@ function navigateTo(page, isBack = false, params = null) {
     if (typeof updateBottomNavItemActive === 'function') updateBottomNavItemActive(page);
   }
 
+  setSystemAlertVisible(
+    page === "landing" ||
+      (dashboardPages.includes(page) && normalizeRole(currentRole) === "applicant"),
+  );
 
   window.scrollTo(0, 0);
 
@@ -1975,6 +1999,55 @@ function navigateTo(page, isBack = false, params = null) {
   updateActiveNavLinks(page);
 }
 
+function setSystemAlertVisible(isVisible) {
+  const alert = renderTopAlertBanner();
+  const shouldShow =
+    Boolean(isVisible && alert && dismissedTopAlertId !== alert.id);
+  document.body.classList.toggle("show-system-alert", shouldShow);
+}
+
+function dismissTopAlert() {
+  const alert = getLatestAlertAnnouncement();
+  dismissedTopAlertId = alert?.id || null;
+  setSystemAlertVisible(false);
+}
+
+function getLatestAlertAnnouncement() {
+  return announcements
+    .filter((item) => item.category === "Alert")
+    .slice()
+    .sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      return dateDiff || b.id - a.id;
+    })[0] || null;
+}
+
+function renderTopAlertBanner() {
+  const alert = getLatestAlertAnnouncement();
+  const messageEl = document.getElementById("topAlertMessage");
+  if (!alert) {
+    if (messageEl) messageEl.textContent = "";
+    return null;
+  }
+
+  if (messageEl) {
+    messageEl.textContent = `${alert.title}: ${alert.content}`;
+  }
+  return alert;
+}
+
+function refreshSystemAlertForCurrentPage() {
+  setSystemAlertVisible(
+    currentPage === "landing" ||
+      (isLoggedIn && normalizeRole(currentRole) === "applicant"),
+  );
+}
+
+window.showTopAlertAnnouncement = function() {
+  const alert = getLatestAlertAnnouncement();
+  if (alert) showAnnouncementModal(alert.id);
+};
+
 function updateBottomNavItemActive(page) {
   const items = document.querySelectorAll(".bottom-nav-item");
   items.forEach((item) => {
@@ -1990,9 +2063,7 @@ function updateBottomNavItemActive(page) {
 function initFeaturedMarketplace() {
   const grid = document.getElementById("featuredInnovationGrid");
   if (grid) {
-    // Show only the first 3 items as "Featured"
-    const featured = marketplaceItems.filter((item) => !item.archived).slice(0, 3);
-    grid.innerHTML = renderInnovationCards(featured);
+    filterLandingMarketplace();
   }
 }
 
@@ -2382,7 +2453,7 @@ function initLandingProposalSections() {
 }
 
 function filterLandingMarketplace() {
-  const type = document.getElementById("landingFilterType")?.value || "All";
+  const type = landingMpType;
   const college =
     document.getElementById("landingFilterCollege")?.value || "All";
   const search =
@@ -2401,7 +2472,9 @@ function filterLandingMarketplace() {
     return true;
   });
 
-  const grid = document.getElementById("landingInnovationGrid");
+  const grid =
+    document.getElementById("landingInnovationGrid") ||
+    document.getElementById("featuredInnovationGrid");
   if (grid) {
     grid.innerHTML = filtered.length
       ? renderInnovationCards(filtered)
@@ -3713,6 +3786,135 @@ function getChatConversationCases(role = currentRole) {
   });
 }
 
+function isAdminChatMonitorRole(role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  return normalizedRole === "superadmin" || normalizedRole === "admin";
+}
+
+function getChatCaseApplicantName(submission) {
+  return getSubmissionApplicantUser(submission)?.name || submission?.applicant || "Unknown applicant";
+}
+
+function getChatCaseSpecialistName(submission) {
+  return getAssignedReviewer(submission)?.name || "Unassigned specialist";
+}
+
+function getAdminChatMonitorFilters() {
+  const params = typeof currentParams === "object" && currentParams ? currentParams : {};
+  return {
+    specialistId: params.chatSpecialistId || "all",
+    applicant: params.chatApplicant || "all",
+    sort: params.chatSort || "latest",
+  };
+}
+
+function compareText(a, b) {
+  return String(a || "").localeCompare(String(b || ""), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+function applyAdminChatMonitorFilters(cases, filters) {
+  const filtered = cases.filter((submission) => {
+    if (filters.specialistId !== "all") {
+      const assignedId = getAssignedReviewerId(submission);
+      const filterId = filters.specialistId === "unassigned" ? null : Number(filters.specialistId);
+      if ((assignedId || null) !== filterId) return false;
+    }
+
+    if (filters.applicant !== "all" && getChatCaseApplicantName(submission) !== filters.applicant) {
+      return false;
+    }
+
+    return true;
+  });
+
+  return filtered.sort((a, b) => {
+    if (filters.sort === "specialist") {
+      return (
+        compareText(getChatCaseSpecialistName(a), getChatCaseSpecialistName(b)) ||
+        compareText(getChatCaseApplicantName(a), getChatCaseApplicantName(b)) ||
+        compareText(a.id, b.id)
+      );
+    }
+    if (filters.sort === "applicant") {
+      return (
+        compareText(getChatCaseApplicantName(a), getChatCaseApplicantName(b)) ||
+        compareText(getChatCaseSpecialistName(a), getChatCaseSpecialistName(b)) ||
+        compareText(a.id, b.id)
+      );
+    }
+    if (filters.sort === "case") {
+      return compareText(a.id, b.id);
+    }
+
+    const aLast = getLastChatMessage(a.id);
+    const bLast = getLastChatMessage(b.id);
+    return new Date(bLast?.created_at || b.date || 0) - new Date(aLast?.created_at || a.date || 0);
+  });
+}
+
+function renderAdminChatMonitorControls(allCases, visibleCases, filters) {
+  const specialistOptions = [
+    { value: "all", label: "All specialists" },
+    ...getReviewerUsers().map((user) => ({ value: String(user.id), label: user.name })),
+  ];
+  if (allCases.some((submission) => !getAssignedReviewerId(submission))) {
+    specialistOptions.push({ value: "unassigned", label: "Unassigned specialist" });
+  }
+
+  const applicantOptions = [
+    "All applicants",
+    ...Array.from(new Set(allCases.map((submission) => getChatCaseApplicantName(submission)))).sort(compareText),
+  ];
+
+  return `
+    <div class="admin-chat-monitor-controls">
+      <div class="chat-filter-group">
+        <label for="chatSpecialistFilter">Specialist</label>
+        <select id="chatSpecialistFilter" onchange="setAdminChatMonitorFilter('chatSpecialistId', this.value)">
+          ${specialistOptions
+            .map(
+              (option) =>
+                `<option value="${escapeHtml(option.value)}" ${filters.specialistId === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`,
+            )
+            .join("")}
+        </select>
+      </div>
+      <div class="chat-filter-group">
+        <label for="chatApplicantFilter">Applicant Conversation</label>
+        <select id="chatApplicantFilter" onchange="setAdminChatMonitorFilter('chatApplicant', this.value)">
+          ${applicantOptions
+            .map((applicant, index) => {
+              const value = index === 0 ? "all" : applicant;
+              return `<option value="${escapeHtml(value)}" ${filters.applicant === value ? "selected" : ""}>${escapeHtml(applicant)}</option>`;
+            })
+            .join("")}
+        </select>
+      </div>
+      <div class="chat-filter-group">
+        <label for="chatSortFilter">Sort</label>
+        <select id="chatSortFilter" onchange="setAdminChatMonitorFilter('chatSort', this.value)">
+          <option value="latest" ${filters.sort === "latest" ? "selected" : ""}>Latest activity</option>
+          <option value="specialist" ${filters.sort === "specialist" ? "selected" : ""}>Specialist name A-Z</option>
+          <option value="applicant" ${filters.sort === "applicant" ? "selected" : ""}>Applicant name A-Z</option>
+          <option value="case" ${filters.sort === "case" ? "selected" : ""}>Case ID A-Z</option>
+        </select>
+      </div>
+      <div class="chat-filter-actions">
+        <div class="chat-filter-summary">
+          <strong>${visibleCases.length}</strong> of ${allCases.length} conversations
+        </div>
+        <button type="button" class="chat-filter-reset" onclick="resetAdminChatMonitorFilters()" title="Reset filters">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Reset</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function formatChatDateTime(value) {
   if (!value) return "Just now";
   return new Date(value).toLocaleString([], {
@@ -3822,13 +4024,18 @@ function renderChatConversationList(cases, activeCaseId) {
 
   return cases
     .map((submission) => {
+      const role = normalizeRole(currentRole);
       const last = getLastChatMessage(submission.id);
       const unread = getUnreadChatCountForCase(submission.id);
       const availability = getCaseChatAvailability(submission);
-      const counterpart =
-        normalizeRole(currentRole) === "applicant"
-          ? getAssignedReviewer(submission)?.name || "Evaluator pending"
-          : getSubmissionApplicantUser(submission)?.name || submission.applicant;
+      const applicantName = getChatCaseApplicantName(submission);
+      const specialistName = getAssignedReviewer(submission)?.name || "Evaluator pending";
+      const metaContent =
+        role === "applicant"
+          ? `${escapeHtml(specialistName)} - ${typeBadge(submission.type)}`
+          : role === "reviewer"
+            ? `${escapeHtml(applicantName)} - ${typeBadge(submission.type)}`
+            : `<span><i class="fa-solid fa-user"></i> ${escapeHtml(applicantName)}</span><span><i class="fa-solid fa-user-tie"></i> ${escapeHtml(specialistName)}</span>${typeBadge(submission.type)}`;
       return `
         <button class="chat-thread-item ${activeCaseId === submission.id ? "active" : ""}" onclick="openCaseChat('${submission.id}')">
           <div class="chat-thread-top">
@@ -3836,7 +4043,7 @@ function renderChatConversationList(cases, activeCaseId) {
             ${unread ? `<span>${unread}</span>` : ""}
           </div>
           <div class="chat-thread-title">${escapeHtml(submission.title)}</div>
-          <div class="chat-thread-meta">${escapeHtml(counterpart)} - ${typeBadge(submission.type)}</div>
+          <div class="chat-thread-meta">${metaContent}</div>
           <p>${last ? escapeHtml(last.message_text || last.attachment_name || "Attachment sent") : availability.available ? "No messages yet." : availability.message}</p>
         </button>
       `;
@@ -3860,10 +4067,12 @@ function renderChatThread(submission) {
   const messages = getCaseChatMessages(submission.id);
   const applicant = getSubmissionApplicantUser(submission);
   const reviewer = getAssignedReviewer(submission);
+  const applicantName = applicant?.name || submission.applicant;
+  const specialistName = reviewer?.name || "Evaluator pending";
   const counterpart =
     role === "applicant"
-      ? reviewer?.name || "Evaluator pending"
-      : applicant?.name || submission.applicant;
+      ? specialistName
+      : applicantName;
   const readOnly = role === "superadmin" || role === "admin";
   const canSend = canSendCaseChat(submission);
   const safeId = submission.id.replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -3874,7 +4083,7 @@ function renderChatThread(submission) {
         <div>
           <div class="chat-case-kicker">${escapeHtml(submission.id)} - ${escapeHtml(submission.type)}</div>
           <h2>${escapeHtml(submission.title)}</h2>
-          <p>${readOnly ? "Monitoring view" : `Conversation with ${escapeHtml(counterpart)}`}</p>
+          <p>${readOnly ? `Applicant: ${escapeHtml(applicantName)} | Specialist: ${escapeHtml(specialistName)}` : `Conversation with ${escapeHtml(counterpart)}`}</p>
         </div>
         <div class="chat-header-actions">
           ${statusBadge(submission.status)}
@@ -3940,16 +4149,19 @@ function renderChatThread(submission) {
 function renderMessagesPage() {
   const role = normalizeRole(currentRole);
   const requestedCaseId = currentParams.caseId || "";
-  let cases = getChatConversationCases(role);
+  const adminMonitor = isAdminChatMonitorRole(role);
+  const allCases = getChatConversationCases(role);
+  const adminFilters = adminMonitor ? getAdminChatMonitorFilters() : null;
+  let cases = adminMonitor ? applyAdminChatMonitorFilters(allCases, adminFilters) : allCases;
   let activeCase =
     cases.find((submission) => submission.id === requestedCaseId) ||
-    (requestedCaseId
+    (!adminMonitor && requestedCaseId
       ? submissions.find((submission) => submission.id === requestedCaseId && canAccessCaseChat(submission))
       : null) ||
     cases[0] ||
     null;
 
-  if (activeCase && !cases.some((submission) => submission.id === activeCase.id)) {
+  if (!adminMonitor && activeCase && !cases.some((submission) => submission.id === activeCase.id)) {
     cases = [activeCase, ...cases];
   }
 
@@ -3977,6 +4189,7 @@ function renderMessagesPage() {
       <h1><i class="fa-solid fa-comments"></i> ${title}</h1>
       <p>${subtitle}</p>
     </div>
+    ${adminMonitor ? renderAdminChatMonitorControls(allCases, cases, adminFilters) : ""}
     <div class="chat-shell">
       <aside class="chat-thread-list">
         <div class="chat-thread-list-header">
@@ -3997,7 +4210,24 @@ function renderMessagesPage() {
 }
 
 window.openCaseChat = function(caseId) {
-  navigateTo("messages", false, { caseId });
+  const params = currentPage === "messages" ? { ...currentParams, caseId } : { caseId };
+  navigateTo("messages", false, params);
+};
+
+window.setAdminChatMonitorFilter = function(key, value) {
+  currentParams = {
+    ...(typeof currentParams === "object" && currentParams ? currentParams : {}),
+    [key]: value,
+  };
+  if (key !== "chatSort") {
+    currentParams.caseId = "";
+  }
+  renderDashboardContent("messages");
+};
+
+window.resetAdminChatMonitorFilters = function() {
+  currentParams = { caseId: "" };
+  renderDashboardContent("messages");
 };
 
 window.selectChatAttachment = function(input, caseId) {
@@ -5050,8 +5280,7 @@ function legacyGetRoleSpecificPanels(role) {
   const side = `
     <div class="dashboard-panel" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-radius:16px; padding:24px; border: 1px solid rgba(255,255,255,0.8); box-shadow:0 8px 30px rgba(0,0,0,0.03);">
       <h3 style="font-size:1.15rem; color:var(--navy); margin-bottom: 16px; font-weight:800;"><i class="fa-solid fa-bolt" style="color:var(--yellow); margin-right:6px;"></i> Quick Launch</h3>
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; margin-bottom: 12px; font-weight:600;" onclick="showToast('Starting report generation...')"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> Download Status</button>
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('ip-tutorial')"><i class="fa-solid fa-book" style="margin-right:8px; width:16px;"></i> Operations Manual</button>
+      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="showToast('Starting report generation...')"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> Download Status</button>
     </div>`;
 
   return { main, side };
@@ -5184,8 +5413,7 @@ function getRoleSpecificPanels(role) {
   const side = `
     <div class="dashboard-panel" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-radius:16px; padding:24px; border: 1px solid rgba(255,255,255,0.8); box-shadow:0 8px 30px rgba(0,0,0,0.03);">
       <h3 style="font-size:1.15rem; color:var(--navy); margin-bottom: 16px; font-weight:800;"><i class="fa-solid fa-bolt" style="color:var(--yellow); margin-right:6px;"></i> Quick Launch</h3>
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; margin-bottom: 12px; font-weight:600;" onclick="${normalizedRole === "reviewer" ? "generateEvaluatorReport()" : "showToast('Starting report generation...')"}"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Download Cases Report" : "Download Status"}</button>
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="navigateTo('ip-guidelines')"><i class="fa-solid fa-book" style="margin-right:8px; width:16px;"></i> Operations Manual</button>
+      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="${normalizedRole === "reviewer" ? "generateEvaluatorReport()" : "showToast('Starting report generation...')"}"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Download Cases Report" : "Download Status"}</button>
     </div>`;
   return { main, side };
 }
@@ -6852,7 +7080,7 @@ function renderSubmissionDetail() {
         <i class="fa-solid fa-${certifiedMetadataEditable ? "unlock" : "lock"}" style="color:#6366f1; font-size:1.2rem;"></i>
         <div><strong style="color:#4f46e5;">${certifiedMetadataEditable ? "Metadata Editing Enabled" : "Metadata Frozen"}</strong><p style="font-size:.85rem; color:var(--gray-500); margin:2px 0 0;">${certifiedMetadataEditable ? "The integrity layer is unlocked. Authorized admins can edit approved record metadata, and changes are audit logged." : "Per system policy, the core technical metadata of this approved submission has been locked and cannot be altered by administrators."}</p></div>
       </div>
-      ${certifiedMetadataEditable ? `<button class="btn btn-primary btn-sm" onclick="editCertifiedRecord('${s.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit Certified Metadata</button>` : ""}
+      ${""}
     </div>`
         : ""
     }
@@ -14944,7 +15172,7 @@ window.showCancellationDocumentModal = function(id, finalReason) {
   const modalTitle = document.getElementById("modalTitle");
   const modalBody = document.getElementById("modalBody");
   const overlay = document.getElementById("modalOverlay");
-  const modalCard = document.querySelector(".modal-card");
+  const modalCard = document.querySelector("#modalOverlay .modal-card");
   if (modalCard) modalCard.classList.add("xl");
   modalTitle.innerText = config.title;
   modalTitle.style.display = "block";
@@ -16134,7 +16362,10 @@ function filterMarketplace() {
       return false;
     return true;
   });
-  document.getElementById("innovationGrid").innerHTML = filtered.length
+  const grid = document.getElementById("innovationGrid");
+  if (!grid) return;
+
+  grid.innerHTML = filtered.length
     ? renderInnovationCards(filtered)
     : '<p style="grid-column:1/-1;text-align:center;color:var(--gray-400);padding:60px 0">No innovations found matching your criteria.</p>';
 }
@@ -16147,8 +16378,10 @@ function showInnovationDetail(id) {
   if (!item) return;
 
   const isInterested = userInterests.includes(id);
-  const modalCard = document.querySelector(".modal-card");
-  if (modalCard) modalCard.classList.add("xl");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalCard = document.querySelector("#modalOverlay .modal-card");
+  if (modalOverlay) modalOverlay.classList.add("marketplace-detail-overlay");
+  if (modalCard) modalCard.classList.add("xl", "marketplace-detail-modal");
 
   document.getElementById("modalTitle").style.display = "none"; // Custom title inside body
   document.getElementById("modalBody").innerHTML = `
@@ -16158,7 +16391,7 @@ function showInnovationDetail(id) {
         <div class="ip-detail-main">
           <div class="ip-detail-header-group">
             <h1 class="ip-detail-title-large">${item.fullTitle || item.title}</h1>
-            <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+            <div class="ip-detail-badges">
               ${typeBadge(item.type)}
               <span class="interest-badge"><i class="fa-solid fa-eye"></i> 124 Views</span>
               ${isInterested ? '<span class="badge badge-approved"><i class="fa-solid fa-check-double"></i> Interest Sent</span>' : ''}
@@ -16190,30 +16423,30 @@ function showInnovationDetail(id) {
         <!-- Sidebar / Visuals -->
         <div class="ip-detail-side">
           <div class="ip-product-visual" style="background-image: url('${item.image}')"></div>
-          <p style="text-align:center; font-size:0.9rem; color:#666; font-weight:600; margin-top:-10px">
+          <p class="ip-visual-caption">
             ${item.title.split(" ").slice(0, 2).join(" ")} visual
           </p>
 
-          <div class="inquiry-box" style="background:var(--gray-50); border:1.5px solid var(--gray-200); border-radius:16px; padding:24px; margin-top:10px;">
-            <h4 style="margin-bottom:12px; color:var(--navy);">Express Commercial Interest</h4>
-            <p style="font-size:0.85rem; color:var(--gray-500); margin-bottom:20px;">Send an official notification to <strong>${item.inventor}</strong> expressing your interest in this IP.</p>
+          <div class="inquiry-box">
+            <h4>Express Commercial Interest</h4>
+            <p class="inquiry-copy">Send an official notification to <strong>${item.inventor}</strong> expressing your interest in this IP.</p>
             
             <button class="interest-btn ${isInterested ? 'active' : ''}" style="width:100%; justify-content:center;" onclick="toggleInterest(${item.id})">
               <i class="fa-solid ${isInterested ? 'fa-check' : 'fa-handshake'}"></i>
               ${isInterested ? 'Interest Expressed' : 'Express Interest'}
             </button>
             
-            <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--gray-200);">
-              <span style="font-size:0.75rem; color:var(--gray-400); font-weight:700; text-transform:uppercase;">Contact Person:</span>
-              <div style="font-weight:700; font-size:0.9rem; color:var(--navy); margin-top:4px;">${item.contactPerson || item.inventor}</div>
-              <a href="mailto:${item.contactEmail || "techtransfer@psu.edu.ph"}" style="font-size:0.85rem; color:var(--gold-dark);">${item.contactEmail || "techtransfer@psu.edu.ph"}</a>
+            <div class="inquiry-contact">
+              <span>Contact Person:</span>
+              <div>${item.contactPerson || item.inventor}</div>
+              <a href="mailto:${item.contactEmail || "techtransfer@psu.edu.ph"}">${item.contactEmail || "techtransfer@psu.edu.ph"}</a>
             </div>
           </div>
         </div>
       </div>
     </div>`;
 
-  document.getElementById("modalOverlay").classList.add("active");
+  modalOverlay.classList.add("active");
 }
 
 window.toggleInterest = function(id) {
@@ -16230,9 +16463,9 @@ window.toggleInterest = function(id) {
 
 
 function closeModal() {
-  document.getElementById("modalOverlay").classList.remove("active");
-  const modalCard = document.querySelector(".modal-card");
-  if (modalCard) modalCard.classList.remove("xl");
+  document.getElementById("modalOverlay").classList.remove("active", "marketplace-detail-overlay");
+  const modalCard = document.querySelector("#modalOverlay .modal-card");
+  if (modalCard) modalCard.classList.remove("xl", "marketplace-detail-modal");
   // Reset title display for regular modals
   document.getElementById("modalTitle").style.display = "block";
 }
@@ -16838,34 +17071,20 @@ function renderProfile() {
 
 function renderAdminRecords() {
   const approved = getCertifiedAdminRecords();
-  const canEditRecords = canEditCertifiedRecords();
-  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties — metadata is locked for integrity.</p></div>
+  return `<div class="page-header"><h1>IP Records</h1><p>All certified intellectual properties - metadata is read-only for integrity.</p></div>
     <div style="padding:12px 18px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-shield-halved" style="color:#6366f1; font-size:1.1rem;"></i>
       <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; width:100%; flex-wrap:wrap;">
-        <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> — All records below have been certified and their metadata is <strong>frozen for protection</strong>. Administrators may not alter core technical fields of these submissions unless the integrity layer is unlocked with a Primary Key or Backup Key.</p>
-        <button class="btn btn-outline-navy btn-sm" onclick="unlockIntegrityFreeze()"><i class="fa-solid fa-${integrityFreezeUnlocked ? "lock" : "key"}"></i> ${integrityFreezeUnlocked ? "Lock Integrity Freeze" : "Unlock Integrity Freeze"}</button>
+        <p style="font-size:.85rem; color:var(--gray-600); margin:0;"><strong style="color:#4f46e5">Certified Records Archive</strong> - All records below have been certified and their metadata is <strong>frozen for protection</strong>. Certified records can be viewed and published to the marketplace, but cannot be edited.</p>
       </div>
     </div>
-    <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th><th>Marketplace</th><th>Actions</th></tr></thead><tbody>
+    <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Owner</th><th>Department</th><th>Status</th><th>Integrity</th><th>Actions</th></tr></thead><tbody>
       ${approved
         .map(
           (s) => {
             const marketplaceListing = findMarketplaceListingByRecordId(s.id);
             const marketplaceRequest = getLatestMarketplaceApprovalRequest(s.id);
-            const marketplaceCell = marketplaceListing
-              ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                  <span class="badge ${marketplaceListing.archived ? "badge-frozen" : "badge-approved"}"><i class="fa-solid fa-${marketplaceListing.archived ? "box-archive" : "store"}"></i> ${marketplaceListing.archived ? "Archived" : "Listed"}</span>
-                  <button class="btn btn-sm btn-outline-navy" onclick="showInnovationDetail(${marketplaceListing.id})"><i class="fa-solid fa-eye"></i> View</button>
-                </div>`
-              : marketplaceRequest?.status === "pending"
-                ? `<span class="badge badge-pending"><i class="fa-solid fa-clock"></i> Pending Approval</span>`
-                : marketplaceRequest?.status === "declined"
-                  ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                      <span class="badge badge-rejected"><i class="fa-solid fa-xmark"></i> Declined</span>
-                      <button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-rotate-right"></i> Request Again</button>
-                    </div>`
-              : `<button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-store"></i> Add to Marketplace</button>`;
+
             return `<tr>
         <td>${escapeHtml(s.id)}</td>
         <td>${typeBadge(s.type)}</td>
@@ -16873,14 +17092,17 @@ function renderAdminRecords() {
         <td>${escapeHtml(s.applicant)}</td>
         <td>${escapeHtml(s.department)}</td>
         <td>${statusBadge(s.status)}</td>
-        <td>${integrityFreezeUnlocked ? '<span class="badge badge-review"><i class="fa-solid fa-unlock"></i> Unlocked</span>' : '<span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Frozen</span>'}</td>
-        <td>${marketplaceCell}</td>
+        <td><span class="badge badge-frozen"><i class="fa-solid fa-lock"></i> Read-only</span></td>
         <td><div class="action-btns">
           <button class="btn btn-sm btn-outline-navy" onclick="viewCertifiedRecord('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
           ${
-            canEditRecords
-              ? `<button class="btn btn-sm btn-primary" onclick="editCertifiedRecord('${s.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`
-              : `<button class="btn btn-sm btn-secondary" disabled title="Unlock Integrity Freeze to edit certified metadata"><i class="fa-solid fa-lock"></i> Edit</button>`
+            !marketplaceListing
+              ? marketplaceRequest?.status === "pending"
+                ? `<button class="btn btn-sm btn-secondary" disabled><i class="fa-solid fa-clock"></i> Pending</button>`
+                : marketplaceRequest?.status === "declined"
+                  ? `<button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-rotate-right"></i> Request Again</button>`
+                  : `<button class="btn btn-sm btn-primary" onclick="publishCertifiedRecordToMarketplace('${s.id}')"><i class="fa-solid fa-store"></i> Add to Marketplace</button>`
+              : ""
           }
         </div></td>
       </tr>`;
@@ -16890,12 +17112,8 @@ function renderAdminRecords() {
     </tbody></table></div></div>`;
 }
 
-function canEditCertifiedRecords(role = currentRole) {
-  const normalizedRole = normalizeRole(role);
-  return (
-    integrityFreezeUnlocked &&
-    (normalizedRole === "superadmin" || normalizedRole === "admin")
-  );
+function canEditCertifiedRecords() {
+  return false;
 }
 
 function getCertifiedAdminRecords() {
@@ -16959,11 +17177,6 @@ window.viewCertifiedRecord = function(id) {
     <div class="detail-actions" style="justify-content:flex-end; margin-top:18px;">
       <button class="btn btn-outline-navy" onclick="closeModal()">Close</button>
       ${marketplaceAction}
-      ${
-        canEditCertifiedRecords()
-          ? `<button class="btn btn-primary" onclick="editCertifiedRecord('${record.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit Record</button>`
-          : `<button class="btn btn-secondary" disabled title="Unlock Integrity Freeze to edit certified metadata"><i class="fa-solid fa-lock"></i> Edit Locked</button>`
-      }
     </div>`;
   document.getElementById("modalOverlay").classList.add("active");
 };
@@ -16974,101 +17187,12 @@ window.editCertifiedRecord = function(id) {
     showToast("Certified record not found.");
     return;
   }
-  if (!canEditCertifiedRecords()) {
-    showToast("Unlock the Integrity Freeze before editing certified records.");
-    return;
-  }
-  const record = match.record;
-  const typeOptions = [
-    "Patent",
-    "Copyright",
-    "Utility Model",
-    "Industrial Design",
-  ];
-  document.getElementById("modalTitle").textContent = "Edit Certified Record";
-  document.getElementById("modalBody").innerHTML = `
-    <form onsubmit="saveCertifiedRecordEdit(event, '${record.id}')">
-      <div class="form-group">
-        <label>Reference</label>
-        <input type="text" value="${escapeHtml(record.id)}" disabled />
-      </div>
-      <div class="form-group">
-        <label for="certifiedEditType">Type</label>
-        <select id="certifiedEditType" name="type" required>
-          ${typeOptions
-            .map(
-              (type) =>
-                `<option value="${type}" ${record.type === type ? "selected" : ""}>${type}</option>`,
-            )
-            .join("")}
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="certifiedEditTitle">Title</label>
-        <input id="certifiedEditTitle" name="title" type="text" value="${escapeHtml(record.title)}" required />
-      </div>
-      <div class="form-group">
-        <label for="certifiedEditApplicant">Owner</label>
-        <input id="certifiedEditApplicant" name="applicant" type="text" value="${escapeHtml(record.applicant)}" required />
-      </div>
-      <div class="form-group">
-        <label for="certifiedEditDepartment">Department</label>
-        <input id="certifiedEditDepartment" name="department" type="text" value="${escapeHtml(record.department)}" required />
-      </div>
-      <div class="form-group">
-        <label for="certifiedEditDate">Date Filed</label>
-        <input id="certifiedEditDate" name="date" type="date" value="${escapeHtml(record.date || "")}" />
-      </div>
-      <div class="form-group">
-        <label for="certifiedEditDescription">Description</label>
-        <textarea id="certifiedEditDescription" name="description" style="min-height:110px;">${escapeHtml(record.description || "")}</textarea>
-      </div>
-      <div style="padding:12px 14px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; margin-bottom:18px;">
-        <strong style="color:#4f46e5;">Integrity Freeze Unlocked</strong>
-        <p style="font-size:.8rem; color:var(--gray-500); margin:4px 0 0;">Saving this form updates the approved record metadata and writes an audit log entry.</p>
-      </div>
-      <div class="detail-actions" style="justify-content:flex-end;">
-        <button type="button" class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
-      </div>
-    </form>`;
-  document.getElementById("modalOverlay").classList.add("active");
+  showToast("Certified IP records are read-only and cannot be edited.");
 };
 
 window.saveCertifiedRecordEdit = function(event, id) {
-  event.preventDefault();
-  const match = findCertifiedRecord(id);
-  if (!match || !canEditCertifiedRecords()) {
-    showToast("Certified record cannot be edited while integrity is locked.");
-    return;
-  }
-
-  const form = event.currentTarget;
-  const previousTitle = match.record.title;
-  match.record.type = form.elements.type.value;
-  match.record.title = form.elements.title.value.trim();
-  match.record.applicant = form.elements.applicant.value.trim();
-  match.record.department = form.elements.department.value.trim();
-  match.record.date = form.elements.date.value;
-  match.record.description = form.elements.description.value.trim();
-  match.record.status = "Approved";
-
-  if (match.source === "submission") {
-    match.record.formType = getFormTypeKeyFromSubmissionType(match.record.type);
-    syncSubmissionWorkflowState(match.record);
-  }
-
-  addAuditLog({
-    accountName: getCurrentUser().name,
-    action: "Edited Certified Record",
-    record: match.record.id,
-    details: `Updated certified metadata for "${previousTitle}".`,
-    module: match.record.type,
-  });
-
-  closeModal();
-  showToast("Certified record updated.");
-  renderDashboardContent(currentPage === "submission-detail" ? "submission-detail" : "admin-records");
+  if (event) event.preventDefault();
+  showToast("Certified IP records are read-only and cannot be edited.");
 };
 
 function renderInterestsList() {
@@ -17386,7 +17510,7 @@ function legacyRenderCreateAccount() {
         <div class="form-group" id="dept-group"><label>Department *</label>
           <select id="newUserDept"><option value="">Select Department</option><option>IT Office</option><option>IP Office</option><option>Research Office</option><option>College of Engineering</option><option>College of Sciences</option><option>College of Agriculture</option><option>College of Arts</option></select></div>
         <div class="form-group" id="role-group"><label>Assign Role *</label>
-          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option>Super Admin</option><option>PITBI Admin</option><option>Evaluator</option><option>Applicant</option></select></div>
+          <select id="newUserRole" onchange="toggleDeptField(this.value)"><option value="">Select Role</option><option value="reviewer">Specialist</option><option value="applicant">Applicant</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Temporary Password *</label><input type="password" id="newUserPass" placeholder="Min 8 characters" /></div>
@@ -17418,7 +17542,7 @@ function legacyCreateNewAccount() {
     showToast("Please fill in all required fields");
     return;
   }
-  if (role !== "Super Admin" && !dept) {
+  if (!dept) {
     showToast("Please select a department");
     return;
   }
@@ -17432,7 +17556,7 @@ function legacyCreateNewAccount() {
     return;
   }
 
-  const finalDept = role === "Super Admin" ? "System" : dept;
+  const finalDept = normalizeRole(role) === "reviewer" ? "Specialist Pool" : dept;
   const newUser = {
     id: systemUsers.length + 1,
     name,
@@ -17595,7 +17719,7 @@ function toggleDeptField(role) {
 }
 
 function renderCreateAccount() {
-  const roleOptions = getManageableRoleOptions()
+  const roleOptions = getCreatableRoleOptions()
     .map((role) => `<option value="${role}">${formatRoleLabel(role)}</option>`)
     .join("");
   
@@ -17686,7 +17810,7 @@ function createNewAccount() {
     showToast("Please fill in all required fields");
     return;
   }
-  if (!getManageableRoleOptions().includes(role)) {
+  if (!getCreatableRoleOptions().includes(role)) {
     showToast("This role cannot be created from the current account.");
     return;
   }
@@ -17718,12 +17842,7 @@ function createNewAccount() {
     suffix,
     email,
     role,
-    dept:
-      role === "superadmin"
-        ? "System Administration"
-        : role === "reviewer"
-          ? "Specialist Pool"
-          : "Unassigned",
+    dept: role === "reviewer" ? "Specialist Pool" : "Unassigned",
     status: "Active",
     dateCreated: new Date().toISOString().split("T")[0],
     allowedCaseTypes
@@ -18007,40 +18126,9 @@ window.toggleSecurityKeyVisibility = function(type) {
 };
 
 window.unlockIntegrityFreeze = function() {
-  if (integrityFreezeUnlocked) {
-    integrityFreezeUnlocked = false;
-    addAuditLog({
-      accountName: getCurrentUser().name,
-      action: "Locked Integrity Freeze",
-      record: "Certified Records Archive",
-      details: "Re-enabled certified record metadata protection.",
-      module: "IP Records",
-    });
-    showToast("Integrity Freeze locked.");
-    renderDashboardContent(currentPage === "submission-detail" ? "submission-detail" : "admin-records");
-    return;
-  }
-
-  const enteredKey = prompt(
-    "Enter the Primary Key or Backup Key to unlock the Integrity Freeze:",
-    "",
-  );
-  if (enteredKey === null) return;
-  const { primary, backup } = getSystemSecurityKeys();
-  if (enteredKey === primary || enteredKey === backup) {
-    integrityFreezeUnlocked = true;
-    addAuditLog({
-      accountName: getCurrentUser().name,
-      action: "Unlocked Integrity Freeze",
-      record: "Certified Records Archive",
-      details: "Temporarily enabled editing for approved certified record metadata.",
-      module: "IP Records",
-    });
-    showToast("Integrity Freeze unlocked successfully.");
-    renderDashboardContent(currentPage === "submission-detail" ? "submission-detail" : "admin-records");
-    return;
-  }
-  showToast("Invalid key. Integrity Freeze remains locked.");
+  integrityFreezeUnlocked = false;
+  showToast("Certified IP records are read-only and cannot be edited.");
+  renderDashboardContent(currentPage === "submission-detail" ? "submission-detail" : "admin-records");
 };
 
 window.filterAnnouncementCategory = function(category) {
@@ -18391,11 +18479,21 @@ window.saveAnnouncement = function(e, id) {
   const date = document.getElementById('annDate').value;
   const content = document.getElementById('annContent').value;
   const image = document.getElementById('annImageUrl').value || 'images/psu_logo_main.png';
+  let savedAnnouncement = null;
+  let shouldNotifyAlert = false;
 
   if (id !== null && id !== undefined && id !== 'null') {
     const idx = announcements.findIndex(a => a.id == id);
     if (idx !== -1) {
+      const previous = announcements[idx];
       announcements[idx] = { ...announcements[idx], title, category, date, content, image };
+      savedAnnouncement = announcements[idx];
+      shouldNotifyAlert =
+        category === "Alert" &&
+        (previous.category !== category ||
+          previous.title !== title ||
+          previous.content !== content ||
+          previous.date !== date);
       addAuditLog({
         accountName: getCurrentUser().name,
         action: "Updated Announcement",
@@ -18407,7 +18505,9 @@ window.saveAnnouncement = function(e, id) {
     }
   } else {
     const newId = announcements.length ? Math.max(...announcements.map(a => a.id)) + 1 : 1;
-    announcements.push({ id: newId, title, category, date, content, image });
+    savedAnnouncement = { id: newId, title, category, date, content, image };
+    announcements.push(savedAnnouncement);
+    shouldNotifyAlert = category === "Alert";
     addAuditLog({
       accountName: getCurrentUser().name,
       action: "Added Announcement",
@@ -18418,8 +18518,23 @@ window.saveAnnouncement = function(e, id) {
     showToast('Announcement created successfully');
   }
 
+  if (category === "Alert") {
+    dismissedTopAlertId = null;
+  }
+  if (shouldNotifyAlert && savedAnnouncement) {
+    pushRoleNotification("applicant", {
+      icon: "fa-triangle-exclamation",
+      color: "#ef4444",
+      title: `Alert: ${savedAnnouncement.title}`,
+      body: savedAnnouncement.content,
+      type: "announcement-alert",
+      announcementId: savedAnnouncement.id,
+    });
+  }
+
   closeModal();
   renderLandingAnnouncements();
+  refreshSystemAlertForCurrentPage();
   renderDashboardContent('admin-announcements');
 };
 
@@ -18439,6 +18554,8 @@ window.deleteAnnouncement = function(id) {
     }
     showToast('Announcement deleted');
     renderLandingAnnouncements();
+    if (deleted?.category === "Alert") dismissedTopAlertId = null;
+    refreshSystemAlertForCurrentPage();
     renderDashboardContent('admin-announcements');
   }
 };
