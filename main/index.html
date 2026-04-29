@@ -14,6 +14,16 @@
 </head>
 <body>
   <div id="app">
+    <div class="top-alert-banner" id="topAlertBanner" role="status" aria-live="polite">
+      <div class="top-alert-content">
+        <span class="top-alert-label">ALERT</span>
+        <span class="top-alert-message" id="topAlertMessage">Announcement alert available.</span>
+        <button class="top-alert-action" type="button" onclick="showTopAlertAnnouncement()">VIEW ANNOUNCEMENT</button>
+      </div>
+      <button class="top-alert-close" type="button" onclick="dismissTopAlert()" aria-label="Dismiss alert">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
 
     <!-- ====== PUBLIC TOP NAV ====== -->
     <nav id="public-nav">
@@ -257,16 +267,39 @@
       <!-- Featured Innovation Spotlight -->
       <section id="featured-marketplace-section" class="section">
         <div class="container">
-          <div class="section-header-inline">
-            <div>
-              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">Featured Innovations</h2>
-              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Highlighting top-tier research and inventions from PSU researchers.</p>
-            </div>
-            <button class="btn btn-outline" onclick="handleMarketplaceAccess()">Browse Full Marketplace <i class="fa-solid fa-arrow-right"></i></button>
+          <div class="page-header">
+            <h1>Innovation Marketplace</h1>
+            <p>Discover and connect with PSU innovations and research outputs.</p>
           </div>
-          
-          <div class="innovation-grid" id="featuredInnovationGrid" style="margin-top: 40px;">
-            <!-- Populated by JS -->
+
+          <div class="mp-type-filters landing-marketplace-filters">
+            <button class="mp-type-btn active" data-type="All" onclick="setLandingMpType('All')">
+              <i class="fa-solid fa-layer-group"></i> All Types
+            </button>
+            <button class="mp-type-btn" data-type="Patent" onclick="setLandingMpType('Patent')">
+              <i class="fa-solid fa-lightbulb"></i> Patent
+            </button>
+            <button class="mp-type-btn" data-type="Utility Model" onclick="setLandingMpType('Utility Model')">
+              <i class="fa-solid fa-gears"></i> Utility Model
+            </button>
+            <button class="mp-type-btn" data-type="Industrial Design" onclick="setLandingMpType('Industrial Design')">
+              <i class="fa-solid fa-pen-nib"></i> Industrial Design
+            </button>
+            <button class="mp-type-btn" data-type="Copyright" onclick="setLandingMpType('Copyright')">
+              <i class="fa-solid fa-copyright"></i> Copyright
+            </button>
+          </div>
+
+          <div class="marketplace-layout no-sidebar landing-marketplace-layout">
+            <div>
+              <div class="search-box" style="margin-bottom: 32px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="landingSearch" placeholder="Search by title, inventor, or description..." oninput="filterLandingMarketplace()" />
+              </div>
+              <div class="innovation-grid" id="featuredInnovationGrid">
+                <!-- Populated by JS -->
+              </div>
+            </div>
           </div>
         </div>
       </section>
