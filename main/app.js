@@ -1012,7 +1012,7 @@ const auditLogs = [
 const ROLE_META = {
   superadmin: { label: "Admin", dashboard: "admin-dashboard" },
   admin: { label: "Admin", dashboard: "admin-dashboard" },
-  reviewer: { label: "Specialist", dashboard: "admin-dashboard" },
+  reviewer: { label: "Evaluator", dashboard: "admin-dashboard" },
   applicant: { label: "Applicant", dashboard: "user-dashboard" },
 };
 
@@ -1168,7 +1168,6 @@ const IPOPHL_CASE_OVERRIDES = {
 
 const IPOPHL_TYPES = new Set([
   "Patent",
-  
   "Utility Model",
   "Industrial Design",
 ]);
@@ -5373,7 +5372,7 @@ function getRoleSpecificPanels(role) {
   const normalizedRole = normalizeRole(role);
   const submissionsList = getVisibleSubmissions(normalizedRole).slice(0, 3);
   const mainPanelTitle =
-    normalizedRole === "reviewer" ? "Assigned Specialist Queue" : "Action Required";
+    normalizedRole === "reviewer" ? "Assigned Case Queue" : "Action Required";
 
   const main = `
     <div style="display:flex; flex-direction:column; gap:24px;">
@@ -5430,7 +5429,7 @@ window.generateEvaluatorReport = function() {
   showToast("Generating cases report...");
 
   // CSV Header
-  let csvContent = "Reference No.,Type,Title,Applicant,Date,Status,Assigned Specialist\n";
+  let csvContent = "Reference No.,Type,Title,Applicant,Date,Status,Assigned Evaluator\n";
 
   // CSV Rows
   visibleSubmissions.forEach(s => {
@@ -5640,10 +5639,12 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
   if (filterStatus && filterStatus !== "All")
     filtered = filtered.filter((s) => s.status === filterStatus);
 
+  const isMyCasesView = adminCaseScope === "mine";
+
   return `
     <div class="table-container" id="adminSubmissionsTable">
       <div class="table-header">
-        <h3>${normalizeRole(currentRole) === "reviewer" ? "My Cases" : "Visible Cases"} <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>
+        ${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<h3>Visible Cases <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>`}
         <select class="filter-select" onchange="filterAdminStatus(this.value)">
           <option value="All">All Status</option>
           <option value="Pending" ${(filterStatus || "") === "Pending" ? "selected" : ""}>Pending</option>
@@ -5663,23 +5664,22 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
       <div style="padding:0 24px 14px;display:flex;gap:6px;flex-wrap:wrap;">
         <button class="filter-btn ${!filterType || filterType === "All" ? "active" : ""}" onclick="filterAdminTable('All')">All</button>
         <button class="filter-btn ${(filterType || "") === "Patent" ? "active" : ""}" onclick="filterAdminTable('Patent')">Patent</button>
-        <button class="filter-btn ${(filterType || "") === "" ? "active" : ""}" onclick="filterAdminTable('')"></button>
         <button class="filter-btn ${(filterType || "") === "Copyright" ? "active" : ""}" onclick="filterAdminTable('Copyright')">Copyright</button>
         <button class="filter-btn ${(filterType || "") === "Utility Model" ? "active" : ""}" onclick="filterAdminTable('Utility Model')">Utility Model</button>
         <button class="filter-btn ${(filterType || "") === "Industrial Design" ? "active" : ""}" onclick="filterAdminTable('Industrial Design')">Industrial Design</button>
       </div>
-      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th><th>Specialist</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>
         ${
           filtered.length === 0
-            ? `<tr><td colspan="8" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
+            ? `<tr><td colspan="${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
             : filtered
                 .map(
                   (s) => `<tr>
-          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${s.title}</td><td>${s.applicant}</td><td>${getAssignedReviewerName(s)}</td><td>${s.date}</td><td>${statusBadge(s.status)}</td>
+          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${s.title}</td><td>${s.applicant}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td><td>${statusBadge(s.status)}</td>
           <td><div class="action-btns">
             <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
             ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
-            ${normalizeRole(currentRole) === "reviewer" && !canTakeSubmission(s) && !isAssignedReviewerSubmission(s) ? `<button class="btn btn-sm btn-secondary" disabled title="Assigned to ${getAssignedReviewerName(s)}"><i class="fa-solid fa-lock"></i> Read Only</button>` : ""}
+            ${normalizeRole(currentRole) === "reviewer" && !canTakeSubmission(s) && !isAssignedReviewerSubmission(s) ? `<button class="btn btn-sm btn-secondary" disabled title="Evaluator: ${getAssignedReviewerName(s)}"><i class="fa-solid fa-lock"></i> Read Only</button>` : ""}
             ${canArchiveSubmission(s) ? `<button class="btn btn-sm btn-secondary" title="Archive" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
           </div></td></tr>`,
                 )
@@ -8141,6 +8141,10 @@ function getLockedAdvisoryServiceAvailed() {
   return [getPatentIntakeServiceDefault()];
 }
 
+function getLockedDisclosureFundingSource() {
+  return ["psu-funded"];
+}
+
 function getPatentProgressPercent() {
   const stepsCount = getPatentFormSteps().length;
   const stepSize = 100 / stepsCount;
@@ -8307,6 +8311,16 @@ function renderLockedAdvisoryServiceChoice(value, label) {
   `;
 }
 
+function renderLockedDisclosureFundingChoice(value, label) {
+  const checked = value === "psu-funded";
+  return `
+    <label class="patent-choice patent-choice--check ${checked ? "checked" : ""}" aria-disabled="true">
+      <input type="checkbox" name="disclosureFundingSource" value="${value}" ${checked ? "checked" : ""} disabled tabindex="-1" />
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `;
+}
+
 function renderPatentAdvisorySheetStep() {
   const typeLabel = getPatentIntakeTypeLabel();
   wizardData.advisoryServiceAvailed = getLockedAdvisoryServiceAvailed();
@@ -8368,7 +8382,6 @@ function renderPatentAdvisorySheetStep() {
           <div class="patent-paper__section-title">Service Availed</div>
           <div class="patent-choice-grid">
             ${renderLockedAdvisoryServiceChoice("copyright", "Copyright / Related Rights")}
-            ${renderLockedAdvisoryServiceChoice("trademark", "Trademark")}
             ${renderLockedAdvisoryServiceChoice("patent", "Patent")}
             ${renderLockedAdvisoryServiceChoice("utility", "Utility Model")}
             ${renderLockedAdvisoryServiceChoice("industrial", "Industrial Design")}
@@ -8389,6 +8402,7 @@ function renderPatentAdvisorySheetStep() {
 
 function renderPatentDisclosureStep() {
   const disclosureDate = wizardData.disclosureDate || "";
+  wizardData.disclosureFundingSource = getLockedDisclosureFundingSource();
 
   return `
     <div class="patent-gform-card">
@@ -8448,9 +8462,9 @@ function renderPatentDisclosureStep() {
           <div class="patent-editor-inline-group">
             <span class="patent-editor-inline-group__label">Source of Funding</span>
             <div class="patent-choice-grid">
-              ${renderPatentCheckbox("disclosureFundingSource", "psu-funded", "PSU-funded")}
-              ${renderPatentCheckbox("disclosureFundingSource", "externally-funded", "Externally funded")}
-              ${renderPatentCheckbox("disclosureFundingSource", "self-funded", "Self-funded")}
+              ${renderLockedDisclosureFundingChoice("psu-funded", "PSU-funded")}
+              ${renderLockedDisclosureFundingChoice("externally-funded", "Externally funded")}
+              ${renderLockedDisclosureFundingChoice("self-funded", "Self-funded")}
             </div>
           </div>
           <div class="patent-editor-grid patent-editor-grid--one">
@@ -9176,7 +9190,6 @@ function renderPatentAdvisoryServiceSheetPaper() {
         <strong>Service Availed</strong>
         <div class="psu-advisory-service-grid">
           ${renderPsuCheck("Copyright/Related Rights", hasService("copyright"))}
-          ${renderPsuCheck("Trademark", hasService("trademark"))}
           ${renderPsuCheck("Patent", hasService("patent"))}
           ${renderPsuCheck("Utility Model", hasService("utility"))}
           ${renderPsuCheck("Industrial Design", hasService("industrial"))}
@@ -9208,7 +9221,7 @@ function renderPatentDisclosureSection(title, value) {
 
 function renderPatentDisclosureFormPaper() {
   const resources = getPatentSelectedValues("disclosureResourcesUsed");
-  const funding = getPatentSelectedValues("disclosureFundingSource");
+  const funding = getLockedDisclosureFundingSource();
   const priorTypes = getPatentSelectedValues("disclosurePriorTypes");
   const hasResource = (value) => resources.includes(value);
   const hasFunding = (value) => funding.includes(value);
@@ -14481,7 +14494,7 @@ function captureWizardData() {
     captureRadio("disclosureUsedPsuResources", "disclosureUsedPsuResources");
     captureRadio("disclosurePriorPublic", "disclosurePriorPublic");
     captureChecks("disclosureResourcesUsed", "disclosureResourcesUsed");
-    captureChecks("disclosureFundingSource", "disclosureFundingSource");
+    wizardData.disclosureFundingSource = getLockedDisclosureFundingSource();
     captureChecks("disclosurePriorTypes", "disclosurePriorTypes");
     [
       ["disclosureInventors", "disclosure-inventors"],
