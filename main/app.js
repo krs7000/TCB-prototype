@@ -2647,8 +2647,10 @@ function filterLandingMarketplace() {
     document.getElementById("landingInnovationGrid") ||
     document.getElementById("featuredInnovationGrid");
   if (grid) {
-    grid.innerHTML = filtered.length
-      ? renderInnovationCards(filtered)
+    // Limit to 3 if it's the featured grid
+    const displayItems = grid.id === "featuredInnovationGrid" ? filtered.slice(0, 3) : filtered;
+    grid.innerHTML = displayItems.length
+      ? renderInnovationCards(displayItems)
       : '<p style="grid-column:1/-1;text-align:center;color:var(--gray-500);padding:60px 0;font-weight:600">No innovations found matching your criteria.</p>';
   }
 }
@@ -6881,12 +6883,17 @@ function renderSubmissionDetail() {
       : showCopyrightOperationalFlow
         ? "Copyright Operational Flow"
         : "Activity Timeline";
+  const submittedSummary = buildSubmissionSummaryFromFormData(
+    formTypeKey,
+    getSubmissionFormData(s),
+    s,
+  );
 
   return `
     ${renderBackNav()}
     <div class="page-header">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <h1 style="margin:0">${s.title}</h1>
+        <h1 style="margin:0">${escapeHtml(submittedSummary.title || s.title)}</h1>
         ${frozen ? `<span class="badge ${certifiedMetadataEditable ? "badge-review" : "badge-frozen"}"><i class="fa-solid fa-${certifiedMetadataEditable ? "unlock" : "lock"}"></i> ${certifiedMetadataEditable ? "Integrity Unlocked" : "Frozen for Certification"}</span>` : ""}
         ${renderCaseChatButton(s)}
       </div>
@@ -6928,22 +6935,23 @@ function renderSubmissionDetail() {
       <div>
         <div class="detail-panel">
           <h3><i class="fa-solid fa-user"></i> Applicant Information</h3>
-          <div class="detail-row"><span class="label">Name</span><span class="value">${s.applicant}</span></div>
-          <div class="detail-row"><span class="label">Department</span><span class="value">${s.department}</span></div>
-          <div class="detail-row"><span class="label">Email</span><span class="value">${s.email}</span></div>
-          <div class="detail-row"><span class="label">Contact</span><span class="value">${s.contact}</span></div>
+          <div class="detail-row"><span class="label">Name</span><span class="value">${escapeHtml(submittedSummary.applicant || s.applicant)}</span></div>
+          <div class="detail-row"><span class="label">Department</span><span class="value">${escapeHtml(submittedSummary.department || s.department || "Not provided")}</span></div>
+          <div class="detail-row"><span class="label">Email</span><span class="value">${escapeHtml(submittedSummary.email || s.email || "Not provided")}</span></div>
+          <div class="detail-row"><span class="label">Contact</span><span class="value">${escapeHtml(submittedSummary.contact || s.contact || "Not provided")}</span></div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-file-lines"></i> IP Details</h3>
           <div class="detail-row"><span class="label">Type</span><span class="value">${typeBadge(s.type)}</span></div>
-          <div class="detail-row"><span class="label">Title</span><span class="value">${s.title}</span></div>
-          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">National Library Lane</span><span class="value">${s.registrationLane || "Copyright"}</span></div>` : ""}
-          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Work Type</span><span class="value">${s.workType || "Creative Work"}</span></div>` : ""}
+          <div class="detail-row"><span class="label">Title</span><span class="value">${escapeHtml(submittedSummary.title || s.title)}</span></div>
+          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">National Library Lane</span><span class="value">${escapeHtml(submittedSummary.registrationLane || s.registrationLane || "Copyright")}</span></div>` : ""}
+          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Work Type</span><span class="value">${escapeHtml(submittedSummary.workType || s.workType || "Creative Work")}</span></div>` : ""}
           ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Official Duty Work</span><span class="value">${s.officialDutyWork ? "Yes" : "No"}</span></div>` : ""}
           ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Approved Letter-Request</span><span class="value">${s.letterRequestApproved ? "Yes" : "No"}</span></div>` : ""}
-          <div class="detail-row"><span class="label">Description</span><span class="value">${s.description}</span></div>
+          <div class="detail-row"><span class="label">Description</span><span class="value">${escapeHtml(submittedSummary.description || s.description || "Not provided")}</span></div>
           <div class="detail-row"><span class="label">Date Filed</span><span class="value">${s.date}</span></div>
         </div>
+        ${renderSubmittedFormDataPanel(s)}
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-paperclip"></i> Documents</h3>
           <div style="padding:16px;background:var(--gray-50);border-radius:8px;margin-bottom:12px">
@@ -7395,6 +7403,394 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function getSubmittedFieldValue(data, keys, fallback = "") {
+  for (const key of keys) {
+    const value = data?.[key];
+    if (Array.isArray(value) && value.length) return value;
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+  return fallback || "";
+}
+
+function joinSubmittedName(data, keys) {
+  return keys
+    .map((key) => data?.[key])
+    .filter((value) => value !== undefined && value !== null && String(value).trim() !== "")
+    .join(" ")
+    .trim();
+}
+
+function getSubmittedPartyName(data, keyBase, surnameKey = "LastName") {
+  const named = joinSubmittedName(data, [
+    `${keyBase}FirstName`,
+    `${keyBase}MiddleName`,
+    `${keyBase}${surnameKey}`,
+    `${keyBase}Suffix`,
+  ]);
+  return named || data?.[`${keyBase}Organization`] || data?.[`${keyBase}InstitutionName`] || "";
+}
+
+function getSubmissionFormData(submission) {
+  return submission?.formData || submission?.data || {};
+}
+
+function getCopyrightWorkClassLabelFromData(data) {
+  return (
+    getCopyrightClassificationLabel(data?.copyrightWorkClassification) ||
+    data?.copyrightWorkClassification ||
+    ""
+  );
+}
+
+function buildSubmissionSummaryFromFormData(formType, data = {}, fallback = {}) {
+  const advisoryName = joinSubmittedName(data, [
+    "advisoryFirstName",
+    "advisoryMiddleName",
+    "advisoryLastName",
+  ]);
+  const genericApplicantName = joinSubmittedName(data, [
+    "applicantFirstName",
+    "applicantMiddleName",
+    "applicantLastName",
+  ]);
+
+  const summary = {
+    applicant:
+      advisoryName ||
+      genericApplicantName ||
+      data.name ||
+      data.applicantName ||
+      fallback.applicant ||
+      "",
+    department: getSubmittedFieldValue(
+      data,
+      ["disclosureCollege", "advisoryCompany", "applicantCompany", "college", "dept", "department"],
+      fallback.department,
+    ),
+    email: getSubmittedFieldValue(
+      data,
+      ["advisoryEmail", "applicantEmail", "email"],
+      fallback.email,
+    ),
+    contact: getSubmittedFieldValue(
+      data,
+      ["advisoryContact", "applicantContact", "contact", "applicantPhone"],
+      fallback.contact,
+    ),
+    title: getSubmittedFieldValue(
+      data,
+      ["title", "disclosureTitle", "advisoryTitle"],
+      fallback.title,
+    ),
+    description: getSubmittedFieldValue(
+      data,
+      ["disclosureDescription", "description", "desc", "disclosureBackground", "supportingNotes"],
+      fallback.description,
+    ),
+    workType: fallback.workType || "",
+    registrationLane: fallback.registrationLane || "",
+  };
+
+  if (formType === "copyright") {
+    const ownerName =
+      data.copyrightOwnerMode === "institutional"
+        ? data.copyrightOwnerInstitutionName
+        : joinSubmittedName(data, [
+            "copyrightOwnerFirstName",
+            "copyrightOwnerMiddleName",
+            "copyrightOwnerSurname",
+            "copyrightOwnerSuffix",
+          ]);
+    const authorName = joinSubmittedName(data, [
+      "copyrightAuthorFirstName",
+      "copyrightAuthorMiddleName",
+      "copyrightAuthorSurname",
+      "copyrightAuthorSuffix",
+    ]);
+    summary.applicant =
+      ownerName ||
+      data.copyrightOwnerInstitutionName ||
+      authorName ||
+      advisoryName ||
+      data.copyrightSignatureName ||
+      summary.applicant;
+    summary.department = getSubmittedFieldValue(
+      data,
+      ["copyrightOwnerInstitutionName", "advisoryCompany", "dept", "college", "department"],
+      fallback.department,
+    );
+    summary.email = getSubmittedFieldValue(
+      data,
+      [
+        "copyrightOwnerInstitutionEmail",
+        "copyrightOwnerEmail",
+        "copyrightAuthorEmail",
+        "advisoryEmail",
+        "email",
+      ],
+      fallback.email,
+    );
+    summary.contact = getSubmittedFieldValue(
+      data,
+      [
+        "copyrightOwnerInstitutionContact",
+        "copyrightOwnerContact",
+        "copyrightAuthorContact",
+        "advisoryContact",
+        "contact",
+      ],
+      fallback.contact,
+    );
+    summary.title = getSubmittedFieldValue(
+      data,
+      ["copyrightWorkTitle", "advisoryTitle", "title"],
+      fallback.title,
+    );
+    summary.description = getSubmittedFieldValue(
+      data,
+      ["description", "copyrightWorkPlace", "copyrightDerivativeType", "copyrightAiDetails"],
+      fallback.description,
+    );
+    summary.workType = getCopyrightWorkClassLabelFromData(data) || fallback.workType || "";
+    summary.registrationLane =
+      data.copyrightApplicationScope === "international"
+        ? "International Filing"
+        : data.copyrightApplicationScope === "local"
+          ? "Local Filing"
+          : fallback.registrationLane || "";
+    return summary;
+  }
+
+  if (formType === "utility" && (data.utilityApplicantFirstName || data.utilityApplicantOrganization)) {
+    summary.applicant = getSubmittedPartyName(data, "utilityApplicant") || summary.applicant;
+    summary.department = data.utilityApplicantOrganization || summary.department;
+    summary.email = data.utilityApplicantEmail || summary.email;
+    summary.contact = data.utilityApplicantContact || summary.contact;
+    summary.title = data.title || fallback.title || summary.title;
+    summary.description =
+      data.utilityNaturePurpose ||
+      data.utilityOtherDocuments ||
+      data.description ||
+      fallback.description ||
+      summary.description;
+    return summary;
+  }
+
+  if (formType === "industrial" && (data.industrialApplicantFirstName || data.industrialApplicantOrganization)) {
+    summary.applicant = getSubmittedPartyName(data, "industrialApplicant") || summary.applicant;
+    summary.department = data.industrialApplicantOrganization || summary.department;
+    summary.email = data.industrialApplicantEmail || summary.email;
+    summary.contact = data.industrialApplicantContact || summary.contact;
+    summary.title = data.title || fallback.title || summary.title;
+    summary.description =
+      data.industrialViewsExplanation ||
+      data.industrialCharacteristicFeatures ||
+      data.desc ||
+      data.description ||
+      fallback.description ||
+      summary.description;
+    return summary;
+  }
+
+  return summary;
+}
+
+function formatSubmittedFieldValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(formatSubmittedFieldValue).filter(Boolean).join(", ");
+  }
+  if (value === true) return "Yes";
+  if (value === false) return "No";
+  if (value === undefined || value === null) return "";
+  return String(value).trim();
+}
+
+function renderSubmittedField(label, value) {
+  const formatted = formatSubmittedFieldValue(value);
+  if (!formatted) return "";
+  return `
+    <div class="detail-row">
+      <span class="label">${escapeHtml(label)}</span>
+      <span class="value" style="white-space:pre-wrap;">${escapeHtml(formatted)}</span>
+    </div>
+  `;
+}
+
+function renderSubmittedSection(title, fields) {
+  const rows = fields.map(([label, value]) => renderSubmittedField(label, value)).join("");
+  if (!rows.trim()) return "";
+  return `
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--gray-100);">
+      <h4 style="font-size:0.86rem; color:var(--navy); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;">${escapeHtml(title)}</h4>
+      ${rows}
+    </div>
+  `;
+}
+
+function renderSubmittedFormDataPanel(submission) {
+  const data = getSubmissionFormData(submission);
+  if (!data || !Object.keys(data).length) return "";
+
+  const formType = getFormTypeKeyFromSubmissionType(submission.type || submission.formType);
+  const advisoryFields = [
+    ["Client Type", data.advisoryClientType],
+    ["Company / School / Agency", data.advisoryCompany],
+    ["Applicant Name", joinSubmittedName(data, ["advisoryFirstName", "advisoryMiddleName", "advisoryLastName"])],
+    ["Position / Designation", data.advisoryPosition],
+    ["Sex", data.advisorySex],
+    ["Age", data.advisoryAge],
+    ["Address", data.advisoryAddress],
+    ["Contact", data.advisoryContact],
+    ["Email", data.advisoryEmail],
+    ["Service Availed", data.advisoryServiceAvailed],
+    ["Material / Technology / Work Title", data.advisoryTitle],
+  ];
+
+  const genericDisclosureFields = [
+    ["Inventor(s)", data.disclosureInventors],
+    ["Job Title / Position", data.disclosureJobTitle],
+    ["College / Unit / Department", data.disclosureCollege],
+    ["Contact Details", data.disclosureContact],
+    ["Title", data.disclosureTitle || data.title],
+    ["Disclosure Date", data.disclosureDate],
+    ["Background / Problem", data.disclosureBackground],
+    ["Description", data.disclosureDescription || data.description || data.desc],
+    ["Novel Features", data.disclosureNovelFeatures],
+    ["Advantages", data.disclosureAdvantages],
+    ["Applications / Uses", data.disclosureApplications],
+    ["Used PSU Resources", data.disclosureUsedPsuResources],
+    ["Resources Used", data.disclosureResourcesUsed],
+    ["Funding Source", data.disclosureFundingSource],
+    ["Prior Public Disclosure", data.disclosurePriorPublic],
+    ["Prior Disclosure Types", data.disclosurePriorTypes],
+    ["Prior Date / Venue", data.disclosurePriorDateVenue],
+  ];
+
+  const sections = [renderSubmittedSection("Advisory Service Sheet", advisoryFields)];
+
+  if (formType === "copyright") {
+    sections.push(
+      renderSubmittedSection("Copyright Owner", [
+        ["Owner Type", data.copyrightOwnerMode],
+        ["Owner Name", joinSubmittedName(data, ["copyrightOwnerFirstName", "copyrightOwnerMiddleName", "copyrightOwnerSurname", "copyrightOwnerSuffix"])],
+        ["Institution / Organization", data.copyrightOwnerInstitutionName],
+        ["Address", data.copyrightOwnerAddress || data.copyrightOwnerInstitutionAddress],
+        ["City", data.copyrightOwnerCity || data.copyrightOwnerInstitutionCity],
+        ["Province", data.copyrightOwnerProvince || data.copyrightOwnerInstitutionProvince],
+        ["Country", data.copyrightOwnerCountry || data.copyrightOwnerInstitutionCountry],
+        ["Email", data.copyrightOwnerEmail || data.copyrightOwnerInstitutionEmail],
+        ["Contact", data.copyrightOwnerContact || data.copyrightOwnerInstitutionContact],
+      ]),
+      renderSubmittedSection("Author / Creator", [
+        ["Author Name", joinSubmittedName(data, ["copyrightAuthorFirstName", "copyrightAuthorMiddleName", "copyrightAuthorSurname", "copyrightAuthorSuffix"])],
+        ["Nationality", data.copyrightAuthorNationality],
+        ["Birth Date", data.copyrightAuthorBirthDate],
+        ["Sex", data.copyrightAuthorSex],
+        ["Civil Status", data.copyrightAuthorCivilStatus],
+        ["Address", data.copyrightAuthorAddress],
+        ["City", data.copyrightAuthorCity],
+        ["Province", data.copyrightAuthorProvince],
+        ["Country", data.copyrightAuthorCountry],
+        ["Email", data.copyrightAuthorEmail],
+        ["Contact", data.copyrightAuthorContact],
+      ]),
+      renderSubmittedSection("Work / Creation", [
+        ["Title of Work", data.copyrightWorkTitle || data.title],
+        ["Creation Date", data.copyrightWorkDate],
+        ["Classification", getCopyrightWorkClassLabelFromData(data)],
+        ["Place of Creation", data.copyrightWorkPlace],
+        ["Reference Type", data.copyrightReferenceType],
+        ["Reference Number", data.copyrightWorkReference],
+        ["Authorship Claims", data.copyrightAuthorshipClaims],
+        ["Disclaimers", data.copyrightDisclaimers],
+        ["Published", data.copyrightPublished],
+        ["Publisher", data.copyrightPublisherName],
+        ["Derivative Work", data.copyrightDerivativeWork],
+        ["Original Work", data.copyrightOriginalWorkName],
+        ["AI Assisted", data.copyrightAiAssisted],
+        ["AI Details", data.copyrightAiDetails],
+      ]),
+      renderSubmittedSection("Declarations", [
+        ["Documents Submitted", data.copyrightSubmittedDocs],
+        ["Terms Agreement", data.copyrightTermsAgreement],
+        ["Privacy Agreement", data.copyrightPrivacyAgreement],
+        ["Signature Name", data.copyrightSignatureName],
+        ["Signature Date", data.copyrightSignatureDate],
+      ]),
+    );
+  } else if (formType === "utility" && (data.utilityApplicantFirstName || data.utilityApplicantOrganization)) {
+    sections.push(
+      renderSubmittedSection("Utility Model Applicant", [
+        ["Applicant Type", data.utilityApplicantType],
+        ["Organization", data.utilityApplicantOrganization],
+        ["Applicant Name", getSubmittedPartyName(data, "utilityApplicant")],
+        ["Position", data.utilityApplicantPosition],
+        ["Address", data.utilityApplicantAddress],
+        ["Town / City", data.utilityApplicantTown],
+        ["Province", data.utilityApplicantProvince],
+        ["Country", data.utilityApplicantCountry],
+        ["Contact", data.utilityApplicantContact],
+        ["Email", data.utilityApplicantEmail],
+      ]),
+      renderSubmittedSection("Utility Model Details", [
+        ["Title", data.title],
+        ["Application Route", data.utilityApplicationRoute],
+        ["Applicant is Maker", data.utilityApplicantIsMaker],
+        ["Maker Name", getSubmittedPartyName(data, "utilityMaker")],
+        ["Maker Email", data.utilityMakerEmail],
+        ["Nature / Purpose", data.utilityNaturePurpose],
+        ["Other Documents", data.utilityOtherDocuments],
+        ["Claims Total", data.utilityClaimsTotal],
+        ["Figure Number", data.utilityFigureNumber],
+        ["Signature Name", data.signaturePrintedName],
+      ]),
+    );
+  } else if (formType === "industrial" && (data.industrialApplicantFirstName || data.industrialApplicantOrganization)) {
+    sections.push(
+      renderSubmittedSection("Industrial Design Applicant", [
+        ["Applicant Type", data.industrialApplicantType],
+        ["Organization", data.industrialApplicantOrganization],
+        ["Applicant Name", getSubmittedPartyName(data, "industrialApplicant")],
+        ["Position", data.industrialApplicantPosition],
+        ["Address", data.industrialApplicantAddress],
+        ["Town / City", data.industrialApplicantTown],
+        ["Province", data.industrialApplicantProvince],
+        ["Country", data.industrialApplicantCountry],
+        ["Contact", data.industrialApplicantContact],
+        ["Email", data.industrialApplicantEmail],
+      ]),
+      renderSubmittedSection("Industrial Design Details", [
+        ["Design Title", data.title],
+        ["Article / Product", data.industrialArticleName],
+        ["Product Category", data.prodcat],
+        ["Design Type", data.designtype],
+        ["Date Created", data.industrialDateCreated],
+        ["Views Count", data.industrialViewsCount],
+        ["Views Explanation", data.industrialViewsExplanation],
+        ["Characteristic Features", data.industrialCharacteristicFeatures],
+        ["Design Description", data.desc],
+        ["Claim", data.industrialClaim],
+        ["Signature Name", data.signaturePrintedName],
+      ]),
+    );
+  } else {
+    sections.push(renderSubmittedSection("Disclosure / Application Details", genericDisclosureFields));
+  }
+
+  const content = sections.join("");
+  if (!content.trim()) return "";
+
+  return `
+    <div class="detail-panel" style="margin-top:20px">
+      <h3><i class="fa-solid fa-clipboard-list"></i> Submitted Form Information</h3>
+      <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 4px;">These values are read directly from the applicant's saved form entry.</p>
+      ${content}
+    </div>
+  `;
 }
 
 function isPatentGoogleFlow() {
@@ -15215,41 +15611,41 @@ function submitForm() {
     industrial: "ID",
   };
   const refNum = `PSU-${prefix[currentFormType]}-2026-${String(submissions.length + 1).padStart(3, "0")}`;
+  const typeLabel = typeMap[currentFormType] || "Application";
+  const submittedSummary = buildSubmissionSummaryFromFormData(currentFormType, wizardData, {
+    title: wizardData.title || `Untitled ${typeLabel} Application`,
+    applicant: "Unnamed Applicant",
+    department: `${typeLabel} Filing`,
+    email: "",
+    contact: "",
+    description: wizardData.desc || wizardData.description || wizardData.title || "Newly submitted application.",
+  });
 
   if (isPatentIntakeFlow()) {
-    const typeLabel = typeMap[currentFormType] || "Patent";
     const formTypeKey =
       currentFormType === "industrial"
         ? "industrial"
         : currentFormType === "utility"
           ? "utility"
           : "patent";
-    const applicantName = [
-      wizardData.applicantFirstName,
-      wizardData.applicantMiddleName,
-      wizardData.applicantLastName,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
 
     const newPatentSubmission = {
       id: refNum,
       type: typeLabel,
-      title: wizardData.title || `Untitled ${typeLabel} Application`,
-      applicant: wizardData.name || applicantName || "Unnamed Applicant",
-      department: wizardData.dept || wizardData.applicantCompany || `${typeLabel} Filing`,
-      email: wizardData.email || wizardData.applicantEmail || "",
-      contact: wizardData.contact || wizardData.applicantContact || "",
+      title: submittedSummary.title || `Untitled ${typeLabel} Application`,
+      applicant: submittedSummary.applicant || "Unnamed Applicant",
+      department: submittedSummary.department || `${typeLabel} Filing`,
+      email: submittedSummary.email || "",
+      contact: submittedSummary.contact || "",
       status: "Pending",
       date: new Date().toISOString().split("T")[0],
       description:
-        wizardData.disclosureDescription ||
-        wizardData.supportingNotes ||
+        submittedSummary.description ||
         (currentFormType === "industrial"
           ? `${typeLabel} intake generated through the Advisory Service Sheet and required drawing upload workflow.`
           : `${typeLabel} intake generated through the Advisory Service Sheet and IP Disclosure workflow.`),
       frozen: false,
+      formType: formTypeKey,
       formStyle: `PSU ${typeLabel} Intake`,
       filingMethod: "Guided Online Form",
       requirementUploads: { ...ensureRequirementUploads(wizardData) },
@@ -15299,19 +15695,21 @@ function submitForm() {
   const newSub = {
     id: refNum,
     type: typeMap[currentFormType],
-    title: wizardData.title || `${typeMap[currentFormType]} Submission`,
-    applicant: wizardData.name || "Unnamed Applicant",
-    department: wizardData.college || wizardData.dept || "PSU Applicant",
-    email: wizardData.email || "",
-    contact: wizardData.contact || "",
+    title: submittedSummary.title || `${typeMap[currentFormType]} Submission`,
+    applicant: submittedSummary.applicant || "Unnamed Applicant",
+    department: submittedSummary.department || "PSU Applicant",
+    email: submittedSummary.email || "",
+    contact: submittedSummary.contact || "",
     status: "Pending",
     date: new Date().toISOString().split("T")[0],
-    description: wizardData.desc || wizardData.description || wizardData.title || "Newly submitted application.",
+    description: submittedSummary.description || "Newly submitted application.",
     frozen: false,
+    formType: currentFormType,
     requirementUploads: { ...ensureRequirementUploads(wizardData) },
     files: [...(wizardData.files || [])],
     requiredDocuments: getRequiredDocumentsForType(currentFormType),
-    registrationLane: wizardData.reglane || "",
+    registrationLane: submittedSummary.registrationLane || wizardData.reglane || "",
+    workType: submittedSummary.workType || wizardData.worktype || "",
     formData: { ...wizardData },
   };
   submissions.unshift(newSub);
@@ -18573,14 +18971,19 @@ window.assignEvaluator = function(submissionId, evaluatorId) {
   renderDashboardContent('submission-detail');
 };
 
-function getFormTypeKeyFromSubmissionType(type) {
+function getFormTypeKeyFromSubmissionType(type = "") {
+  const normalized = String(type || "")
+    .trim()
+    .toLowerCase();
   const map = {
-    Patent: "patent",
-    Copyright: "copyright",
-    "Utility Model": "utility",
-    "Industrial Design": "industrial",
+    patent: "patent",
+    copyright: "copyright",
+    "utility model": "utility",
+    utility: "utility",
+    "industrial design": "industrial",
+    industrial: "industrial",
   };
-  return map[type] || "patent";
+  return map[normalized] || normalized || currentFormType || "patent";
 }
 
 function normalizeSubmissionWorkflowDefaults() {

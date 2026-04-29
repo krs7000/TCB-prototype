@@ -288,39 +288,16 @@
       <!-- Featured Innovation Spotlight -->
       <section id="featured-marketplace-section" class="section">
         <div class="container">
-          <div class="page-header">
-            <h1>Innovation Marketplace</h1>
-            <p>Discover and connect with PSU innovations and research outputs.</p>
-          </div>
-
-          <div class="mp-type-filters landing-marketplace-filters">
-            <button class="mp-type-btn active" data-type="All" onclick="setLandingMpType('All')">
-              <i class="fa-solid fa-layer-group"></i> All Types
-            </button>
-            <button class="mp-type-btn" data-type="Patent" onclick="setLandingMpType('Patent')">
-              <i class="fa-solid fa-lightbulb"></i> Patent
-            </button>
-            <button class="mp-type-btn" data-type="Utility Model" onclick="setLandingMpType('Utility Model')">
-              <i class="fa-solid fa-gears"></i> Utility Model
-            </button>
-            <button class="mp-type-btn" data-type="Industrial Design" onclick="setLandingMpType('Industrial Design')">
-              <i class="fa-solid fa-pen-nib"></i> Industrial Design
-            </button>
-            <button class="mp-type-btn" data-type="Copyright" onclick="setLandingMpType('Copyright')">
-              <i class="fa-solid fa-copyright"></i> Copyright
-            </button>
-          </div>
-
-          <div class="marketplace-layout no-sidebar landing-marketplace-layout">
+          <div class="section-header-inline">
             <div>
-              <div class="search-box landing-marketplace-search">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="landingSearch" placeholder="Search by title, inventor, or description..." oninput="filterLandingMarketplace()" />
-              </div>
-              <div class="innovation-grid" id="featuredInnovationGrid">
-                <!-- Populated by JS -->
-              </div>
+              <h2 class="section-title" style="text-align:left; margin-bottom: 8px;">Featured Innovations</h2>
+              <p class="section-subtitle" style="text-align:left; margin-left: 0; margin-bottom: 0;">Discover top-tier research and inventions from PSU researchers.</p>
             </div>
+            <button class="btn btn-outline" onclick="navigateTo('marketplace')">View All Innovations <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+          
+          <div class="innovation-grid" id="featuredInnovationGrid" style="margin-top: 40px;">
+            <!-- Populated by JS -->
           </div>
         </div>
       </section>

@@ -6186,36 +6186,125 @@ body.compact-layout .sidebar-toggle {
 
 /* Featured Section on Landing */
 #featured-marketplace-section {
-  background:
-    linear-gradient(180deg, rgba(255, 250, 248, 0.96) 0%, rgba(255, 246, 242, 0.98) 100%);
-  border-top: 1px solid rgba(230, 107, 63, 0.12);
-  border-bottom: 1px solid rgba(230, 107, 63, 0.1);
-  padding: 46px 0 86px;
+  padding: 80px 0 100px;
 }
 
 #featured-marketplace-section .container {
-  width: min(1440px, calc(100vw - 48px));
-  max-width: 1440px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0;
 }
 
-#featured-marketplace-section .page-header {
-  margin-bottom: 20px;
+#featured-marketplace-section .m-eyebrow {
+  display: inline-block;
+  color: #e66b3f;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
 }
 
-#featured-marketplace-section .page-header h1 {
-  font-size: clamp(2rem, 3vw, 2.65rem);
-  line-height: 1.08;
+#featured-marketplace-section .section-title {
+  font-family: "Fraunces", serif;
+  font-size: 2.5rem;
+  color: #1e293b;
+  margin-bottom: 12px;
 }
 
-#featured-marketplace-section .page-header p {
-  max-width: none;
-  font-size: 1rem;
+#featured-marketplace-section .section-subtitle {
+  color: #64748b;
+  font-size: 1.1rem;
+  max-width: 600px;
 }
 
-.landing-marketplace-layout {
+#featured-marketplace-section .innovation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+#featured-marketplace-section .innovation-card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#featured-marketplace-section .innovation-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(230, 107, 63, 0.12);
+  border-color: rgba(230, 107, 63, 0.2);
+}
+
+#featured-marketplace-section .innovation-card-img {
+  height: 220px;
   width: 100%;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+#featured-marketplace-section .innovation-card-body {
+  padding: 28px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#featured-marketplace-section .innovation-card-body h4 {
+  font-family: "Inter", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+#featured-marketplace-section .innovation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+#featured-marketplace-section .innovation-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#featured-marketplace-section .innovation-card-body p {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#featured-marketplace-section .learn-more {
+  margin-top: auto;
+  color: #e66b3f;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: gap 0.2s;
+}
+
+#featured-marketplace-section .innovation-card:hover .learn-more {
+  gap: 12px;
 }
 
 #page-marketplace.container {
