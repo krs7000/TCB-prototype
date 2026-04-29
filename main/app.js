@@ -3012,9 +3012,24 @@ const REQUIRED_DOCUMENTS_BY_TYPE = {
     { key: "claims-statement", name: "Claims Statement", type: "Optional" },
   ],
   industrial: [
-    { key: "technical-drawings-diagrams", name: "Technical Drawings / Diagrams", type: "Optional" },
-    { key: "abstract", name: "Abstract", type: "Optional" },
-    { key: "claims-statement", name: "Claims Statement", type: "Optional" },
+    {
+      key: "industrial-drawings",
+      name: "Drawings",
+      type: "Required",
+      description: "Submit either in a single PDF file or as individual JPEG files.",
+      details: [
+        "Figure 1 - Perspective View",
+        "Figure 2 - Front View",
+        "Figure 3 - Back View",
+        "Figure 4 - Left Side View",
+        "Figure 5 - Right Side View",
+        "Figure 6 - Top View",
+        "Figure 7 - Bottom View",
+      ],
+      accept: ".pdf,.jpg,.jpeg",
+      acceptLabel: "PDF or JPEG",
+      multiple: true,
+    },
   ],
 };
 
@@ -3101,11 +3116,22 @@ function getRequirementUploadEntries(formType = currentFormType, data = wizardDa
 function syncRequirementUploadsToFiles(formType = currentFormType, data = wizardData) {
   data.files = getRequirementUploadEntries(formType, data)
     .filter((entry) => entry.file)
-    .map((entry) => ({
-      ...entry.file,
-      requirementName: entry.doc.name,
-      required: entry.doc.type === "Required",
-    }));
+    .flatMap((entry) => {
+      if (Array.isArray(entry.file.files) && entry.file.files.length) {
+        return entry.file.files.map((file) => ({
+          ...file,
+          requirementName: entry.doc.name,
+          required: entry.doc.type === "Required",
+        }));
+      }
+      return [
+        {
+          ...entry.file,
+          requirementName: entry.doc.name,
+          required: entry.doc.type === "Required",
+        },
+      ];
+    });
 }
 
 function getUploadedRequiredCount(formType = currentFormType, data = wizardData) {
@@ -3223,14 +3249,54 @@ function renderRequirementChecklistPanel(
     <div style="${containerStyle}">
       ${entries.map((entry) => {
         const uploaded = Boolean(entry.file);
+        const detailList = Array.isArray(entry.doc.details) && entry.doc.details.length
+          ? `<ul style="margin:6px 0 0; padding-left:16px; color:var(--gray-500); line-height:1.5;">${entry.doc.details.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+          : "";
         return `
           <div style="font-size:${compact ? "0.78rem" : "0.82rem"}; color:var(--gray-600); display:flex; align-items:flex-start; gap:10px; padding:${compact ? "10px 12px" : "10px"}; background:white; border-radius:10px; border:1px solid ${uploaded ? "rgba(34,197,94,0.18)" : "var(--gray-50)"};">
             <i class="fa-solid fa-${uploaded ? "circle-check" : "circle"}" style="color:${uploaded ? "var(--green)" : "var(--gray-300)"}; font-size:0.8rem; margin-top:3px;"></i>
             <div style="flex:1; min-width:0;">
               <div style="font-weight:600; color:var(--navy); line-height:1.45;">${entry.doc.name}</div>
-              ${entry.file ? `<div style="font-size:0.72rem; color:var(--gray-400); margin-top:4px;">${entry.file.name}</div>` : ""}
+              ${entry.doc.description ? `<div style="font-size:0.74rem; color:var(--gray-500); margin-top:4px; line-height:1.5;">${escapeHtml(entry.doc.description)}</div>` : ""}
+              ${detailList}
+              ${entry.file ? `<div style="font-size:0.72rem; color:var(--gray-400); margin-top:4px;">${escapeHtml(entry.file.name)}</div>` : ""}
             </div>
             <span style="font-size:0.65rem; font-weight:800; color:${entry.doc.type === "Required" ? "var(--red)" : "var(--gray-400)"}; text-transform:uppercase; white-space:nowrap;">${entry.doc.type}</span>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderDynamicRequirementUploadersLegacy(formType = currentFormType) {
+  return `
+    <div style="display:grid; gap:14px;">
+      ${getRequirementUploadEntries(formType).map((entry) => {
+        const inputId = `req-upload-${formType}-${entry.key}`;
+        const detailList = Array.isArray(entry.doc.details) && entry.doc.details.length
+          ? `<ul style="margin:8px 0 0; padding-left:18px; color:var(--gray-500); line-height:1.55;">${entry.doc.details.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+          : "";
+        return `
+          <div style="border:1.5px solid ${entry.file ? "rgba(34,197,94,0.2)" : "var(--gray-200)"}; background:${entry.file ? "rgba(34,197,94,0.04)" : "white"}; border-radius:16px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:240px;">
+              <div style="font-size:0.9rem; font-weight:700; color:var(--navy); line-height:1.45;">Upload a file for ${entry.doc.name}</div>
+              <div style="font-size:0.78rem; color:var(--gray-500); margin-top:6px;">
+                ${entry.file ? `${entry.file.name} • ${(entry.file.size / 1024).toFixed(1)} KB` : "Accepted formats: PDF, DOCX, JPG, PNG"}
+              </div>
+            </div>
+            ${entry.doc.description ? `<div style="flex:1 1 100%; font-size:0.78rem; color:var(--gray-500); line-height:1.55;">${escapeHtml(entry.doc.description)}${entry.doc.acceptLabel ? ` Accepted formats: ${escapeHtml(entry.doc.acceptLabel)}.` : ""}${detailList}</div>` : ""}
+            <div style="display:flex; align-items:center; gap:12px;">
+              ${
+                entry.file
+                  ? '<span class="badge badge-approved" style="font-size:0.68rem;">UPLOADED</span>'
+                  : `<span class="badge ${entry.doc.type === "Required" ? "badge-pending" : "badge-review"}" style="font-size:0.68rem;">${entry.doc.type.toUpperCase()}</span>`
+              }
+              <button type="button" class="btn ${entry.file ? "btn-outline-navy" : "btn-primary"} btn-sm" onclick="document.getElementById('${inputId}').click()">
+                <i class="fa-solid fa-${entry.file ? "arrows-rotate" : "upload"}"></i> ${entry.file ? "Replace File" : "Choose File"}
+              </button>
+              <input type="file" id="${inputId}" style="display:none" ${entry.doc.accept ? `accept="${entry.doc.accept}"` : ""} ${entry.doc.multiple ? "multiple" : ""} onchange="handleRequirementUpload('${entry.key}', this, '${formType}')" />
+            </div>
           </div>
         `;
       }).join("")}
@@ -3243,13 +3309,21 @@ function renderDynamicRequirementUploaders(formType = currentFormType) {
     <div style="display:grid; gap:14px;">
       ${getRequirementUploadEntries(formType).map((entry) => {
         const inputId = `req-upload-${formType}-${entry.key}`;
+        const detailList = Array.isArray(entry.doc.details) && entry.doc.details.length
+          ? `<ul style="margin:8px 0 0; padding-left:18px; color:var(--gray-500); line-height:1.55;">${entry.doc.details.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+          : "";
+        const acceptedFormats = entry.doc.acceptLabel || "PDF, DOCX, JPG, PNG";
+        const fileSummary = entry.file
+          ? `${entry.file.fileCount ? `${entry.file.fileCount} files` : entry.file.name} - ${(entry.file.size / 1024).toFixed(1)} KB`
+          : `Accepted formats: ${acceptedFormats}`;
+
         return `
           <div style="border:1.5px solid ${entry.file ? "rgba(34,197,94,0.2)" : "var(--gray-200)"}; background:${entry.file ? "rgba(34,197,94,0.04)" : "white"}; border-radius:16px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
             <div style="flex:1; min-width:240px;">
-              <div style="font-size:0.9rem; font-weight:700; color:var(--navy); line-height:1.45;">Upload a file for ${entry.doc.name}</div>
-              <div style="font-size:0.78rem; color:var(--gray-500); margin-top:6px;">
-                ${entry.file ? `${entry.file.name} • ${(entry.file.size / 1024).toFixed(1)} KB` : "Accepted formats: PDF, DOCX, JPG, PNG"}
-              </div>
+              <div style="font-size:0.9rem; font-weight:700; color:var(--navy); line-height:1.45;">Upload a file for ${escapeHtml(entry.doc.name)}</div>
+              <div style="font-size:0.78rem; color:var(--gray-500); margin-top:6px;">${escapeHtml(fileSummary)}</div>
+              ${entry.doc.description ? `<div style="font-size:0.78rem; color:var(--gray-500); margin-top:6px; line-height:1.55;">${escapeHtml(entry.doc.description)}</div>` : ""}
+              ${detailList}
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
               ${
@@ -3260,7 +3334,7 @@ function renderDynamicRequirementUploaders(formType = currentFormType) {
               <button type="button" class="btn ${entry.file ? "btn-outline-navy" : "btn-primary"} btn-sm" onclick="document.getElementById('${inputId}').click()">
                 <i class="fa-solid fa-${entry.file ? "arrows-rotate" : "upload"}"></i> ${entry.file ? "Replace File" : "Choose File"}
               </button>
-              <input type="file" id="${inputId}" style="display:none" onchange="handleRequirementUpload('${entry.key}', this, '${formType}')" />
+              <input type="file" id="${inputId}" style="display:none" ${entry.doc.accept ? `accept="${entry.doc.accept}"` : ""} ${entry.doc.multiple ? "multiple" : ""} onchange="handleRequirementUpload('${entry.key}', this, '${formType}')" />
             </div>
           </div>
         `;
@@ -6146,7 +6220,7 @@ function isPatentSubmission(submission) {
 
 function getIPOPHLOperationFlow(submission) {
   return isPatentSubmission(submission)
-    ? PATENT_OPERATION_FLOW
+    ? getPatentDisplayFlow(submission?.type)
     : IPOPHL_OPERATION_FLOW;
 }
 
@@ -6180,6 +6254,38 @@ function getCopyrightStageIndex(submission) {
   const key = getCopyrightStageKey(submission);
   const idx = COPYRIGHT_OPERATION_FLOW.findIndex((step) => step.key === key);
   return idx < 0 ? 0 : idx;
+}
+
+function getPatentDisplayFlow(typeLabel = getPatentIntakeTypeLabel()) {
+  if (typeLabel !== "Industrial Design") return PATENT_OPERATION_FLOW;
+
+  return PATENT_OPERATION_FLOW.map((step) => {
+    if (step.key === "advisory-disclosure") {
+      return {
+        ...step,
+        title: "Advisory Sheet (to PSU)",
+        description: "Applicant completes the Advisory Service Sheet for PSU intake.",
+      };
+    }
+    if (step.key === "optional-documents") {
+      return {
+        ...step,
+        title: "Required Drawings to Upload",
+        description:
+          "Applicant uploads the industrial design drawings as one PDF file or as individual JPEG files.",
+        subitems: [
+          "Figure 1 - Perspective View",
+          "Figure 2 - Front View",
+          "Figure 3 - Back View",
+          "Figure 4 - Left Side View",
+          "Figure 5 - Right Side View",
+          "Figure 6 - Top View",
+          "Figure 7 - Bottom View",
+        ],
+      };
+    }
+    return step;
+  });
 }
 
 function syncSubmissionWorkflowState(submission) {
@@ -6453,14 +6559,14 @@ function renderPatentFlowItem(step, idx, activeIdx, closed) {
   `;
 }
 
-function renderPatentFlowItems(startStep, endStep, activeIdx, closed) {
-  return PATENT_OPERATION_FLOW.filter(
+function renderPatentFlowItems(startStep, endStep, activeIdx, closed, flow = PATENT_OPERATION_FLOW) {
+  return flow.filter(
     (step) => step.step >= startStep && step.step <= endStep,
   )
     .map((step) =>
       renderPatentFlowItem(
         step,
-        PATENT_OPERATION_FLOW.findIndex((entry) => entry.key === step.key),
+        flow.findIndex((entry) => entry.key === step.key),
         activeIdx,
         closed,
       ),
@@ -6468,13 +6574,13 @@ function renderPatentFlowItems(startStep, endStep, activeIdx, closed) {
     .join("");
 }
 
-function renderPatentProgressGroup(startStep, endStep, activeIdx, closed) {
+function renderPatentProgressGroup(startStep, endStep, activeIdx, closed, flow = PATENT_OPERATION_FLOW) {
   return `
     <div class="patent-flow-progress-group">
       <div class="patent-flow-progress-label">Progress</div>
       <div class="patent-flow-progress-brace"></div>
       <div class="patent-flow-progress-items">
-        ${renderPatentFlowItems(startStep, endStep, activeIdx, closed)}
+        ${renderPatentFlowItems(startStep, endStep, activeIdx, closed, flow)}
       </div>
     </div>
   `;
@@ -6490,15 +6596,16 @@ function renderPatentFlowReference({ submission = null, activeIndex = null } = {
   const closed =
     submission?.status === "Rejected" || submission?.status === "Archived";
   const heading = (submission?.type || getPatentIntakeTypeLabel()).toUpperCase();
+  const flow = getPatentDisplayFlow(submission?.type || getPatentIntakeTypeLabel());
 
   return `
     <div class="patent-flow-paper">
       <h3>${escapeHtml(heading)}</h3>
       <div class="patent-flow-list">
-        ${renderPatentFlowItems(1, 6, activeIdx, closed)}
-        ${renderPatentProgressGroup(7, 10, activeIdx, closed)}
-        ${renderPatentFlowItems(11, 14, activeIdx, closed)}
-        ${renderPatentProgressGroup(15, 18, activeIdx, closed)}
+        ${renderPatentFlowItems(1, 6, activeIdx, closed, flow)}
+        ${renderPatentProgressGroup(7, 10, activeIdx, closed, flow)}
+        ${renderPatentFlowItems(11, 14, activeIdx, closed, flow)}
+        ${renderPatentProgressGroup(15, 18, activeIdx, closed, flow)}
       </div>
     </div>
   `;
@@ -7428,6 +7535,14 @@ function renderPatentEditorHeader(title, subtitle) {
 }
 
 function getPatentFormSteps() {
+  if (currentFormType === "industrial") {
+    return [
+      "Advisory Sheet",
+      "Required Drawings",
+      "Preview & Submit",
+    ];
+  }
+
   return [
     "Advisory Sheet",
     "IP Disclosure",
@@ -7463,6 +7578,14 @@ function renderPatentGoogleForm(
   const steps = getPatentFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
   const typeLabel = getPatentIntakeTypeLabel();
+  const isIndustrial = currentFormType === "industrial";
+  const heroCopy = isIndustrial
+    ? "Complete the Advisory Service Sheet, upload the required industrial design drawings, then review the finished paper-style form before submission."
+    : `Complete the Advisory Service Sheet and IP Disclosure Form first, attach optional ${typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.`;
+  const previewMeta = isIndustrial
+    ? "Advisory and drawing previews"
+    : "Advisory and disclosure previews";
+  const finalButtonLabel = `Submit ${typeLabel} Intake`;
 
   return `
     ${renderBackNav(backTarget, backLabel)}
@@ -7472,10 +7595,10 @@ function renderPatentGoogleForm(
         <div class="patent-gform-card patent-gform-card--hero">
           <span class="patent-gform-kicker">PSU ${typeLabel} Intake</span>
           <h1>${typeLabel} Fill-Up Forms</h1>
-          <p>Complete the Advisory Service Sheet and IP Disclosure Form first, attach optional ${typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.</p>
+          <p>${heroCopy}</p>
           <div class="patent-gform-meta">
             <span><i class="fa-solid fa-file-lines"></i> ${steps.length} guided sections</span>
-            <span><i class="fa-solid fa-table-cells-large"></i> Advisory and disclosure previews</span>
+            <span><i class="fa-solid fa-table-cells-large"></i> ${previewMeta}</span>
             <span><i class="fa-solid fa-diagram-project"></i> 18-step ${typeLabel.toLowerCase()} progress map</span>
           </div>
         </div>
@@ -7511,7 +7634,7 @@ function renderPatentGoogleForm(
               ${
                 currentWizardStep < steps.length
                   ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next Section <i class="fa-solid fa-arrow-right"></i></button>`
-                  : `<button class="btn btn-success" onclick="submitForm()">Submit Patent Intake <i class="fa-solid fa-paper-plane"></i></button>`
+                  : `<button class="btn btn-success" onclick="submitForm()">${finalButtonLabel} <i class="fa-solid fa-paper-plane"></i></button>`
               }
             </div>
           </div>
@@ -7531,8 +7654,13 @@ function renderPatentGoogleForm(
             <span class="patent-gform-side-label">How This Works</span>
             <ul class="patent-gform-note-list">
               <li>The first form mirrors the PSU Advisory Service Sheet layout from your reference.</li>
-              <li>The disclosure section follows the 2026 IP Disclosure Form fields.</li>
-              <li>Technical drawings, abstract, and claims remain optional uploads at intake.</li>
+              ${
+                isIndustrial
+                  ? `<li>Industrial design filings go from advisory intake directly to drawing uploads.</li>
+                     <li>The required drawings can be submitted as one PDF or as individual JPEG views.</li>`
+                  : `<li>The disclosure section follows the 2026 IP Disclosure Form fields.</li>
+                     <li>Technical drawings, abstract, and claims remain optional uploads at intake.</li>`
+              }
             </ul>
           </div>
         </aside>
@@ -7543,6 +7671,10 @@ function renderPatentGoogleForm(
 
 function renderPatentGoogleStep() {
   if (currentWizardStep === 1) return renderPatentAdvisorySheetStep();
+  if (currentFormType === "industrial") {
+    if (currentWizardStep === 2) return renderPatentOptionalDocumentsStep();
+    return renderPatentPreviewStep();
+  }
   if (currentWizardStep === 2) return renderPatentDisclosureStep();
   if (currentWizardStep === 3) return renderPatentOptionalDocumentsStep();
   return renderPatentPreviewStep();
@@ -7787,38 +7919,45 @@ function renderPatentDisclosureStep() {
 function renderPatentOptionalDocumentsStep() {
   const uploads = ensureRequirementUploads(wizardData);
   const uploadedCount = Object.keys(uploads).length;
+  const isIndustrial = currentFormType === "industrial";
   const formType = currentFormType === "industrial"
     ? "industrial"
     : currentFormType === "utility"
       ? "utility"
       : "patent";
   const typeLabel = getPatentIntakeTypeLabel();
+  const stepNumber = currentWizardStep;
+  const entries = getRequirementUploadEntries(formType);
+  const sectionTitle = isIndustrial ? "Required Drawing Uploads" : "Optional Upload Checklist";
+  const headerTitle = isIndustrial
+    ? "Upload Required Industrial Design Drawings"
+    : `Upload Optional ${typeLabel} Documents`;
+  const headerCopy = isIndustrial
+    ? "Submit the required design drawings either as one PDF file containing all views or as individual JPEG files."
+    : "Your reference flow lists these as optional attachments. Accepted formats are PDF, DOCX, JPG, and PNG.";
 
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step 3 - Optional Documents</span>
-      <h2>Upload Optional ${typeLabel} Documents</h2>
-      <p>Your reference flow lists these as optional attachments. Accepted formats are PDF, DOCX, JPG, and PNG.</p>
+      <span class="patent-gform-kicker">Step ${stepNumber} - ${isIndustrial ? "Required Drawings" : "Optional Documents"}</span>
+      <h2>${headerTitle}</h2>
+      <p>${headerCopy}</p>
     </div>
 
     <div class="patent-gform-card patent-gform-card--sheet">
       <div class="patent-editor-sheet">
         <div class="patent-editor-section">
-          <div class="patent-paper__section-title">Optional Upload Checklist</div>
+          <div class="patent-paper__section-title">${sectionTitle}</div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
-            ${[
-              ["technical-drawings-diagrams", "Technical Drawings / Diagrams", "PDF, DOCX, JPG, PNG"],
-              ["abstract", "Abstract", "PDF, DOCX, JPG, PNG"],
-              ["claims-statement", "Claims Statement", "PDF, DOCX, JPG, PNG"],
-            ]
-              .map(([key, title, formats]) => {
-                const uploaded = Boolean(uploads[key]);
+            ${entries
+              .map((entry) => {
+                const uploaded = Boolean(uploads[entry.key]);
+                const formats = entry.doc.acceptLabel || "PDF, DOCX, JPG, PNG";
                 return `
                   <div class="patent-upload-pill ${uploaded ? "success" : ""}" style="align-items:flex-start;">
                     <i class="fa-solid fa-${uploaded ? "circle-check" : "file-arrow-up"}"></i>
                     <span>
-                      <strong style="display:block; margin:0 0 4px; color:inherit;">${title}</strong>
-                      <small style="color:var(--gray-500);">${formats}</small>
+                      <strong style="display:block; margin:0 0 4px; color:inherit;">${escapeHtml(entry.doc.name)}</strong>
+                      <small style="color:var(--gray-500);">${escapeHtml(formats)}</small>
                     </span>
                   </div>
                 `;
@@ -8613,10 +8752,11 @@ function renderPatentDisclosureFormPaper() {
 }
 
 function renderPatentIntakeFormBundle({ includeFlow = false } = {}) {
+  const showDisclosure = currentFormType !== "industrial";
   return `
     <div class="patent-paper-stack psu-form-stack">
       ${renderPatentAdvisoryServiceSheetPaper()}
-      ${renderPatentDisclosureFormPaper()}
+      ${showDisclosure ? renderPatentDisclosureFormPaper() : ""}
       ${includeFlow ? renderPatentFlowReference({ activeIndex: 0 }) : ""}
     </div>
   `;
@@ -8906,11 +9046,20 @@ function renderPatentFormSheet() {
 }
 
 function renderPatentPreviewStep() {
+  const isIndustrial = currentFormType === "industrial";
+  const stepCount = getPatentFormSteps().length;
+  const title = isIndustrial
+    ? "Review the Completed Industrial Design Intake"
+    : "Review the Completed PSU Forms";
+  const copy = isIndustrial
+    ? "The Advisory Service Sheet below is generated from your fill-up answers, and the required drawing uploads are summarized for checking before submission."
+    : "The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.";
+
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step 4 - Preview and Submit</span>
-      <h2>Review the Completed PSU Forms</h2>
-      <p>The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.</p>
+      <span class="patent-gform-kicker">Step ${stepCount} - Preview and Submit</span>
+      <h2>${title}</h2>
+      <p>${copy}</p>
     </div>
 
     <div class="patent-gform-card patent-gform-card--sheet">
@@ -8918,7 +9067,7 @@ function renderPatentPreviewStep() {
     </div>
 
     <div class="patent-gform-card">
-      <h3>Optional Document Summary</h3>
+      <h3>${isIndustrial ? "Required Drawing Summary" : "Optional Document Summary"}</h3>
       ${renderPatentSubmissionList()}
       ${
         wizardData.supportingNotes
@@ -14826,17 +14975,25 @@ function handleFileUpload(input) {
 window.handleRequirementUpload = function(key, input, formType = currentFormType) {
   if (!input?.files?.length) return;
   captureWizardData();
-  const file = input.files[0];
+  const files = Array.from(input.files);
+  const file = files[0];
   const uploads = ensureRequirementUploads(wizardData);
   uploads[key] = {
-    name: file.name,
-    size: file.size,
-    type: file.type,
+    name: files.length > 1 ? files.map((item) => item.name).join(", ") : file.name,
+    size: files.reduce((total, item) => total + item.size, 0),
+    type: files.length > 1 ? "multiple" : file.type,
+    fileCount: files.length,
+    files: files.map((item) => ({
+      name: item.name,
+      size: item.size,
+      type: item.type,
+      uploadedAt: new Date().toISOString(),
+    })),
     uploadedAt: new Date().toISOString(),
   };
   syncRequirementUploadsToFiles(formType, wizardData);
   refreshWizard();
-  showToast(`Uploaded ${file.name} for the selected requirement.`, "success");
+  showToast(`Uploaded ${files.length > 1 ? `${files.length} files` : file.name} for the selected requirement.`, "success");
 };
 
 function handleDepositUpload(input) {
@@ -14938,7 +15095,9 @@ function submitForm() {
       description:
         wizardData.disclosureDescription ||
         wizardData.supportingNotes ||
-        `${typeLabel} intake generated through the Advisory Service Sheet and IP Disclosure workflow.`,
+        (currentFormType === "industrial"
+          ? `${typeLabel} intake generated through the Advisory Service Sheet and required drawing upload workflow.`
+          : `${typeLabel} intake generated through the Advisory Service Sheet and IP Disclosure workflow.`),
       paymentRequested: false,
       paymentProofUploaded: false,
       paymentVerified: false,
@@ -14964,7 +15123,11 @@ function submitForm() {
         <div class="confirmation-screen">
           <div class="check-circle"><i class="fa-solid fa-check"></i></div>
           <h2>${typeLabel} intake submitted</h2>
-          <p style="color:var(--gray-500)">The Advisory Service Sheet and IP Disclosure Form were received and are now queued for PSU review. The completed paper-style forms are shown below.</p>
+          <p style="color:var(--gray-500)">${
+            currentFormType === "industrial"
+              ? "The Advisory Service Sheet and required drawing uploads were received and are now queued for PSU review. The completed paper-style form is shown below."
+              : "The Advisory Service Sheet and IP Disclosure Form were received and are now queued for PSU review. The completed paper-style forms are shown below."
+          }</p>
           <div class="ref-number">${refNum}</div>
           <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
           <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
