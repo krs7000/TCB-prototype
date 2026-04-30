@@ -1262,12 +1262,83 @@ function rebalanceDemoActiveCases({ force = false } = {}) {
   }
 }
 
+const DASHBOARD_SAMPLE_CASES_STORAGE_KEY = "tcbPrototype.dashboardSamples.v1";
+const DASHBOARD_SAMPLE_CASES = [
+  {
+    id: "PSU-COP-2026-009",
+    type: "Copyright",
+    title: "Palawan Oral Traditions Audio Archive",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Rejected",
+    date: "2026-02-18",
+    department: "College of Arts",
+    description: "Audio compilation of community oral-history recordings for copyright registration.",
+    registrationLane: "Copyright",
+    workType: "Sound Recording",
+    rejectionReason: "The submitted authorship declaration needs corrected ownership details.",
+    formType: "copyright",
+  },
+  {
+    id: "PSU-UM-2026-003",
+    type: "Utility Model",
+    title: "Portable Mangrove Seedling Carrier",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Under Review",
+    statusNote: "Please upload the signed applicant declaration and clearer technical drawing.",
+    date: "2026-04-16",
+    department: "College of Engineering",
+    description: "Lightweight compartment carrier for mangrove seedling transport during coastal restoration.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3,
+    formType: "utility",
+  },
+  {
+    id: "PSU-DFT-ID-001",
+    type: "Industrial Design",
+    title: "Tourism Kiosk Wayfinding Panel",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Draft",
+    date: "2026-04-27",
+    department: "College of Arts",
+    description: "Draft industrial design entry for a modular wayfinding panel used in campus tourism kiosks.",
+    formType: "industrial",
+  },
+];
+
+function seedDashboardSampleCases({ force = false } = {}) {
+  try {
+    const alreadySeeded =
+      window.localStorage?.getItem(DASHBOARD_SAMPLE_CASES_STORAGE_KEY) === "true";
+    if (alreadySeeded && !force) return;
+  } catch (err) {
+    console.warn("Unable to read dashboard sample case flag", err);
+  }
+
+  const existingIds = new Set(submissions.map((submission) => submission.id));
+  const missingSamples = DASHBOARD_SAMPLE_CASES
+    .filter((sample) => !existingIds.has(sample.id))
+    .map(cloneSubmissionRecord);
+  if (missingSamples.length) {
+    submissions = [...submissions, ...missingSamples];
+  }
+
+  try {
+    window.localStorage?.setItem(DASHBOARD_SAMPLE_CASES_STORAGE_KEY, "true");
+  } catch (err) {
+    console.warn("Unable to save dashboard sample case flag", err);
+  }
+}
+
 systemUsers = systemUsers.map((user) => ({
   ...user,
   role: normalizeRole(user.role),
 }));
 
 submissions.forEach((submission) => {
+  normalizeSubmissionStatusLabel(submission);
   normalizeUnassignedSubmissionStatus(submission);
   syncSubmissionWorkflowState(submission);
 });
@@ -1368,6 +1439,15 @@ function shouldDefaultToPending(submission) {
 function normalizeUnassignedSubmissionStatus(submission) {
   if (!shouldDefaultToPending(submission)) return;
   submission.status = "Pending";
+}
+
+function normalizeSubmissionStatusLabel(submission) {
+  if (!submission) return submission;
+  const legacyAwaitingDocumentsStatus = `Awaiting ${"Documents"}`;
+  if (submission.status === legacyAwaitingDocumentsStatus) {
+    submission.status = "Under Review";
+  }
+  return submission;
 }
 
 function canLeavePendingStatus(submission) {
@@ -1862,7 +1942,6 @@ function statusBadge(status) {
     Validated: "badge-approved",
     Rejected: "badge-rejected",
     Cancelled: "badge-rejected",
-    "Awaiting Documents": "badge-review",
     Draft: "badge-review",
   };
   return `<span class="badge ${m[status] || "badge-pending"}">${status}</span>`;
@@ -4816,7 +4895,7 @@ function renderUserDashboard() {
   const role = "applicant";
   const userSubmissions = getVisibleSubmissions(role);
   const total = userSubmissions.length;
-  const actionRequired = userSubmissions.filter((s) => s.status === "Awaiting Documents").length;
+  const actionRequired = userSubmissions.filter((s) => s.statusNote).length;
   const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
   const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
   const recent = userSubmissions.filter(s => s.status !== 'Draft').slice(0, 3);
@@ -5766,8 +5845,7 @@ function getRoleSpecificStats(role) {
     (s) =>
       s.status === "Pending" ||
       s.status === "Under Review" ||
-      s.status === "Validated" ||
-      s.status === "Awaiting Documents",
+      s.status === "Validated",
   ).length;
   const approvedCount = visibleSubmissions.filter(
     (s) => s.status === "Approved",
@@ -6109,7 +6187,6 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
           <option value="Validated" ${(filterStatus || "") === "Validated" ? "selected" : ""}>Validated</option>
           <option value="Approved" ${(filterStatus || "") === "Approved" ? "selected" : ""}>Approved</option>
           <option value="Rejected" ${(filterStatus || "") === "Rejected" ? "selected" : ""}>Rejected</option>
-          <option value="Awaiting Documents" ${(filterStatus || "") === "Awaiting Documents" ? "selected" : ""}>Awaiting Docs</option>
           <option value="Archived" ${(filterStatus || "") === "Archived" ? "selected" : ""}>Archived</option>
         </select>
       </div>
@@ -6453,8 +6530,7 @@ function requestDocs(id) {
   );
 
   if (missing !== null) {
-    // If user didn't cancel
-    sub.status = "Awaiting Documents";
+    sub.status = "Under Review";
     sub.statusNote = missing;
     syncSubmissionWorkflowState(sub);
     persistSubmissions();
@@ -6744,8 +6820,7 @@ function getCopyrightStageKey(submission) {
   if (submission.copyrightStage) return submission.copyrightStage;
   if (submission.status === "Approved") return "certificate-released";
   if (submission.status === "Validated") return "ip-director-action";
-  if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
-    return "technical-review";
+  if (submission.status === "Under Review") return "technical-review";
   return "author-submission";
 }
 
@@ -6766,10 +6841,7 @@ function syncSubmissionWorkflowState(submission) {
     submission.copyrightStage = "certificate-released";
     return;
   }
-  if (
-    submission.status === "Awaiting Documents" ||
-    submission.status === "Under Review"
-  ) {
+  if (submission.status === "Under Review") {
     submission.copyrightStage = "technical-review";
     return;
   }
@@ -6814,15 +6886,13 @@ function getIPOPHLStageKey(submission) {
     }
     if (submission.status === "Approved") return "certificate-released";
     if (submission.status === "Validated") return "ip-director-action";
-    if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
-      return "technical-review";
+    if (submission.status === "Under Review") return "technical-review";
     return "inventor-submission";
   }
   if (submission.ipophlStage) return submission.ipophlStage;
   if (submission.status === "Approved") return "certificate-released";
   if (submission.status === "Validated") return "ip-director-action";
-  if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
-    return "technical-review";
+  if (submission.status === "Under Review") return "technical-review";
   return "inventor-submission";
 }
 
@@ -6838,10 +6908,7 @@ function syncIPOPHLWorkflowState(submission) {
       submission.ipophlStage = "certificate-released";
       return;
     }
-    if (
-      submission.status === "Awaiting Documents" ||
-      submission.status === "Under Review"
-    ) {
+    if (submission.status === "Under Review") {
       submission.ipophlStage = "technical-review";
       return;
     }
@@ -6858,10 +6925,7 @@ function syncIPOPHLWorkflowState(submission) {
     submission.ipophlStage = "certificate-released";
     return;
   }
-  if (
-    submission.status === "Awaiting Documents" ||
-    submission.status === "Under Review"
-  ) {
+  if (submission.status === "Under Review") {
     submission.ipophlStage = "technical-review";
     return;
   }
@@ -7152,7 +7216,7 @@ function renderSubmissionDetail() {
             
             ${
               normalizeRole(currentRole) === "applicant" &&
-              (s.status === "Pending" || s.status === "Under Review" || s.status === "Validated" || s.status === "Draft" || s.status === "Awaiting Documents")
+              (s.status === "Pending" || s.status === "Under Review" || s.status === "Validated" || s.status === "Draft")
                 ? `<button class="btn btn-outline-danger btn-sm" onclick="handleCancelSubmission('${s.id}')">
                     <i class="fa-solid ${s.status === "Draft" ? "fa-trash-can" : "fa-ban"}"></i> 
                     ${s.status === "Draft" ? "Discard Draft" : "Cancel Application"}
@@ -7213,7 +7277,6 @@ function renderSubmissionDetail() {
               <option ${s.status === "Pending" ? "selected" : ""}>Pending</option>
               <option ${s.status === "Under Review" ? "selected" : ""}>Under Review</option>
               <option ${s.status === "Validated" ? "selected" : ""}>Validated</option>
-              <option ${s.status === "Awaiting Documents" ? "selected" : ""}>Awaiting Documents</option>
               <option ${s.status === "Approved" ? "selected" : ""}>Approved</option>
               <option ${s.status === "Rejected" ? "selected" : ""}>Rejected</option>
               ${canArchiveSubmission(s) ? `<option ${s.status === "Archived" ? "selected" : ""}>Archived</option>` : ""}
@@ -7243,13 +7306,6 @@ function renderSubmissionDetail() {
           </div>` 
               : ""
           }
-        </div>
-        <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-comment"></i> Evaluator Notes</h3>
-          <div class="admin-notes">
-            <textarea placeholder="Add internal notes about this submission..." ${frozen || !canEditSubmission(s) ? "disabled" : ""}></textarea>
-            ${!frozen && canEditSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="showToast('Notes saved')">Save Notes</button>` : ""}
-          </div>
         </div>
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-timeline"></i> ${timelineTitle}</h3>
@@ -8041,7 +8097,6 @@ function renderSubmittedDocumentUploadsSection(formType, submission, data) {
     ["Additional Attachments", extraFileNames],
     ["Drawings Count", data.drawingsCount || data.industrialViewsCount],
     ["Claims Count", data.claimsCount || data.utilityClaimsTotal],
-    ["Attachment Notes", data.supportingNotes],
   ]);
 }
 
@@ -9320,10 +9375,6 @@ function renderPatentOptionalDocumentsStep() {
           </div>
         </div>
 
-        <div class="patent-editor-section">
-          <div class="patent-paper__section-title">Attachment Notes</div>
-          ${renderPatentEditorTextarea("Notes for PSU / IPTTO", "patent-supporting-notes", wizardData.supportingNotes || "", { placeholder: "Optional notes about uploaded files or missing attachments.", fullWidth: true })}
-        </div>
       </div>
     </div>
   `;
@@ -15040,11 +15091,6 @@ function renderStep3() {
 
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:28px;">
       <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
-        <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Submission Progress</div>
-        <div style="font-size:1.75rem; font-weight:800; color:var(--navy);">${uploadedCount}/${totalRequired}</div>
-        <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Required documents uploaded</div>
-      </div>
-      <div style="padding:18px; background:white; border:1px solid var(--gray-100); border-radius:14px;">
         <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px;">Current Status</div>
         <div style="font-size:1.1rem; font-weight:800; color:var(--navy);">${currentStatus}</div>
         <div style="font-size:0.82rem; color:var(--gray-500); margin-top:6px;">Visible to the applicant throughout submission</div>
@@ -16322,6 +16368,35 @@ window.handleRequirementUpload = function(key, input, formType = currentFormType
   showToast(`Uploaded ${files.length > 1 ? `${files.length} files` : file.name} for the selected requirement.`, "success");
 };
 
+function renderSubmissionConfirmationScreen(typeLabel, refNum, { copyright = false } = {}) {
+  const inPublicForms = currentPage === "forms";
+  const heading = copyright
+    ? "Copyright form submitted"
+    : `${typeLabel} intake submitted`;
+  const message = copyright
+    ? "The Advisory Service Sheet, BCRR copyright form, and document uploads were received and are now queued for PSU review."
+    : "The Advisory Service Sheet, IP Disclosure Form, and document uploads were received and are now queued for PSU review.";
+  const buttons = inPublicForms
+    ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
+       <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
+    : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
+       <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`;
+
+  return `
+    <div class="patent-confirmation-shell">
+      <div class="confirmation-screen">
+        <div class="check-circle"><i class="fa-solid fa-check"></i></div>
+        <h2>${escapeHtml(heading)}</h2>
+        <p style="color:var(--gray-500)">${escapeHtml(message)}</p>
+        <div class="ref-number">${escapeHtml(refNum)}</div>
+        <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          ${buttons}
+        </div>
+      </div>
+    </div>`;
+}
+
 function submitForm() {
   captureWizardData();
 
@@ -16394,29 +16469,10 @@ function submitForm() {
         : document.getElementById("main-content");
     if (!patentConfirmationTarget) return;
 
-    patentConfirmationTarget.innerHTML = `
-      <div class="patent-confirmation-shell">
-        <div class="confirmation-screen">
-          <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-          <h2>${typeLabel} intake submitted</h2>
-          <p style="color:var(--gray-500)">The Advisory Service Sheet, IP Disclosure Form, and document uploads were received and are now queued for PSU review. The completed paper-style forms are shown below.</p>
-          <div class="ref-number">${refNum}</div>
-          <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            ${
-              currentPage === "forms"
-                ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
-                : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`
-            }
-          </div>
-        </div>
-
-        <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
-          ${renderPatentIntakeFormBundle({ includeFlow: true })}
-        </div>
-      </div>`;
+    patentConfirmationTarget.innerHTML = renderSubmissionConfirmationScreen(
+      typeLabel,
+      refNum,
+    );
     return;
   }
 
@@ -16453,44 +16509,19 @@ function submitForm() {
   if (!confirmationTarget) return;
 
   if (isCopyrightGoogleFlow()) {
-    confirmationTarget.innerHTML = `
-      <div class="patent-confirmation-shell">
-        <div class="confirmation-screen">
-          <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-          <h2>Copyright form submitted</h2>
-          <p style="color:var(--gray-500)">The Advisory Service Sheet and BCRR copyright form were received and are now pending evaluator review. The completed paper-style forms are shown below.</p>
-          <div class="ref-number">${refNum}</div>
-          <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Please save this reference number for tracking purposes.</p>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            ${
-              currentPage === "forms"
-                ? `<button class="btn btn-primary" onclick="navigateTo('forms')"><i class="fa-solid fa-arrow-left"></i> Back to Forms</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('login')"><i class="fa-solid fa-right-to-bracket"></i> Login to Track</button>`
-                : `<button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-                   <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>`
-            }
-          </div>
-        </div>
-
-        <div class="patent-gform-card patent-gform-card--sheet" style="margin-top:24px;">
-          ${renderCopyrightIntakeFormBundle()}
-        </div>
-      </div>`;
+    confirmationTarget.innerHTML = renderSubmissionConfirmationScreen(
+      typeLabel,
+      refNum,
+      { copyright: true },
+    );
     return;
   }
 
-  confirmationTarget.innerHTML = `
-    <div class="confirmation-screen">
-      <div class="check-circle"><i class="fa-solid fa-check"></i></div>
-      <h2>Application Submitted Successfully!</h2>
-      <p style="color:var(--gray-500)">Your ${typeMap[currentFormType]} application has been received and is pending evaluator review.</p>
-      <div class="ref-number">${refNum}</div>
-      <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Please save this reference number for tracking purposes.</p>
-      <div style="display:flex;gap:12px;justify-content:center">
-        <button class="btn btn-primary" onclick="navigateTo('user-dashboard')"><i class="fa-solid fa-chart-line"></i> Go to Dashboard</button>
-        <button class="btn btn-outline-navy" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View Submissions</button>
-      </div>
-    </div>`;
+  confirmationTarget.innerHTML = renderSubmissionConfirmationScreen(
+    typeLabel,
+    refNum,
+    { copyright: currentFormType === "copyright" },
+  );
 }
 
 // ===== MARKETPLACE =====
@@ -17349,7 +17380,6 @@ function getTrackingSteps(status) {
   ];
   const statusMap = {
     Pending: 0,
-    "Awaiting Documents": 0,
     "Under Review": 1,
     Validated: 2,
     Approved: 3,
@@ -17409,14 +17439,12 @@ function getStatusCounts() {
     Validated: 0,
     Approved: 0,
     Rejected: 0,
-    "Awaiting Documents": 0,
     Draft: 0,
     ActionRequired: 0,
   };
   visible.forEach((s) => {
     if (counts[s.status] !== undefined) counts[s.status]++;
-    if (s.status === "Awaiting Documents")
-      counts.ActionRequired++;
+    if (s.statusNote) counts.ActionRequired++;
   });
   return counts;
 }
@@ -17428,6 +17456,7 @@ function renderUserSubmissions() {
     { id: "Draft", label: "Draft" },
     { id: "Pending", label: "Submitted" },
     { id: "Under Review", label: "Under Review" },
+    { id: "Validated", label: "Validated" },
     { id: "ActionRequired", label: "Action Required" },
     { id: "Approved", label: "Approved" },
     { id: "Rejected", label: "Rejected" },
@@ -17540,7 +17569,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
     if (ft && ft !== "All") filtered = filtered.filter((s) => s.type === ft);
     
     if (fs === "ActionRequired") {
-      filtered = filtered.filter((s) => s.status === "Awaiting Documents");
+      filtered = filtered.filter((s) => s.statusNote);
     } else if (fs && fs !== "All") {
       filtered = filtered.filter((s) => s.status === fs);
     }
@@ -17579,16 +17608,8 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
       .map((s) => {
         const display = getSubmissionDisplayData(s);
         const isCR = s.type === "Copyright";
-        const flow = isCR ? COPYRIGHT_OPERATION_FLOW : getIPOPHLOperationFlow(s);
-        const stageIdx = isCR
-          ? getCopyrightStageIndex(s)
-          : getIPOPHLStageIndex(s);
-        const steps = getPreciseSubmissionSteps(s);
-        const totalStages = flow.length;
-        const currentStepObj = flow[stageIdx] || (flow.length ? flow[0] : null);
-
         const frozen = s.status === "Approved";
-        const needsAction = s.status === "Awaiting Documents";
+        const needsAction = Boolean(s.statusNote);
 
         return `
       <div class="case-card ${needsAction ? "needs-action" : ""}" style="margin-bottom:20px; background:white; border-radius:12px; border:1px solid var(--gray-200); overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -17606,7 +17627,6 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
               <div style="font-size:0.85rem; color:var(--gray-500); display:flex; align-items:center; gap:12px;">
                 <span><i class="fa-solid fa-hashtag" style="font-size:0.75rem; margin-right:4px;"></i>${s.id}</span>
                 <span><i class="fa-solid fa-calendar" style="font-size:0.75rem; margin-right:4px;"></i>Filed ${s.date}</span>
-                <span style="color:var(--gold-dark); font-weight:600;"><i class="fa-solid fa-layer-group" style="font-size:0.75rem; margin-right:4px;"></i>Step ${stageIdx + 1} of ${totalStages}</span>
               </div>
             </div>
           </div>
@@ -17619,48 +17639,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
           </div>
         </div>
         
-        <div class="case-detail-panel hidden" style="border-top:1px solid var(--gray-100);">
-          <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:24px; margin-top:24px;">
-            <div class="workflow-visual">
-              <h4 style="font-size:0.9rem; color:var(--navy); font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-                <i class="fa-solid fa-diagram-project" style="color:var(--gold);"></i> Submission Progress
-              </h4>
-              <div class="tracking-timeline">
-                ${steps
-                  .map(
-                    (step, idx) => {
-                      const isCompleted = idx < stageIdx;
-                      const isCurrent = idx === stageIdx;
-                      const statusClass = isCompleted ? "completed" : isCurrent ? "current" : "";
-                      return `
-                  <div class="tracking-step ${statusClass}">
-                    <div class="step-dot">${isCompleted ? '<i class="fa-solid fa-check"></i>' : idx + 1}</div>
-                    <div class="step-info">
-                      <div style="font-size:0.85rem; font-weight:700; color:${isCurrent ? "var(--gold-dark)" : "var(--navy)"}">${step.label}</div>
-                      ${isCurrent ? `<div style="font-size:0.75rem; color:var(--gray-500); margin-top:4px;">${currentStepObj.description}</div>` : ""}
-                    </div>
-                  </div>`;
-                    },
-                  )
-                  .join("")}
-              </div>
-              
-              ${
-                currentStepObj
-                  ? `
-                <div class="current-step-detail" style="margin-top:20px; padding:16px; background:white; border-radius:8px; border:1px solid var(--gray-200);">
-                  <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <span style="font-size:0.75rem; font-weight:700; color:var(--gold-dark); text-transform:uppercase; letter-spacing:0.5px;">Current Stage Detail</span>
-                    <span style="font-size:0.75rem; color:var(--gray-400);">Responsible: ${currentStepObj.lane}</span>
-                  </div>
-                  <h5 style="font-size:0.95rem; font-weight:700; color:var(--navy); margin-bottom:8px;">${currentStepObj.title}</h5>
-                  <p style="font-size:0.85rem; color:var(--gray-600); line-height:1.5; margin:0;">${currentStepObj.description}</p>
-                </div>
-              `
-                  : ""
-              }
-            </div>
-            
+        <div class="case-detail-panel hidden" style="border-top:1px solid var(--gray-100); padding:24px;">
             <div class="case-meta-sidebar">
               <h4 style="font-size:0.9rem; color:var(--navy); font-weight:700; margin-bottom:16px;">Quick Info</h4>
               <div style="display:flex; flex-direction:column; gap:12px;">
@@ -17705,7 +17684,6 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>`;
       })
@@ -19270,7 +19248,7 @@ function renderForms() {
       icon: "fa-lightbulb",
       color: "#3b82f6",
       gradient: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-      forms: ["Request Form"],
+      forms: ["Request Form", "Supplemental Sheet", "Petition for Cancellation"],
       onlineAction: "launchPatentOnlineForm()",
     },
     {
@@ -19279,7 +19257,7 @@ function renderForms() {
       icon: "fa-gears",
       color: "#6366f1",
       gradient: "linear-gradient(135deg, #6366f1, #4338ca)",
-      forms: ["Registration Form"],
+      forms: ["Registration Form", "Petition for Cancellation"],
       onlineAction: "launchUtilityOnlineForm()",
     },
     {
@@ -19288,7 +19266,7 @@ function renderForms() {
       icon: "fa-pen-nib",
       color: "#ec4899",
       gradient: "linear-gradient(135deg, #ec4899, #be185d)",
-      forms: ["Registration Form"],
+      forms: ["Registration Form", "Petition for Cancellation"],
       onlineAction: "launchIndustrialOnlineForm()",
     },
 
@@ -19732,6 +19710,7 @@ function normalizeSubmissionWorkflowDefaults() {
       formType: submission.formType || getFormTypeKeyFromSubmissionType(submission.type),
       requirementUploads: submission.requirementUploads || {},
     };
+    normalizeSubmissionStatusLabel(normalized);
     normalizeUnassignedSubmissionStatus(normalized);
     syncSubmissionWorkflowState(normalized);
     return normalized;
@@ -19740,6 +19719,7 @@ function normalizeSubmissionWorkflowDefaults() {
 
 const loadedStoredSubmissions = loadStoredSubmissions();
 rebalanceDemoActiveCases({ force: !loadedStoredSubmissions });
+seedDashboardSampleCases({ force: !loadedStoredSubmissions });
 normalizeSubmissionWorkflowDefaults();
 syncAllSubmissionDisplayFields();
 persistSubmissions();

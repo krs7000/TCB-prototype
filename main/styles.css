@@ -5500,11 +5500,6 @@ body.compact-layout .sidebar-toggle {
   color: var(--gray-700);
   font-weight: 500;
 }
-.admin-notes textarea {
-  width: 100%;
-  min-height: 80px;
-  margin-bottom: 8px;
-}
 .workflow-note {
   padding: 12px 14px;
   border-radius: 12px;
