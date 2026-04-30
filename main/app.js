@@ -214,22 +214,24 @@ let announcements = [
 
 // ===== MOCK DATA =====
 let submissions = [
-  // PATENTS
+  // Balanced demo cases: one available case and one assigned case per IP type.
   {
     id: "PSU-PAT-2026-001",
     type: "Patent",
     title: "High-Efficiency Solar Distiller",
     applicant: "Juan dela Cruz",
-    status: "Under Review",
+    applicantUserId: 9,
+    status: "Pending",
     date: "2026-04-01",
     department: "College of Engineering",
-    description: "A solar-powered distiller optimized for brackish water."
+    description: "A solar-powered distiller optimized for brackish water.",
   },
   {
     id: "PSU-PAT-2026-002",
     type: "Patent",
     title: "Automated Crop Pest Detector",
     applicant: "Juan dela Cruz",
+    applicantUserId: 9,
     status: "Under Review",
     date: "2026-03-15",
     department: "College of Agriculture",
@@ -238,185 +240,81 @@ let submissions = [
     assignedEvaluatorId: 3
   },
   {
-    id: "PSU-PAT-2026-003",
-    type: "Patent",
-    title: "Low-Cost Wind Turbine Blade",
-    applicant: "Juan dela Cruz",
-    status: "Validated",
-    date: "2026-03-01",
-    department: "College of Engineering",
-    description: "Optimized blade design using composite local materials.",
-    assignedReviewerId: 3,
-    assignedEvaluatorId: 3
-  },
-  {
-    id: "PSU-PAT-2026-004",
-    type: "Patent",
-    title: "Portable Soil Analyzer",
-    applicant: "Juan dela Cruz",
-    status: "Under Review",
-    date: "2026-02-10",
-    department: "College of Sciences",
-    description: "Handheld device for real-time soil nutrient analysis."
-  },
-  {
-    id: "PSU-PAT-2026-005",
-    type: "Patent",
-    title: "Bamboo-Based Water Filter",
-    applicant: "Juan dela Cruz",
-    status: "Approved",
-    date: "2026-01-20",
-    department: "College of Engineering",
-    description: "Natural filtration system using bamboo charcoal."
-  },
-  {
-    id: "PSU-PAT-2026-006",
-    type: "Patent",
-    title: "Plastic-to-Fuel Converter",
-    applicant: "Juan dela Cruz",
-    status: "Rejected",
-    date: "2025-12-05",
-    department: "College of Engineering",
-    description: "Small-scale pyrolysis reactor for non-recyclable plastics."
-  },
-  {
-    id: "PSU-PAT-2026-007",
-    type: "Patent",
-    title: "Smart Irrigation Valve",
-    applicant: "Juan dela Cruz",
-    status: "Awaiting Documents",
-    date: "2026-04-20",
-    department: "College of Engineering",
-    description: "Electronically controlled valve for precision farming."
-  },
-  {
-    id: "PSU-DFT-PAT-001",
-    type: "Patent",
-    title: "Thermal Energy Harvester",
-    applicant: "Juan dela Cruz",
-    status: "Draft",
-    date: "2026-04-25",
-    department: "College of Sciences",
-    description: "Drafting phase for thermoelectric generator modules."
-  },
-  {
-    id: "PSU-PAT-2026-008",
-    type: "Patent",
-    title: "Smart Hydroponics System",
-    applicant: "Juan dela Cruz",
-    status: "Pending",
-    date: "2026-04-26",
-    department: "College of Agriculture",
-    description: "Automated nutrient delivery system for indoor farming."
-  },
-
-  // COPYRIGHTS
-  {
     id: "PSU-COP-2026-001",
     type: "Copyright",
     title: "Palawan Ecosystem Documentary",
     applicant: "Juan dela Cruz",
-    status: "Under Review",
+    applicantUserId: 9,
+    status: "Pending",
     date: "2026-04-05",
     department: "College of Arts",
-    description: "Visual documentation of Palawan's flora and fauna."
+    description: "Visual documentation of Palawan's flora and fauna.",
+    registrationLane: "Copyright",
+    workType: "Audiovisual Work",
   },
   {
     id: "PSU-COP-2026-002",
     type: "Copyright",
     title: "PSU Campus Map App",
     applicant: "Juan dela Cruz",
+    applicantUserId: 9,
     status: "Under Review",
     date: "2026-03-20",
     department: "College of Sciences",
     description: "Mobile application for campus navigation and info.",
+    registrationLane: "Copyright",
+    workType: "Computer Program",
     assignedReviewerId: 3,
     assignedEvaluatorId: 3
   },
-  {
-    id: "PSU-COP-2026-003",
-    type: "Copyright",
-    title: "Sustainable Living Handbook",
-    applicant: "Juan dela Cruz",
-    status: "Validated",
-    date: "2026-03-05",
-    department: "College of Arts",
-    description: "Illustrated guide for eco-friendly urban living.",
-    assignedReviewerId: 3,
-    assignedEvaluatorId: 3
-  },
-  {
-    id: "PSU-COP-2026-004",
-    type: "Copyright",
-    title: "Local Legends Anthology",
-    applicant: "Juan dela Cruz",
-    status: "Under Review",
-    date: "2026-02-15",
-    department: "College of Arts",
-    description: "Compilation of oral traditions from northern Palawan."
-  },
-  {
-    id: "PSU-COP-2026-005",
-    type: "Copyright",
-    title: "EcoLearn Mobile Game",
-    applicant: "Juan dela Cruz",
-    status: "Approved",
-    date: "2026-01-25",
-    department: "College of Sciences",
-    description: "Educational game teaching environmental stewardship."
-  },
-  {
-    id: "PSU-COP-2026-006",
-    type: "Copyright",
-    title: "Palawan Culinary History",
-    applicant: "Juan dela Cruz",
-    status: "Rejected",
-    date: "2025-12-15",
-    department: "College of Arts",
-    description: "Research paper on traditional cooking methods."
-  },
-  {
-    id: "PSU-COP-2026-007",
-    type: "Copyright",
-    title: "Visual Art Collection 2025",
-    applicant: "Juan dela Cruz",
-    status: "Awaiting Documents",
-    date: "2026-04-22",
-    department: "College of Arts",
-    description: "Digital gallery of student art contributions."
-  },
-  {
-    id: "PSU-DFT-COP-001",
-    type: "Copyright",
-    title: "IP Management Software",
-    applicant: "Juan dela Cruz",
-    status: "Draft",
-    date: "2026-04-26",
-    department: "College of Sciences",
-    description: "Internal codebase for submission tracking."
-  },
-  {
-    id: "PSU-COP-2026-008",
-    type: "Copyright",
-    title: "Native Plants Field Guide",
-    applicant: "Juan dela Cruz",
-    status: "Pending",
-    date: "2026-04-26",
-    department: "College of Sciences",
-    description: "Comprehensive field guide for Palawan's native plant species."
-  },
-
-  // ADDING SOME OTHER TYPES FOR VARIETY
   {
     id: "PSU-UM-2026-001",
     type: "Utility Model",
     title: "Foldable Solar Oven",
     applicant: "Juan dela Cruz",
-    status: "Approved",
-    date: "2026-01-10",
+    applicantUserId: 9,
+    status: "Pending",
+    date: "2026-04-08",
     department: "College of Engineering",
-    description: "Portable cooking device for field researchers."
-  }
+    description: "Portable cooking device for field researchers.",
+  },
+  {
+    id: "PSU-UM-2026-002",
+    type: "Utility Model",
+    title: "Bamboo Water Filter Cartridge",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Under Review",
+    date: "2026-03-28",
+    department: "College of Engineering",
+    description: "Replaceable bamboo-charcoal cartridge for household water filtration.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3,
+  },
+  {
+    id: "PSU-ID-2026-001",
+    type: "Industrial Design",
+    title: "Ergonomic Fisherfolk Sorting Tray",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Pending",
+    date: "2026-04-11",
+    department: "College of Arts",
+    description: "Ergonomic seafood sorting tray designed for coastal livelihood use.",
+  },
+  {
+    id: "PSU-ID-2026-002",
+    type: "Industrial Design",
+    title: "Modular Market Backpack",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Under Review",
+    date: "2026-03-25",
+    department: "College of Arts",
+    description: "Convertible market backpack with protected ornamental layout.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3,
+  },
 ];
 
 const SUBMISSIONS_STORAGE_KEY = "tcbPrototype.submissions.v1";
@@ -921,7 +819,7 @@ let systemUsers = [
     dept: "Specialist Pool",
     status: "Active",
     dateCreated: "2025-08-01",
-    allowedCaseTypes: ["Patent", "Utility Model"],
+    allowedCaseTypes: ["Patent", "Copyright", "Utility Model", "Industrial Design"],
   },
   {
     id: 4,
@@ -1199,33 +1097,23 @@ const OPERATIONAL_AUDIT_MODULES = new Set([
   "Messages",
 ]);
 const REVIEWER_ASSIGNMENTS = {
-  "PSU-COP-2026-007": 4,
-  "PSU-PAT-2026-008": 5,
-  "PSU-UM-2026-009": 3,
   "PSU-PAT-2026-002": 3,
-  "PSU-PAT-2026-003": 3,
   "PSU-COP-2026-002": 3,
-  "PSU-COP-2026-003": 3,
+  "PSU-UM-2026-002": 3,
+  "PSU-ID-2026-002": 3,
 };
 const COPYRIGHT_CASE_OVERRIDES = {
+  "PSU-COP-2026-001": {
+    registrationLane: "Copyright",
+    officialDutyWork: false,
+    letterRequestApproved: false,
+    copyrightStage: "author-submission",
+  },
   "PSU-COP-2026-002": {
     registrationLane: "Copyright",
     officialDutyWork: false,
     letterRequestApproved: false,
     copyrightStage: "technical-review",
-  },
-  "PSU-COP-2026-005": {
-    registrationLane: "ISBN",
-    officialDutyWork: true,
-    letterRequestApproved: true,
-    certificateNumber: "NL-COR-2026-0105",
-    copyrightStage: "certificate-released",
-  },
-  "PSU-COP-2026-007": {
-    registrationLane: "Copyright",
-    officialDutyWork: true,
-    letterRequestApproved: true,
-    copyrightStage: "ip-director-action",
   },
 };
 
@@ -1233,30 +1121,29 @@ const IPOPHL_CASE_OVERRIDES = {
   "PSU-PAT-2026-001": {
     officialDutyWork: false,
     letterRequestApproved: false,
-    ipophlStage: "certificate-released",
+    ipophlStage: "inventor-submission",
   },
-
-  "PSU-PAT-2026-004": {
+  "PSU-PAT-2026-002": {
     officialDutyWork: false,
     letterRequestApproved: false,
     ipophlStage: "technical-review",
   },
-  "PSU-TM-2026-006": {
-    officialDutyWork: true,
-    letterRequestApproved: true,
-    ipophlStage: "mis-recording",
+  "PSU-UM-2026-001": {
+    officialDutyWork: false,
+    letterRequestApproved: false,
+    ipophlStage: "inventor-submission",
   },
-  "PSU-PAT-2026-008": {
+  "PSU-UM-2026-002": {
     officialDutyWork: false,
     letterRequestApproved: false,
     ipophlStage: "technical-review",
   },
-  "PSU-UM-2026-009": {
+  "PSU-ID-2026-001": {
     officialDutyWork: false,
     letterRequestApproved: false,
-    ipophlStage: "ip-director-action",
+    ipophlStage: "inventor-submission",
   },
-  "PSU-ID-2026-010": {
+  "PSU-ID-2026-002": {
     officialDutyWork: false,
     letterRequestApproved: false,
     ipophlStage: "technical-review",
@@ -1279,6 +1166,101 @@ submissions = submissions.map((submission) => ({
   assignedEvaluatorId: REVIEWER_ASSIGNMENTS[submission.id] || submission.assignedEvaluatorId || null,
   hasTopSecretAnnex: ["Patent", "Utility Model"].includes(submission.type),
 }));
+
+const DEMO_CASE_BALANCE_STORAGE_KEY = "tcbPrototype.demoCaseBalance.v1";
+const BALANCED_ACTIVE_DEMO_CASES = submissions.map((submission) => ({
+  ...submission,
+}));
+const BALANCED_ACTIVE_DEMO_IDS = new Set(
+  BALANCED_ACTIVE_DEMO_CASES.map((submission) => submission.id),
+);
+const LEGACY_DEMO_SUBMISSION_IDS = new Set([
+  ...BALANCED_ACTIVE_DEMO_IDS,
+  "PSU-PAT-2026-003",
+  "PSU-PAT-2026-004",
+  "PSU-PAT-2026-005",
+  "PSU-PAT-2026-006",
+  "PSU-PAT-2026-007",
+  "PSU-PAT-2026-008",
+  "PSU-DFT-PAT-001",
+  "PSU-COP-2026-003",
+  "PSU-COP-2026-004",
+  "PSU-COP-2026-005",
+  "PSU-COP-2026-006",
+  "PSU-COP-2026-007",
+  "PSU-COP-2026-008",
+  "PSU-DFT-COP-001",
+  "PSU-TM-2026-006",
+  "PSU-UM-2026-009",
+  "PSU-ID-2026-010",
+]);
+
+function cloneSubmissionRecord(submission) {
+  return {
+    ...submission,
+    requirementUploads: { ...(submission.requirementUploads || {}) },
+    formData: submission.formData ? { ...submission.formData } : submission.formData,
+    data: submission.data ? { ...submission.data } : submission.data,
+  };
+}
+
+function mergeBalancedDemoSubmission(template, existing) {
+  const existingStatus = String(existing?.status || "").trim();
+  const shouldPreserveStatus =
+    existingStatus && !["Archived", "Draft"].includes(existingStatus);
+  const merged = {
+    ...(existing || {}),
+    ...cloneSubmissionRecord(template),
+    status: shouldPreserveStatus ? existing.status : template.status,
+    formData: existing?.formData || template.formData,
+    data: existing?.data || template.data,
+    requirementUploads: {
+      ...(template.requirementUploads || {}),
+      ...(existing?.requirementUploads || {}),
+    },
+  };
+  if (merged.status !== "Archived") {
+    delete merged.archivedFromStatus;
+  }
+  return merged;
+}
+
+function archiveLegacyDemoSubmission(submission) {
+  if (!LEGACY_DEMO_SUBMISSION_IDS.has(submission.id)) return submission;
+  if (BALANCED_ACTIVE_DEMO_IDS.has(submission.id)) return submission;
+  if (submission.status === "Archived") return submission;
+  return {
+    ...submission,
+    archivedFromStatus: submission.status,
+    status: "Archived",
+  };
+}
+
+function rebalanceDemoActiveCases({ force = false } = {}) {
+  try {
+    const alreadyBalanced =
+      window.localStorage?.getItem(DEMO_CASE_BALANCE_STORAGE_KEY) === "true";
+    if (alreadyBalanced && !force) return;
+  } catch (err) {
+    console.warn("Unable to read demo case balance flag", err);
+  }
+
+  const currentById = new Map(submissions.map((submission) => [submission.id, submission]));
+  const balancedCases = BALANCED_ACTIVE_DEMO_CASES.map((template) =>
+    mergeBalancedDemoSubmission(template, currentById.get(template.id)),
+  );
+  const remainingCases = submissions
+    .filter((submission) => !BALANCED_ACTIVE_DEMO_IDS.has(submission.id))
+    .map(archiveLegacyDemoSubmission);
+
+  submissions = [...balancedCases, ...remainingCases];
+
+  try {
+    window.localStorage?.setItem(DEMO_CASE_BALANCE_STORAGE_KEY, "true");
+  } catch (err) {
+    console.warn("Unable to save demo case balance flag", err);
+  }
+}
 
 systemUsers = systemUsers.map((user) => ({
   ...user,
@@ -3880,6 +3862,7 @@ function renderChatNavBadge() {
 function getSubmissionApplicantUser(submission) {
   if (!submission) return null;
   return (
+    systemUsers.find((user) => Number(user.id) === Number(submission.applicantUserId)) ||
     systemUsers.find((user) => user.email && user.email === submission.email) ||
     systemUsers.find((user) => user.name === submission.applicant) ||
     systemUsers.find(
@@ -4211,6 +4194,80 @@ function renderChatAttachment(attachment) {
   `;
 }
 
+function isCopyrightPaymentRequest(message) {
+  return message?.message_kind === "copyright-payment-request";
+}
+
+function isCopyrightPaymentReceipt(message) {
+  return message?.message_kind === "copyright-payment-receipt";
+}
+
+function getCopyrightPaymentRequest(caseId) {
+  return getCaseChatMessages(caseId)
+    .filter(isCopyrightPaymentRequest)
+    .slice(-1)[0] || null;
+}
+
+function renderCopyrightPaymentMessageMeta(message, submission) {
+  if (!isCopyrightPaymentRequest(message) && !isCopyrightPaymentReceipt(message)) return "";
+  const role = normalizeRole(currentRole);
+  const requestMessage = isCopyrightPaymentRequest(message)
+    ? message
+    : chatMessages.find((item) => Number(item.id) === Number(message.payment_request_id));
+  const receiptSubmitted =
+    requestMessage?.receipt_status === "submitted" ||
+    getCaseChatMessages(submission.id).some(
+      (item) =>
+        isCopyrightPaymentReceipt(item) &&
+        Number(item.payment_request_id) === Number(requestMessage?.id),
+    );
+  const canUploadReceipt =
+    role === "applicant" &&
+    isCopyrightPaymentRequest(message) &&
+    !receiptSubmitted &&
+    message.receiver_id === getCurrentUser().id &&
+    submission?.type === "Copyright";
+  const safeMessageId = String(message.id).replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  if (isCopyrightPaymentReceipt(message)) {
+    return `
+      <div class="chat-payment-meta receipt">
+        <i class="fa-solid fa-receipt"></i>
+        <span>Proof of payment receipt reply</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="chat-payment-card">
+      <div class="chat-payment-card__top">
+        <span><i class="fa-solid fa-money-bill-transfer"></i> Copyright payment request</span>
+        <strong>${receiptSubmitted ? "Receipt submitted" : "Awaiting receipt"}</strong>
+      </div>
+      ${
+        message.payment_amount
+          ? `<div class="chat-payment-row"><span>Amount</span><strong>${escapeHtml(message.payment_amount)}</strong></div>`
+          : ""
+      }
+      ${
+        message.payment_details
+          ? `<div class="chat-payment-details">${escapeHtml(message.payment_details)}</div>`
+          : ""
+      }
+      ${
+        canUploadReceipt
+          ? `<div class="chat-payment-actions">
+              <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('paymentReceiptInput-${safeMessageId}').click()">
+                <i class="fa-solid fa-upload"></i> Reply with Receipt
+              </button>
+              <input id="paymentReceiptInput-${safeMessageId}" type="file" accept=".jpg,.jpeg,.png,.pdf" onchange="handlePaymentReceiptUpload(this, '${submission.id}', '${message.id}')" />
+            </div>`
+          : ""
+      }
+    </div>
+  `;
+}
+
 function renderDraftChatAttachment(caseId) {
   const draft = chatDraftAttachments[caseId];
   if (!draft) return "";
@@ -4339,6 +4396,7 @@ function renderChatThread(submission) {
                           <span>${formatChatDateTime(message.created_at)}</span>
                         </div>
                         ${message.message_text ? `<div class="chat-message-text">${escapeHtml(message.message_text)}</div>` : ""}
+                        ${renderCopyrightPaymentMessageMeta(message, submission)}
                         ${renderChatAttachment(message)}
                         <div class="chat-message-status">${isMine ? (message.is_read ? "Seen" : "Sent") : "Seen"}</div>
                       </div>
@@ -4503,6 +4561,196 @@ function pushChatNotification(receiverId, submission, preview) {
     caseId: submission.id,
   });
 }
+
+function buildCopyrightPaymentRequestText(submission, amount, details, note) {
+  const lines = [
+    `Your copyright application ${submission.id} has been validated.`,
+    amount ? `Amount to pay: ${amount}` : "",
+    "Payment details:",
+    details,
+    note ? `Note: ${note}` : "",
+    "After sending payment, reply to this message and upload your receipt as proof of payment.",
+  ].filter(Boolean);
+  return lines.join("\n");
+}
+
+function sendCopyrightPaymentRequestMessage(submission, amount, details, note = "") {
+  const sender = getCurrentUser();
+  const receiverId = getSubmissionApplicantUser(submission)?.id || null;
+  if (!receiverId) {
+    showToast("Could not find the applicant account for the payment request.");
+    return false;
+  }
+
+  const messageId = Date.now();
+  const messageText = buildCopyrightPaymentRequestText(submission, amount, details, note);
+  chatMessages.push({
+    id: messageId,
+    case_id: submission.id,
+    sender_id: sender.id,
+    receiver_id: receiverId,
+    sender_role: "reviewer",
+    message_kind: "copyright-payment-request",
+    payment_amount: amount,
+    payment_details: details,
+    payment_note: note,
+    receipt_status: "awaiting-receipt",
+    message_text: messageText,
+    attachment_url: "",
+    attachment_type: "",
+    attachment_name: "",
+    attachment_size: 0,
+    created_at: new Date().toISOString(),
+    is_read: false,
+  });
+
+  submission.paymentRequestMessageId = messageId;
+  submission.paymentStatus = "Awaiting Receipt";
+  pushChatNotification(receiverId, submission, `Payment request sent for ${amount || "copyright filing"}`);
+  return true;
+}
+
+window.showCopyrightPaymentRequestModal = function(submissionId) {
+  const submission = submissions.find((s) => s.id === submissionId);
+  if (!submission) return;
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  const overlay = document.getElementById("modalOverlay");
+  const existingRequest = getCopyrightPaymentRequest(submissionId);
+
+  modalTitle.textContent = "Send Copyright Payment Request";
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div style="display:grid; gap:16px;">
+      <div style="padding:14px 16px; border-radius:10px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.16); color:var(--gray-700); font-size:0.88rem; line-height:1.55;">
+        This validates the copyright case and sends the applicant a payment message. Add your GCash, bank, or other payment channel details below.
+      </div>
+      ${
+        existingRequest
+          ? `<div style="padding:12px 14px; border-radius:10px; background:rgba(245,158,11,0.08); color:#92400e; font-size:0.82rem;">A payment request was already sent for this case. Sending another one will create a new request message.</div>`
+          : ""
+      }
+      <label class="form-group">
+        <span style="font-size:.85rem;font-weight:700;display:block;margin-bottom:6px;">Amount to Pay</span>
+        <input id="copyrightPaymentAmount" type="text" placeholder="e.g. PHP 625.00" />
+      </label>
+      <label class="form-group">
+        <span style="font-size:.85rem;font-weight:700;display:block;margin-bottom:6px;">GCash / Bank / Payment Details</span>
+        <textarea id="copyrightPaymentDetails" style="min-height:130px;" placeholder="Example: GCash - Juan D. Cruz, 09XX XXX XXXX&#10;BPI - Juan D. Cruz, 1234-5678-90"></textarea>
+      </label>
+      <label class="form-group">
+        <span style="font-size:.85rem;font-weight:700;display:block;margin-bottom:6px;">Additional Note</span>
+        <textarea id="copyrightPaymentNote" style="min-height:80px;" placeholder="Optional instructions or deadline"></textarea>
+      </label>
+      <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="closeModal(); renderDashboardContent('submission-detail')">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmCopyrightPaymentValidation('${submission.id}')">
+          <i class="fa-solid fa-check"></i> Validate & Send Payment Message
+        </button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add("active");
+};
+
+window.confirmCopyrightPaymentValidation = function(submissionId) {
+  const submission = submissions.find((s) => s.id === submissionId);
+  if (!submission) return;
+  const amount = (document.getElementById("copyrightPaymentAmount")?.value || "").trim();
+  const details = (document.getElementById("copyrightPaymentDetails")?.value || "").trim();
+  const note = (document.getElementById("copyrightPaymentNote")?.value || "").trim();
+
+  if (!amount) {
+    showToast("Please enter the payment amount.");
+    return;
+  }
+  if (!details) {
+    showToast("Please provide GCash, bank, or other payment details.");
+    return;
+  }
+
+  const previousStatus = submission.status;
+  submission.status = "Validated";
+  syncSubmissionWorkflowState(submission);
+  const sent = sendCopyrightPaymentRequestMessage(submission, amount, details, note);
+  if (!sent) {
+    submission.status = previousStatus;
+    syncSubmissionWorkflowState(submission);
+    return;
+  }
+  persistSubmissions();
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Validated Copyright",
+    record: submission.id,
+    details: `Validated copyright case and sent payment request message. Previous status: ${previousStatus}.`,
+    module: "Copyright",
+  });
+  closeModal();
+  showToast("Copyright validated and payment request sent.");
+  navigateTo("messages", false, { caseId: submission.id });
+};
+
+window.handlePaymentReceiptUpload = function(input, caseId, requestId) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const result = validateChatFile(file);
+  if (!result.valid) {
+    input.value = "";
+    showToast(result.message);
+    return;
+  }
+
+  const submission = submissions.find((s) => s.id === caseId);
+  const request = chatMessages.find((message) => Number(message.id) === Number(requestId));
+  if (!submission || !request || !isCopyrightPaymentRequest(request)) {
+    showToast("Payment request could not be found.");
+    return;
+  }
+  if (normalizeRole(currentRole) !== "applicant" || request.receiver_id !== getCurrentUser().id) {
+    showToast("Only the applicant can upload the payment receipt.");
+    return;
+  }
+
+  const attachmentUrl =
+    typeof URL !== "undefined" && URL.createObjectURL
+      ? URL.createObjectURL(file)
+      : "#";
+  const receiptMessageId = Date.now();
+  chatMessages.push({
+    id: receiptMessageId,
+    case_id: caseId,
+    sender_id: getCurrentUser().id,
+    receiver_id: request.sender_id,
+    sender_role: "applicant",
+    message_kind: "copyright-payment-receipt",
+    payment_request_id: request.id,
+    message_text: `Payment receipt uploaded for ${request.payment_amount || "the copyright filing payment"}.`,
+    attachment_url: attachmentUrl,
+    attachment_type: getChatAttachmentType(file),
+    attachment_name: file.name,
+    attachment_size: file.size,
+    created_at: new Date().toISOString(),
+    is_read: false,
+  });
+
+  request.receipt_status = "submitted";
+  request.receipt_message_id = receiptMessageId;
+  submission.paymentStatus = "Receipt Submitted";
+  submission.paymentReceiptMessageId = receiptMessageId;
+  persistSubmissions();
+  pushChatNotification(request.sender_id, submission, "Payment receipt uploaded");
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Uploaded Payment Receipt",
+    record: caseId,
+    details: `Uploaded proof of payment receipt: ${file.name}.`,
+    module: "Messages",
+  });
+  showToast("Receipt uploaded and sent to the evaluator.");
+  renderSidebar();
+  renderDashboardContent("messages");
+};
 
 window.sendChatMessage = function(caseId) {
   const submission = submissions.find((s) => s.id === caseId);
@@ -6164,6 +6412,15 @@ function changeStatus(id, newStatus) {
   const normalizedRole = normalizeRole(currentRole);
   if (normalizedRole === "reviewer" && !isAssignedReviewerSubmission(sub)) {
     showToast("You must 'Take' this case before you can update its status.");
+    return;
+  }
+
+  if (
+    normalizedRole === "reviewer" &&
+    sub.type === "Copyright" &&
+    newStatus === "Validated"
+  ) {
+    showCopyrightPaymentRequestModal(sub.id);
     return;
   }
 
@@ -19470,15 +19727,19 @@ function getFormTypeKeyFromSubmissionType(type = "") {
 
 function normalizeSubmissionWorkflowDefaults() {
   submissions = submissions.map((submission) => {
-    return {
+    const normalized = {
       ...submission,
       formType: submission.formType || getFormTypeKeyFromSubmissionType(submission.type),
       requirementUploads: submission.requirementUploads || {},
     };
+    normalizeUnassignedSubmissionStatus(normalized);
+    syncSubmissionWorkflowState(normalized);
+    return normalized;
   });
 }
 
-loadStoredSubmissions();
+const loadedStoredSubmissions = loadStoredSubmissions();
+rebalanceDemoActiveCases({ force: !loadedStoredSubmissions });
 normalizeSubmissionWorkflowDefaults();
 syncAllSubmissionDisplayFields();
 persistSubmissions();
