@@ -1262,7 +1262,7 @@ function rebalanceDemoActiveCases({ force = false } = {}) {
   }
 }
 
-const DASHBOARD_SAMPLE_CASES_STORAGE_KEY = "tcbPrototype.dashboardSamples.v1";
+const DASHBOARD_SAMPLE_CASES_STORAGE_KEY = "tcbPrototype.dashboardSamples.v2";
 const DASHBOARD_SAMPLE_CASES = [
   {
     id: "PSU-COP-2026-009",
@@ -1304,6 +1304,34 @@ const DASHBOARD_SAMPLE_CASES = [
     date: "2026-04-27",
     department: "College of Arts",
     description: "Draft industrial design entry for a modular wayfinding panel used in campus tourism kiosks.",
+    formType: "industrial",
+  },
+  {
+    id: "PSU-PAT-2026-009",
+    type: "Patent",
+    title: "Solar-Powered Brine Monitor",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Validated",
+    date: "2026-04-18",
+    department: "College of Engineering",
+    description: "Validated patent intake for a solar-powered salinity monitor used in coastal water systems.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3,
+    formType: "patent",
+  },
+  {
+    id: "PSU-ID-2026-003",
+    type: "Industrial Design",
+    title: "Campus Wayfinding Signage Set",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Approved",
+    date: "2026-03-12",
+    department: "College of Arts",
+    description: "Approved industrial design record for a coordinated signage set used across PSU campus facilities.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3,
     formType: "industrial",
   },
 ];
@@ -17224,17 +17252,8 @@ function showInnovationDetail(id) {
           <p class="ip-visual-caption">
             ${item.title.split(" ").slice(0, 2).join(" ")} visual
           </p>
-
           <div class="inquiry-box">
-            <h4>Express Commercial Interest</h4>
-            <p class="inquiry-copy">Send an official notification to <strong>${item.inventor}</strong> expressing your interest in this IP.</p>
-            
-            <button class="interest-btn ${isInterested ? 'active' : ''}" style="width:100%; justify-content:center;" onclick="toggleInterest(${item.id})">
-              <i class="fa-solid ${isInterested ? 'fa-check' : 'fa-handshake'}"></i>
-              ${isInterested ? 'Interest Expressed' : 'Express Interest'}
-            </button>
-            
-            <div class="inquiry-contact">
+            <div class="inquiry-contact" style="margin-top:0; padding-top:0; border-top:0;">
               <span>Contact Person:</span>
               <div>${item.contactPerson || item.inventor}</div>
               <a href="mailto:${item.contactEmail || "techtransfer@psu.edu.ph"}">${item.contactEmail || "techtransfer@psu.edu.ph"}</a>
@@ -17454,7 +17473,7 @@ function renderUserSubmissions() {
   const statuses = [
     { id: "All", label: "All" },
     { id: "Draft", label: "Draft" },
-    { id: "Pending", label: "Submitted" },
+    { id: "Pending", label: "Pending" },
     { id: "Under Review", label: "Under Review" },
     { id: "Validated", label: "Validated" },
     { id: "ActionRequired", label: "Action Required" },
