@@ -9,7 +9,7 @@ let currentRole = "applicant";
 // Supported RBAC roles: 'superadmin', 'admin', 'reviewer', 'applicant'
 let isLoggedIn = false;
 let sidebarCollapsed = false;
-let selectedLoginRole = "client";
+let selectedLoginRole = "applicant";
 let currentWizardStep = 1;
 let currentFormType = "";
 let submissionMethod = "online"; // 'online' or 'upload'
@@ -418,6 +418,33 @@ let submissions = [
     description: "Portable cooking device for field researchers."
   }
 ];
+
+const SUBMISSIONS_STORAGE_KEY = "tcbPrototype.submissions.v1";
+
+function loadStoredSubmissions() {
+  try {
+    const raw = window.localStorage?.getItem(SUBMISSIONS_STORAGE_KEY);
+    if (!raw) return false;
+    const stored = JSON.parse(raw);
+    if (!Array.isArray(stored)) return false;
+    submissions = stored;
+    return true;
+  } catch (err) {
+    console.warn("Unable to load stored submissions", err);
+    return false;
+  }
+}
+
+function persistSubmissions() {
+  try {
+    window.localStorage?.setItem(
+      SUBMISSIONS_STORAGE_KEY,
+      JSON.stringify(submissions),
+    );
+  } catch (err) {
+    console.warn("Unable to save submissions", err);
+  }
+}
 
 const marketplaceItems = [
   {
@@ -1021,6 +1048,96 @@ const ROLE_META = {
   applicant: { label: "Applicant", dashboard: "user-dashboard" },
 };
 
+const LOGIN_PAGE_ROLES = {
+  login: "applicant",
+  "applicant-login": "applicant",
+  "evaluator-login": "reviewer",
+  "reviewer-login": "reviewer",
+  "admin-login": "superadmin",
+  "superadmin-login": "superadmin",
+};
+
+function isLoginPage(page) {
+  return Object.prototype.hasOwnProperty.call(LOGIN_PAGE_ROLES, page);
+}
+
+function getLoginRoleForPage(page) {
+  return LOGIN_PAGE_ROLES[page] || "applicant";
+}
+
+function getLoginPageForRole(role = selectedLoginRole) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === "reviewer") return "evaluator-login";
+  if (normalizedRole === "superadmin" || normalizedRole === "admin") return "admin-login";
+  return "login";
+}
+
+function getProtectedPageLogin(page) {
+  if (page === "reviewer-my-cases") return "evaluator-login";
+  if (
+    page === "admin-dashboard" ||
+    page === "admin-submissions" ||
+    page === "admin-records" ||
+    page === "admin-marketplace" ||
+    page === "admin-users" ||
+    page === "admin-settings" ||
+    page === "admin-announcements" ||
+    page === "audit-log" ||
+    page === "role-permissions" ||
+    page === "create-account"
+  ) {
+    return getLoginPageForRole(selectedLoginRole === "reviewer" ? "reviewer" : "superadmin");
+  }
+  return "login";
+}
+
+function setLoginMode(role = "applicant") {
+  selectedLoginRole = normalizeRole(role);
+
+  const title = document.getElementById("loginTitle");
+  const subtitle = document.getElementById("loginSubtitle");
+  const email = document.getElementById("loginEmail");
+  const password = document.getElementById("loginPassword");
+  const forgotLink = document.getElementById("loginForgotLink");
+  const applicantFooter = document.getElementById("loginApplicantFooter");
+  const isApplicantLogin = selectedLoginRole === "applicant";
+  const copy = {
+    applicant: {
+      title: "Applicant Login",
+      subtitle: "Track your submissions and continue your IP filings.",
+      emailPlaceholder: "@psu.palawan.edu.ph or personal email",
+    },
+    reviewer: {
+      title: "Evaluator Login",
+      subtitle: "Sign in to review assigned and available submissions.",
+      emailPlaceholder: "evaluator@psu.edu.ph",
+    },
+    superadmin: {
+      title: "Admin Login",
+      subtitle: "Sign in to the admin dashboard.",
+      emailPlaceholder: "admin@psu.edu.ph",
+    },
+  }[selectedLoginRole] || {
+    title: "Applicant Login",
+    subtitle: "Login to The Creator's Bulwark",
+    emailPlaceholder: "@psu.palawan.edu.ph or personal email",
+  };
+
+  if (title) title.textContent = copy.title;
+  if (subtitle) subtitle.textContent = copy.subtitle;
+  if (email) email.placeholder = copy.emailPlaceholder;
+  if (password) password.placeholder = "Enter your password";
+  if (forgotLink) forgotLink.style.display = isApplicantLogin ? "" : "none";
+  if (applicantFooter) applicantFooter.style.display = isApplicantLogin ? "" : "none";
+  ["loginEmailError", "loginPasswordError"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = "";
+      el.style.display = "none";
+    }
+  });
+}
+
 const DASHBOARD_ACCESS = {
   superadmin: [
     "admin-dashboard",
@@ -1179,6 +1296,8 @@ const ACTIVE_ROLE_USER_IDS = {
   applicant: 9,
 };
 
+const DEFAULT_APPLICANT_USER_ID = 9;
+
 function formatAuditTimestamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -1234,6 +1353,10 @@ function getDisplaySecurityKey(type) {
 
 function setActiveUserForRole(role, userId) {
   const normalizedRole = normalizeRole(role);
+  if (normalizedRole === "applicant") {
+    ACTIVE_ROLE_USER_IDS.applicant = DEFAULT_APPLICANT_USER_ID;
+    return;
+  }
   const target = systemUsers.find(
     (user) => user.id === Number(userId) && user.role === normalizedRole,
   );
@@ -1383,6 +1506,9 @@ function canAccessDashboardPage(page, role = currentRole) {
 
 function isOwnSubmission(submission, role = currentRole) {
   const user = getCurrentUser(role);
+  if (submission.applicantUserId && user?.id) {
+    return Number(submission.applicantUserId) === Number(user.id);
+  }
   return submission.applicant === user.name || submission.email === user.email;
 }
 
@@ -1394,10 +1520,7 @@ function isAssignedReviewerSubmission(submission, role = currentRole) {
 function getVisibleSubmissions(role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === "superadmin" || normalizedRole === "admin") {
-    return submissions.filter(
-      (submission) =>
-        submission.status !== "Draft" && !getAssignedReviewerId(submission),
-    );
+    return submissions.filter((submission) => submission.status !== "Draft");
   }
   if (normalizedRole === "reviewer") {
     return submissions.filter((submission) => {
@@ -1826,6 +1949,10 @@ function navigateTo(page, isBack = false, params = null) {
     }
   }
   currentPage = page;
+  document.body.classList.toggle(
+    "portal-login-mode",
+    isLoginPage(page) && getLoginRoleForPage(page) !== "applicant",
+  );
 
   // Hide all pages & states
   document
@@ -1917,7 +2044,8 @@ function navigateTo(page, isBack = false, params = null) {
     document.getElementById("public-nav").classList.add("active");
     document.getElementById("page-terms").classList.add("active");
     document.getElementById("termsPublicContent").innerHTML = renderTermsAndConditions();
-  } else if (page === "login") {
+  } else if (isLoginPage(page)) {
+    setLoginMode(getLoginRoleForPage(page));
     if (publicNav) publicNav.classList.add("active");
     document.getElementById("page-login").classList.add("active");
   } else if (page === "signup") {
@@ -1932,7 +2060,7 @@ function navigateTo(page, isBack = false, params = null) {
     document.getElementById("page-reset-password").classList.add("active");
   } else if (dashboardPages.includes(page)) {
     if (!isLoggedIn) {
-      navigateTo("login");
+      navigateTo(getProtectedPageLogin(page));
       return;
     }
     if (!canAccessDashboardPage(page)) {
@@ -2656,15 +2784,6 @@ function filterLandingMarketplace() {
 }
 
 // ===== LOGIN =====
-function selectLoginRole(role) {
-  selectedLoginRole = normalizeRole(role);
-  // Sync selectors
-  const pubSelect = document.getElementById("publicRoleSelect");
-  const topSelect = document.getElementById("topbarRoleSelect");
-  if (pubSelect) pubSelect.value = selectedLoginRole;
-  if (topSelect) topSelect.value = selectedLoginRole;
-}
-
 window.initSignupWizard = function() {
   const step2 = document.getElementById('signup-step-2');
   const title = document.getElementById('signup-title');
@@ -2803,15 +2922,46 @@ window.resendSignupOtp = function() {
   showToast("A new verification code has been sent to your email.");
 };
 
+function findLoginUser(role, email) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === "applicant") {
+    return (
+      systemUsers.find((user) => user.id === DEFAULT_APPLICANT_USER_ID) ||
+      systemUsers.find(
+        (user) =>
+          normalizeRole(user.role) === "applicant" &&
+          String(user.name || "").toLowerCase() === "juan dela cruz",
+      ) ||
+      systemUsers.find((user) => normalizeRole(user.role) === "applicant")
+    );
+  }
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const matchingRoleUsers = systemUsers.filter(
+    (user) => normalizeRole(user.role) === normalizedRole && user.status === "Active",
+  );
+  if (normalizedEmail) {
+    const emailMatch = matchingRoleUsers.find(
+      (user) => String(user.email || "").toLowerCase() === normalizedEmail,
+    );
+    if (emailMatch) return emailMatch;
+  }
+  return matchingRoleUsers[0] || null;
+}
+
 function handleLogin(e) {
   if (e) e.preventDefault();
-  
-  // PROTOTYPE BYPASS: Go directly to applicant dashboard
+
+  const loginRole = normalizeRole(selectedLoginRole || "applicant");
+  const loginEmail = document.getElementById("loginEmail")?.value || "";
+  const user = findLoginUser(loginRole, loginEmail);
+
   isLoggedIn = true;
-  currentRole = 'applicant';
+  currentRole = loginRole;
+  selectedLoginRole = loginRole;
+  if (user) setActiveUserForRole(loginRole, user.id);
   updateTopbarRole();
-  
-  showToast("Prototype Access: Logged in as APPLICANT");
+
+  showToast(`Prototype Access: Logged in to the ${getRoleMeta(currentRole).label} portal`);
 
   if (pendingAction && pendingAction.type === 'registration') {
     const action = pendingAction;
@@ -2846,6 +2996,9 @@ window.verifyOtp = function () {
 
   isLoggedIn = true;
   currentRole = normalizeRole(selectedLoginRole);
+  if (currentRole === "applicant") {
+    setActiveUserForRole("applicant", DEFAULT_APPLICANT_USER_ID);
+  }
   updateTopbarRole();
   
   showToast("MFA verified — Successfully logged in!");
@@ -2862,7 +3015,7 @@ window.verifyOtp = function () {
 function logout() {
   isLoggedIn = false;
   currentRole = "applicant";
-  selectedLoginRole = "client";
+  selectedLoginRole = "applicant";
   navigateTo("landing");
   showToast("Logged out successfully");
 }
@@ -3038,26 +3191,8 @@ function hideError(id) {
 }
 
 // ===== ROLE TOGGLE =====
-// Merged with the main switchRole at the bottom to avoid redeclaration issues.
-
-function toggleRole() {
-  const roles = ["applicant", "reviewer", "superadmin"];
-  const currentNorm = normalizeRole(currentRole);
-  let idx = roles.indexOf(currentNorm);
-  const nextRole = roles[(idx + 1) % roles.length];
-  switchRole(nextRole);
-}
-
 function updateTopbarRole() {
-  const pubSelect = document.getElementById("publicRoleSelect");
-  const topSelect = document.getElementById("topbarRoleSelect");
   const normRole = normalizeRole(currentRole);
-
-  let uiRole = normRole;
-  if (normRole === "reviewer") uiRole = "evaluator";
-
-  if (pubSelect) pubSelect.value = uiRole;
-  if (topSelect) topSelect.value = uiRole;
 
   const user = getCurrentUser();
   const userName = user?.name || "User";
@@ -3311,7 +3446,11 @@ const APPLICANT_VISIBLE_STATUSES = [
   "Validated",
 ];
 
-function getRequiredDocumentsForType(formType = currentFormType) {
+function getRequiredDocumentsForType(
+  formType = currentFormType,
+  data = wizardData,
+  method = submissionMethod,
+) {
   let docs = REQUIRED_DOCUMENTS_BY_TYPE[formType] || REQUIRED_DOCUMENTS_BY_TYPE.patent;
   if (formType === "copyright") {
     // Deep copy to allow modifying objects inside the array safely
@@ -3325,16 +3464,16 @@ function getRequiredDocumentsForType(formType = currentFormType) {
     }
     
     // If online method, remove the manual registration form upload requirement
-    if (typeof submissionMethod !== 'undefined' && submissionMethod === 'online') {
+    if (typeof method !== 'undefined' && method === 'online') {
       copyDocs = copyDocs.filter(d => d.key !== "registration-form");
     }
 
-    if (typeof wizardData !== 'undefined' && wizardData) {
+    if (data) {
       const regFormIndex = copyDocs.findIndex(d => d.key === "registration-form");
-      if (wizardData.applicantTypeGroup === "Individual") {
+      if (data.applicantTypeGroup === "Individual") {
         if (regFormIndex !== -1) copyDocs[regFormIndex].name = "Registration Form (BCRR Form 2025-1)";
         copyDocs.push({ key: "tin-sss-gsis", name: "TIN / SSS / GSIS", type: "Required" });
-      } else if (wizardData.applicantTypeGroup === "Institution") {
+      } else if (data.applicantTypeGroup === "Institution") {
         if (regFormIndex !== -1) copyDocs[regFormIndex].name = "Registration Form (BCRR Form 2025-2)";
         copyDocs.push({ key: "business-details", name: "Business Details / Company ID", type: "Required" });
       }
@@ -3344,8 +3483,8 @@ function getRequiredDocumentsForType(formType = currentFormType) {
   return docs;
 }
 
-function getRequiredDocumentCount(formType = currentFormType) {
-  return getRequiredDocumentsForType(formType).filter((doc) => doc.type === "Required").length;
+function getRequiredDocumentCount(formType = currentFormType, data = wizardData) {
+  return getRequiredDocumentsForType(formType, data).filter((doc) => doc.type === "Required").length;
 }
 
 function ensureRequirementUploads(data = wizardData) {
@@ -3357,7 +3496,7 @@ function ensureRequirementUploads(data = wizardData) {
 
 function getRequirementUploadEntries(formType = currentFormType, data = wizardData) {
   const uploads = ensureRequirementUploads(data);
-  return getRequiredDocumentsForType(formType).map((doc) => ({
+  return getRequiredDocumentsForType(formType, data).map((doc) => ({
     doc,
     key: doc.key,
     file: uploads[doc.key] || null,
@@ -4554,14 +4693,17 @@ function renderUserDashboard() {
             <tbody>
               ${recent
                 .map(
-                  (s) => `
+                  (s) => {
+                    const display = getSubmissionDisplayData(s);
+                    return `
                 <tr style="border-bottom:1px solid var(--gray-50); cursor:pointer; transition: background 0.2s;" onclick="viewSubmission('${s.id}')" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
                   <td style="padding:16px; font-weight:700; color:var(--navy);">${s.id}</td>
                   <td style="padding:16px;">${typeBadge(s.type)}</td>
-                  <td style="padding:16px; font-weight:500; color:var(--gray-700);">${s.title}</td>
+                  <td style="padding:16px; font-weight:500; color:var(--gray-700);">${escapeHtml(display.title)}</td>
                   <td style="padding:16px; color:var(--gray-500);">${s.date}</td>
                   <td style="padding:16px;">${statusBadge(s.status)}</td>
-                </tr>`,
+                </tr>`;
+                  },
                 )
                 .join("")}
             </tbody>
@@ -5335,18 +5477,22 @@ function legacyGetRoleSpecificPanels(role) {
         <h3 style="font-size:1.15rem; color:var(--navy); font-weight:800; margin-bottom:16px;"><i class="fa-solid fa-bell" style="color:var(--yellow); margin-right:6px;"></i> ${mainPanelTitle}</h3>
         <div class="table-responsive">
           <table class="data-table" style="width:100%; font-size: 0.9rem;">
-            <thead><tr><th>Reference</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Reference</th><th>Type</th><th>Title</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
             ${submissionsList
               .map(
-                (s) => `
+                (s) => {
+                  const display = getSubmissionDisplayData(s);
+                  return `
               <tr>
                 <td><strong>${s.id}</strong></td>
                 <td>${typeBadge(s.type)}</td>
+                <td>${escapeHtml(display.title)}</td>
                 <td>${statusBadge(s.status)}</td>
                 <td><button class="btn btn-sm btn-primary" onclick="viewSubmission('${s.id}')">Process</button></td>
               </tr>
-            `,
+            `;
+                },
               )
               .join("")}
           </tbody>
@@ -5469,17 +5615,21 @@ function getRoleSpecificPanels(role) {
             ${
               (submissionsList.length ? submissionsList : [])
                 .map(
-                  (s) => `
+                  (s) => {
+                    const display = getSubmissionDisplayData(s);
+                    return `
               <tr>
                 <td><strong>${s.id}</strong></td>
                 <td>${typeBadge(s.type)}</td>
+                <td style="max-width:260px;">${escapeHtml(display.title)}</td>
                 <td>${statusBadge(s.status)}</td>
                 <td><button class="btn btn-sm btn-primary" onclick="viewSubmission('${s.id}')">Process</button></td>
               </tr>
-            `,
+            `;
+                  },
                 )
                 .join("") ||
-              '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--gray-400)">No cases available for this role.</td></tr>'
+              '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">No cases available for this role.</td></tr>'
             }
           </tbody>
         </table>
@@ -5512,11 +5662,12 @@ window.generateEvaluatorReport = function() {
   // CSV Rows
   visibleSubmissions.forEach(s => {
     const specialist = getAssignedReviewerName(s);
+    const display = getSubmissionDisplayData(s);
     const row = [
       s.id,
       s.type,
-      `"${s.title.replace(/"/g, '""')}"`,
-      `"${s.applicant.replace(/"/g, '""')}"`,
+      `"${display.title.replace(/"/g, '""')}"`,
+      `"${display.applicant.replace(/"/g, '""')}"`,
       s.date,
       s.status,
       `"${specialist.replace(/"/g, '""')}"`
@@ -5629,26 +5780,6 @@ function initCharts() {
   }
 }
 
-function switchRole(role) {
-  currentRole = normalizeRole(role);
-  selectedLoginRole = currentRole;
-  isLoggedIn = true;
-
-  const user = getCurrentUser(currentRole);
-  if (user) {
-    showToast(
-      `Access switched to: ${user.name} (${getRoleMeta(currentRole).label})`,
-    );
-  }
-
-  // Render Sidebar and Topbar immediately to reflect new role
-  renderSidebar();
-  updateTopbarRole();
-
-  // Navigate to appropriate landing page
-  navigateTo(getDefaultDashboardPage(currentRole));
-}
-
 function getScopedReviewerSubmissions(scope = adminCaseScope, role = currentRole) {
   const normalizedRole = normalizeRole(role);
   let visible = [...getVisibleSubmissions(role)];
@@ -5751,15 +5882,18 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
             ? `<tr><td colspan="${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
             : filtered
                 .map(
-                  (s) => `<tr>
-          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${s.title}</td><td>${s.applicant}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td><td>${statusBadge(s.status)}</td>
+                  (s) => {
+                    const display = getSubmissionDisplayData(s);
+                    return `<tr>
+          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td><td>${statusBadge(s.status)}</td>
           <td><div class="action-btns">
             <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
             ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
             ${normalizeRole(currentRole) === "reviewer" && !canTakeSubmission(s) && !isAssignedReviewerSubmission(s) ? `<button class="btn btn-sm btn-secondary" disabled title="Evaluator: ${getAssignedReviewerName(s)}"><i class="fa-solid fa-lock"></i> Read Only</button>` : ""}
             ${canArchiveSubmission(s) ? `<button class="btn btn-sm btn-secondary" title="Archive" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
             ${canUnarchiveSubmission(s) ? `<button class="btn btn-sm btn-primary" title="Unarchive" onclick="unarchiveSubmission('${s.id}')"><i class="fa-solid fa-box-open"></i> Unarchive</button>` : ""}
-          </div></td></tr>`,
+          </div></td></tr>`;
+                  },
                 )
                 .join("")
         }
@@ -5996,6 +6130,7 @@ function takeCase(id) {
   sub.assignedEvaluatorId = user.id;
   sub.status = "Under Review";
   syncSubmissionWorkflowState(sub);
+  persistSubmissions();
   
   addAuditLog({
     accountName: user.name,
@@ -6035,6 +6170,7 @@ function changeStatus(id, newStatus) {
   const previousStatus = sub.status;
   sub.status = newStatus;
   syncSubmissionWorkflowState(sub);
+  persistSubmissions();
   addAuditLog({
     accountName: getCurrentUser().name,
     action: "Updated Review",
@@ -6064,6 +6200,7 @@ function requestDocs(id) {
     sub.status = "Awaiting Documents";
     sub.statusNote = missing;
     syncSubmissionWorkflowState(sub);
+    persistSubmissions();
     addAuditLog({
       accountName: getCurrentUser().name,
       action: "Requested Documents",
@@ -6087,6 +6224,7 @@ function archiveSubmission(id) {
   submission.archivedFromStatus = previousStatus;
   submission.status = "Archived";
   syncSubmissionWorkflowState(submission);
+  persistSubmissions();
   addAuditLog({
     accountName: getCurrentUser().name,
     action: "Archived Case",
@@ -6109,6 +6247,7 @@ function unarchiveSubmission(id) {
   submission.status = restoredStatus;
   delete submission.archivedFromStatus;
   syncSubmissionWorkflowState(submission);
+  persistSubmissions();
   addAuditLog({
     accountName: getCurrentUser().name,
     action: "Unarchived Case",
@@ -6129,6 +6268,7 @@ function viewSubmission(id) {
     showToast(`${getRoleMeta().label} cannot open this case.`);
     return;
   }
+  syncSubmissionDisplayFields(submission);
   selectedSubmissionId = id;
   navigateTo("submission-detail");
 }
@@ -6233,121 +6373,6 @@ const COPYRIGHT_TRACKING_GROUPS = [
   { label: "Certificate Released", keys: ["certificate-released"] },
 ];
 
-const PATENT_OPERATION_FLOW = [
-  {
-    key: "advisory-disclosure",
-    step: 1,
-    title: "Advisory Sheet and Disclosure form (to PSU)",
-    owner: "Applicant",
-    lane: "Applicant",
-    description:
-      "Applicant completes the Advisory Service Sheet and IP Disclosure Form for PSU intake.",
-  },
-  {
-    key: "optional-documents",
-    step: 2,
-    title: "Optional Document to Upload",
-    owner: "Applicant",
-    lane: "Applicant",
-    description:
-      "Optional supporting files may be uploaded with the patent intake packet.",
-    subitems: [
-      "Technical Drawings / Diagrams (Accepted formats: PDF, DOCX, JPG, PNG)",
-      "Abstract (Accepted formats: PDF, DOCX, JPG, PNG)",
-      "Claims Statement (Accepted formats: PDF, DOCX, JPG, PNG)",
-    ],
-  },
-  {
-    key: "acknowledgement-application",
-    step: 3,
-    title: "Acknowledgement of Application (from PSU)",
-    owner: "PSU",
-    lane: "PSU / IPTTO",
-    description: "PSU acknowledges receipt of the patent intake packet.",
-  },
-  {
-    key: "under-review",
-    step: 4,
-    title: "Status: Under review",
-    owner: "Evaluator",
-    lane: "PSU / IPTTO",
-    description: "PSU reviews the patent intake packet.",
-  },
-  {
-    key: "approved-for-drafting",
-    step: 5,
-    title: "Status: Approved",
-    owner: "PSU",
-    lane: "PSU / IPTTO",
-    description: "The patent packet is approved for drafting.",
-  },
-  {
-    key: "application-drafting",
-    step: 6,
-    title: "Status: Application Drafting (From PSU to IPOPHL)",
-    owner: "PSU",
-    lane: "PSU / IPTTO",
-    description: "PSU prepares the formal patent application for IPOPHL.",
-  },
-  {
-    key: "application-submitted",
-    step: 7,
-    title: "Status: Application Submitted (From PSU to IPOPHL)",
-    owner: "PSU",
-    lane: "PSU / IPTTO",
-    description: "The prepared application is submitted to IPOPHL.",
-  },
-  {
-    key: "filing-acknowledgement",
-    step: 8,
-    title: "Filing Acknowledgement (From IPOPHL to PSU to inventor)",
-    owner: "IPOPHL",
-    lane: "IPOPHL / PSU / Inventor",
-    description: "IPOPHL filing acknowledgement is relayed to the inventor.",
-  },
-  {
-    key: "formality-report",
-    step: 9,
-    title: "Status: Formality Report received (IPOPHL to PSU to inventor)",
-    owner: "IPOPHL",
-    lane: "IPOPHL / PSU / Inventor",
-    description: "Formality report is received and reviewed for defects.",
-    subitems: [
-      "No defect (no action need)",
-      "With defect (need to file a response: PSU to IPOPHL)",
-    ],
-  },
-  {
-    key: "publication",
-    step: 10,
-    title: "Status: Publication (IPOPHL publication at gazette, 18 months after filing)",
-    owner: "IPOPHL",
-    lane: "IPOPHL",
-    description: "The application is published in the gazette 18 months after filing.",
-  },
-  {
-    key: "substantial-examination-report",
-    step: 11,
-    title:
-      "Status: Substantial Examination Report received (From IPOPHL to PSU to inventor)",
-    owner: "IPOPHL",
-    lane: "IPOPHL / PSU / Inventor",
-    description: "Substantive examination report is received and reviewed.",
-    subitems: [
-      "No defect (no action need)",
-      "With defect (need to file a response: PSU to IPOPHL)",
-    ],
-  },
-  {
-    key: "certificate-registration-withdrawal",
-    step: 12,
-    title: "Status: Certificate Registration or Withdrawal",
-    owner: "IPOPHL",
-    lane: "IPOPHL / PSU / Inventor",
-    description: "The application reaches registration, certificate issuance, or withdrawal.",
-  },
-];
-
 const IPOPHL_OPERATION_FLOW = [
   {
     key: "inventor-submission",
@@ -6437,20 +6462,23 @@ function isPatentSubmission(submission) {
 }
 
 function getIPOPHLOperationFlow(submission) {
-  return isPatentSubmission(submission)
-    ? getPatentDisplayFlow(submission?.type)
-    : IPOPHL_OPERATION_FLOW;
+  return IPOPHL_OPERATION_FLOW;
 }
 
 function normalizePatentStageKey(key) {
   const aliases = {
-    "inventor-submission": "advisory-disclosure",
-    "technical-review": "under-review",
-    "mis-recording": "acknowledgement-application",
-    "mis-forwarding": "application-drafting",
-    "ip-director-action": "application-submitted",
-    "certificate-received": "substantial-examination-report",
-    "certificate-released": "certificate-registration-withdrawal",
+    "advisory-disclosure": "inventor-submission",
+    "optional-documents": "inventor-submission",
+    "acknowledgement-application": "mis-recording",
+    "under-review": "technical-review",
+    "approved-for-drafting": "ip-director-action",
+    "application-drafting": "mis-forwarding",
+    "application-submitted": "ip-director-action",
+    "filing-acknowledgement": "certificate-received",
+    "formality-report": "certificate-received",
+    publication: "certificate-received",
+    "substantial-examination-report": "certificate-received",
+    "certificate-registration-withdrawal": "certificate-released",
   };
   return aliases[key] || key;
 }
@@ -6468,38 +6496,6 @@ function getCopyrightStageIndex(submission) {
   const key = getCopyrightStageKey(submission);
   const idx = COPYRIGHT_OPERATION_FLOW.findIndex((step) => step.key === key);
   return idx < 0 ? 0 : idx;
-}
-
-function getPatentDisplayFlow(typeLabel = getPatentIntakeTypeLabel()) {
-  if (typeLabel !== "Industrial Design") return PATENT_OPERATION_FLOW;
-
-  return PATENT_OPERATION_FLOW.map((step) => {
-    if (step.key === "advisory-disclosure") {
-      return {
-        ...step,
-        title: "Advisory Sheet (to PSU)",
-        description: "Applicant completes the Advisory Service Sheet for PSU intake.",
-      };
-    }
-    if (step.key === "optional-documents") {
-      return {
-        ...step,
-        title: "Required Drawings to Upload",
-        description:
-          "Applicant uploads the industrial design drawings as one PDF file or as individual JPEG files.",
-        subitems: [
-          "Figure 1 - Perspective View",
-          "Figure 2 - Front View",
-          "Figure 3 - Back View",
-          "Figure 4 - Left Side View",
-          "Figure 5 - Right Side View",
-          "Figure 6 - Top View",
-          "Figure 7 - Bottom View",
-        ],
-      };
-    }
-    return step;
-  });
 }
 
 function syncSubmissionWorkflowState(submission) {
@@ -6559,11 +6555,11 @@ function getIPOPHLStageKey(submission) {
     if (submission.ipophlStage) {
       return normalizePatentStageKey(submission.ipophlStage);
     }
-    if (submission.status === "Approved") return "certificate-registration-withdrawal";
-    if (submission.status === "Validated") return "application-submitted";
+    if (submission.status === "Approved") return "certificate-released";
+    if (submission.status === "Validated") return "ip-director-action";
     if (submission.status === "Under Review" || submission.status === "Awaiting Documents")
-      return "under-review";
-    return "advisory-disclosure";
+      return "technical-review";
+    return "inventor-submission";
   }
   if (submission.ipophlStage) return submission.ipophlStage;
   if (submission.status === "Approved") return "certificate-released";
@@ -6582,22 +6578,22 @@ function getIPOPHLStageIndex(submission) {
 function syncIPOPHLWorkflowState(submission) {
   if (isPatentSubmission(submission)) {
     if (submission.status === "Approved") {
-      submission.ipophlStage = "certificate-registration-withdrawal";
+      submission.ipophlStage = "certificate-released";
       return;
     }
     if (
       submission.status === "Awaiting Documents" ||
       submission.status === "Under Review"
     ) {
-      submission.ipophlStage = "under-review";
+      submission.ipophlStage = "technical-review";
       return;
     }
     if (submission.status === "Validated") {
-      submission.ipophlStage = "application-submitted";
+      submission.ipophlStage = "ip-director-action";
       return;
     }
     if (submission.status === "Pending") {
-      submission.ipophlStage = "advisory-disclosure";
+      submission.ipophlStage = "inventor-submission";
     }
     return;
   }
@@ -6684,81 +6680,13 @@ function renderCopyrightOperationTimeline(submission) {
   `;
 }
 
-function renderPatentFlowItem(step, idx, activeIdx, closed) {
-  let state = "pending";
-  if (closed) state = idx === 0 ? "completed" : "pending";
-  else if (idx < activeIdx) state = "completed";
-  else if (idx === activeIdx) state = "active";
-
-  return `
-    <div class="patent-flow-item ${state}">
-      <span class="patent-flow-num">${step.step}.</span>
-      <div class="patent-flow-copy">
-        <div class="patent-flow-title">${escapeHtml(step.title)}</div>
-        ${
-          step.subitems?.length
-            ? `<ul>${step.subitems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
-            : ""
-        }
-      </div>
-    </div>
-  `;
-}
-
-function renderPatentFlowItems(startStep, endStep, activeIdx, closed, flow = PATENT_OPERATION_FLOW) {
-  return flow.filter(
-    (step) => step.step >= startStep && step.step <= endStep,
-  )
-    .map((step) =>
-      renderPatentFlowItem(
-        step,
-        flow.findIndex((entry) => entry.key === step.key),
-        activeIdx,
-        closed,
-      ),
-    )
-    .join("");
-}
-
-function renderPatentProgressGroup(startStep, endStep, activeIdx, closed, flow = PATENT_OPERATION_FLOW) {
-  return `
-    <div class="patent-flow-progress-group">
-      <div class="patent-flow-progress-label">Progress</div>
-      <div class="patent-flow-progress-brace"></div>
-      <div class="patent-flow-progress-items">
-        ${renderPatentFlowItems(startStep, endStep, activeIdx, closed, flow)}
-      </div>
-    </div>
-  `;
-}
-
 function renderPatentFlowReference({ submission = null, activeIndex = null } = {}) {
-  const activeIdx =
-    activeIndex !== null
-      ? activeIndex
-      : submission
-        ? getIPOPHLStageIndex(submission)
-        : 0;
-  const closed =
-    submission?.status === "Rejected" || submission?.status === "Archived";
-  const heading = (submission?.type || getPatentIntakeTypeLabel()).toUpperCase();
-  const flow = getPatentDisplayFlow(submission?.type || getPatentIntakeTypeLabel());
-
-  return `
-    <div class="patent-flow-paper">
-      <h3>${escapeHtml(heading)}</h3>
-      <div class="patent-flow-list">
-        ${renderPatentFlowItems(1, Math.min(6, flow.length), activeIdx, closed, flow)}
-        ${flow.length > 6 ? renderPatentProgressGroup(7, Math.min(10, flow.length), activeIdx, closed, flow) : ""}
-        ${flow.length > 10 ? renderPatentFlowItems(11, flow.length, activeIdx, closed, flow) : ""}
-      </div>
-    </div>
-  `;
+  return "";
 }
 
 function renderIPOPHLOperationTimeline(submission) {
   if (isPatentSubmission(submission)) {
-    return renderPatentFlowReference({ submission });
+    return "";
   }
 
   const activeIdx = getIPOPHLStageIndex(submission);
@@ -6850,7 +6778,7 @@ function renderSubmissionDetail() {
   const normalizedRole = normalizeRole(currentRole);
   const frozen = s.status === "Approved";
   const certifiedMetadataEditable = frozen && canEditCertifiedRecords();
-  const formTypeKey = getFormTypeKeyFromSubmissionType(s.type);
+  const formTypeKey = getFormTypeKeyFromSubmissionType(s.formType || s.type);
   const requiredUploadedCount = getUploadedRequiredCount(formTypeKey, s);
   const requiredDocCount = getRequiredDocumentCount(formTypeKey);
   const confidentialAccess = getDownloadAccess(s, "confidential");
@@ -7075,7 +7003,7 @@ function renderSubmissionDetail() {
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
             <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${s.applicant}</div></div>
+            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${escapeHtml(submittedSummary.applicant || s.applicant)}</div></div>
           </div>`
               : showCopyrightOperationalFlow
               ? renderCopyrightOperationTimeline(s)
@@ -7084,7 +7012,7 @@ function renderSubmissionDetail() {
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
             <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${s.applicant}</div></div>
+            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${escapeHtml(submittedSummary.applicant || s.applicant)}</div></div>
           </div>`
           }
         </div>
@@ -7434,8 +7362,201 @@ function getSubmittedPartyName(data, keyBase, surnameKey = "LastName") {
   return named || data?.[`${keyBase}Organization`] || data?.[`${keyBase}InstitutionName`] || "";
 }
 
+function buildFallbackSubmittedFormData(submission = {}, source = {}) {
+  const formType = getFormTypeKeyFromSubmissionType(
+    source.formType || submission.formType || submission.type,
+  );
+  const applicantName =
+    source.name ||
+    source.applicantName ||
+    submission.applicant ||
+    "";
+  const title =
+    source.disclosureTitle ||
+    source.copyrightWorkTitle ||
+    source.title ||
+    submission.title ||
+    "";
+  const department =
+    source.disclosureCollege ||
+    source.college ||
+    source.dept ||
+    source.department ||
+    submission.department ||
+    "";
+  const email =
+    source.advisoryEmail ||
+    source.applicantEmail ||
+    source.email ||
+    submission.email ||
+    "";
+  const contact =
+    source.advisoryContact ||
+    source.applicantContact ||
+    source.contact ||
+    source.applicantPhone ||
+    submission.contact ||
+    "";
+  const description =
+    source.disclosureDescription ||
+    source.description ||
+    source.desc ||
+    source.disclosureBackground ||
+    submission.description ||
+    "";
+
+  const fallback = {
+    advisoryClientType: source.advisoryClientType || "individual",
+    advisoryCompany: source.advisoryCompany || department,
+    advisoryDate: source.advisoryDate || submission.date || "",
+    advisoryPosition: source.advisoryPosition || "",
+    advisoryAge: source.advisoryAge || "",
+    advisoryFirstName: source.advisoryFirstName || applicantName,
+    advisoryMiddleName: source.advisoryMiddleName || "",
+    advisoryLastName: source.advisoryLastName || "",
+    advisoryAddress: source.advisoryAddress || source.applicantAddress || "",
+    advisoryContact: contact,
+    advisoryEmail: email,
+    advisoryServiceAvailed: source.advisoryServiceAvailed || [formType],
+    advisoryTitle: source.advisoryTitle || title,
+    advisoryTechnicalAdvisor: source.advisoryTechnicalAdvisor || "",
+    advisoryClientSignature: source.advisoryClientSignature || applicantName,
+    disclosureInventors:
+      source.disclosureInventors ||
+      source.inventors ||
+      applicantName,
+    disclosureJobTitle: source.disclosureJobTitle || source.applicantPosition || "",
+    disclosureCollege: department,
+    disclosureContact:
+      source.disclosureContact ||
+      [contact, email].filter(Boolean).join(" / "),
+    disclosureTitle: title,
+    disclosureDate: source.disclosureDate || submission.date || "",
+    disclosureBackground: source.disclosureBackground || description,
+    disclosureDescription: description,
+    disclosureNovelFeatures: source.disclosureNovelFeatures || source.novelty || "",
+    disclosureAdvantages: source.disclosureAdvantages || "",
+    disclosureApplications: source.disclosureApplications || "",
+    disclosureUsedPsuResources: source.disclosureUsedPsuResources || "",
+    disclosureResourcesUsed: source.disclosureResourcesUsed || [],
+    disclosureFundingSource: source.disclosureFundingSource || getLockedDisclosureFundingSource(),
+    disclosurePriorPublic: source.disclosurePriorPublic || "",
+    disclosurePriorTypes: source.disclosurePriorTypes || [],
+    disclosurePriorDateVenue: source.disclosurePriorDateVenue || "",
+    disclosurePriorOther: source.disclosurePriorOther || "",
+    disclosureCreator1: source.disclosureCreator1 || applicantName,
+    title,
+    description,
+    desc: source.desc || description,
+    name: applicantName,
+    email,
+    contact,
+    dept: department,
+    requirementUploads: source.requirementUploads || submission.requirementUploads || {},
+    files: Array.isArray(source.files)
+      ? source.files
+      : Array.isArray(submission.files)
+        ? submission.files
+        : [],
+  };
+
+  if (formType === "copyright") {
+    fallback.applicantTypeGroup = source.applicantTypeGroup || "Individual";
+    fallback.copyrightSubmissionType = source.copyrightSubmissionType || "electronic";
+    fallback.copyrightOwnerMode = source.copyrightOwnerMode || "individual";
+    fallback.copyrightOwnerFirstName = source.copyrightOwnerFirstName || applicantName;
+    fallback.copyrightOwnerEmail = source.copyrightOwnerEmail || email;
+    fallback.copyrightOwnerContact = source.copyrightOwnerContact || contact;
+    fallback.copyrightOwnerAddress = source.copyrightOwnerAddress || source.advisoryAddress || "";
+    fallback.copyrightAuthorFirstName = source.copyrightAuthorFirstName || applicantName;
+    fallback.copyrightAuthorEmail = source.copyrightAuthorEmail || email;
+    fallback.copyrightAuthorContact = source.copyrightAuthorContact || contact;
+    fallback.copyrightWorkTitle = source.copyrightWorkTitle || title;
+    fallback.copyrightWorkDate = source.copyrightWorkDate || submission.date || "";
+    fallback.copyrightWorkPlace = source.copyrightWorkPlace || department;
+    fallback.copyrightWorkClassification =
+      source.copyrightWorkClassification || source.worktype || "";
+    fallback.copyrightSubmittedDocs = source.copyrightSubmittedDocs || [];
+    fallback.copyrightSignatureName = source.copyrightSignatureName || applicantName;
+    fallback.copyrightSignatureDate = source.copyrightSignatureDate || submission.date || "";
+  }
+
+  return fallback;
+}
+
 function getSubmissionFormData(submission) {
-  return submission?.formData || submission?.data || {};
+  if (!submission) return {};
+  const source =
+    submission.formData && Object.keys(submission.formData).length
+      ? submission.formData
+      : submission.data && Object.keys(submission.data).length
+        ? submission.data
+        : {};
+  const fallback = buildFallbackSubmittedFormData(submission, source);
+  return {
+    ...fallback,
+    ...source,
+    requirementUploads:
+      source.requirementUploads || submission.requirementUploads || fallback.requirementUploads || {},
+    files: Array.isArray(source.files)
+      ? source.files
+      : Array.isArray(submission.files)
+        ? submission.files
+        : fallback.files || [],
+  };
+}
+
+function getSubmissionDisplayData(submission) {
+  if (!submission) {
+    return {
+      title: "",
+      applicant: "",
+      department: "",
+      email: "",
+      contact: "",
+      description: "",
+      registrationLane: "",
+      workType: "",
+    };
+  }
+
+  const formType = getFormTypeKeyFromSubmissionType(
+    submission.formType || submission.type || currentFormType,
+  );
+  const summary = buildSubmissionSummaryFromFormData(
+    formType,
+    getSubmissionFormData(submission),
+    submission,
+  );
+
+  return {
+    title: summary.title || submission.title || "",
+    applicant: summary.applicant || submission.applicant || "",
+    department: summary.department || submission.department || "",
+    email: summary.email || submission.email || "",
+    contact: summary.contact || submission.contact || "",
+    description: summary.description || submission.description || "",
+    registrationLane: summary.registrationLane || submission.registrationLane || "",
+    workType: summary.workType || submission.workType || "",
+  };
+}
+
+function syncSubmissionDisplayFields(submission) {
+  if (!submission) return submission;
+  const display = getSubmissionDisplayData(submission);
+  submission.title = display.title || submission.title;
+  submission.applicant = display.applicant || submission.applicant;
+  submission.department = display.department || submission.department;
+  submission.email = display.email || submission.email;
+  submission.contact = display.contact || submission.contact;
+  submission.description = display.description || submission.description;
+  if (display.registrationLane) submission.registrationLane = display.registrationLane;
+  if (display.workType) submission.workType = display.workType;
+  return submission;
+}
+
+function syncAllSubmissionDisplayFields() {
+  submissions.forEach((submission) => syncSubmissionDisplayFields(submission));
 }
 
 function getCopyrightWorkClassLabelFromData(data) {
@@ -7631,11 +7752,171 @@ function renderSubmittedSection(title, fields) {
   `;
 }
 
+function getSubmittedUploadSummary(upload) {
+  if (!upload) return "No file submitted";
+  if (Array.isArray(upload.files) && upload.files.length) {
+    return upload.files.map((file) => file.name).filter(Boolean).join(", ");
+  }
+  return upload.name || "Uploaded file";
+}
+
+function renderSubmittedDocumentUploadsSection(formType, submission, data) {
+  const uploads = {
+    ...(submission.requirementUploads || {}),
+    ...(data.requirementUploads || {}),
+  };
+  const uploadFields = getRequiredDocumentsForType(formType, data).map((doc) => [
+    `${doc.type} - ${doc.name}`,
+    getSubmittedUploadSummary(uploads[doc.key]),
+  ]);
+  const extraFiles = Array.isArray(data.files)
+    ? data.files
+    : Array.isArray(submission.files)
+      ? submission.files
+      : [];
+  const extraFileNames = extraFiles
+    .map((file) => file.requirementName ? `${file.requirementName}: ${file.name}` : file.name)
+    .filter(Boolean)
+    .join(", ");
+
+  return renderSubmittedSection("Optional Documents / Uploaded Requirements", [
+    ...uploadFields,
+    ["Additional Attachments", extraFileNames],
+    ["Drawings Count", data.drawingsCount || data.industrialViewsCount],
+    ["Claims Count", data.claimsCount || data.utilityClaimsTotal],
+    ["Attachment Notes", data.supportingNotes],
+  ]);
+}
+
+function getSubmittedFormTypeLabel(formType) {
+  const labels = {
+    patent: "Patent",
+    copyright: "Copyright",
+    utility: "Utility Model",
+    industrial: "Industrial Design",
+  };
+  return labels[formType] || "IP";
+}
+
+function getSubmittedFormStepLabels(formType) {
+  if (formType === "copyright") {
+    return [
+      "Advisory Sheet",
+      "Upload Requirements",
+      "BCRR Form 2025-1",
+      "BCRR Form 2025-2",
+      "Preview & Submit",
+    ];
+  }
+
+  return ["Advisory Sheet", "IP Disclosure", "Optional Documents", "Preview & Submit"];
+}
+
+function renderSubmittedFormStepStrip(formType, hasSavedPacket = true) {
+  const steps = getSubmittedFormStepLabels(formType);
+  return `
+    <div class="submitted-form-step-strip" style="--submitted-step-count:${steps.length}">
+      ${steps
+        .map((step, index) => {
+          const isFinalStep = index === steps.length - 1;
+          const stateClass = hasSavedPacket
+            ? isFinalStep
+              ? "active"
+              : "done"
+            : "";
+          return `
+            <div class="patent-step-chip ${stateClass}">
+              <span class="patent-step-chip__num">${index + 1}</span>
+              <span class="patent-step-chip__label">${escapeHtml(step)}</span>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderSubmittedPaperPacketPreview(submission, formType, data) {
+  if (!["patent", "utility", "industrial", "copyright"].includes(formType)) {
+    return "";
+  }
+
+  const previousWizardData = wizardData;
+  const previousFormType = currentFormType;
+  const previousSubmissionMethod = submissionMethod;
+  const previousWizardStep = currentWizardStep;
+
+  try {
+    currentFormType = formType;
+    submissionMethod = "online";
+    currentWizardStep = getSubmittedFormStepLabels(formType).length;
+    wizardData = {
+      ...data,
+      requirementUploads: data.requirementUploads || submission.requirementUploads || {},
+      files: Array.isArray(data.files)
+        ? data.files
+        : Array.isArray(submission.files)
+          ? submission.files
+          : [],
+    };
+
+    const packetHtml =
+      formType === "copyright"
+        ? renderCopyrightIntakeFormBundle()
+        : renderPatentIntakeFormBundle({ includeFlow: true });
+    const uploadSummary =
+      formType === "copyright"
+        ? renderCopyrightSubmissionList()
+        : renderPatentSubmissionList();
+
+    return `
+      <div class="submitted-paper-preview">
+        ${packetHtml}
+        <div class="submitted-upload-summary">
+          <h4>Document Uploads</h4>
+          ${uploadSummary}
+        </div>
+      </div>
+    `;
+  } finally {
+    wizardData = previousWizardData;
+    currentFormType = previousFormType;
+    submissionMethod = previousSubmissionMethod;
+    currentWizardStep = previousWizardStep;
+  }
+}
+
+function renderSubmittedFormUnavailablePanel(submission, formType) {
+  const typeLabel = getSubmittedFormTypeLabel(formType);
+
+  return `
+    <div class="detail-panel submitted-form-panel" style="margin-top:20px">
+      <h3><i class="fa-solid fa-clipboard-list"></i> Submitted ${escapeHtml(typeLabel)} Intake Packet</h3>
+      ${renderSubmittedFormStepStrip(formType, false)}
+      <div class="submitted-form-empty">
+        <strong>No saved applicant fill-up packet is attached to this record.</strong>
+        <p>This case only has the summary fields shown above, so the Advisory Sheet / IP Disclosure packet cannot be reconstructed from the record.</p>
+        ${renderSubmittedSection("Available Case Summary", [
+          ["Reference", submission.id],
+          ["Applicant", submission.applicant],
+          ["Department", submission.department],
+          ["Title", submission.title],
+          ["Description", submission.description],
+          ["Date Filed", submission.date],
+        ])}
+      </div>
+    </div>
+  `;
+}
+
 function renderSubmittedFormDataPanel(submission) {
   const data = getSubmissionFormData(submission);
-  if (!data || !Object.keys(data).length) return "";
+  const formType = getFormTypeKeyFromSubmissionType(submission.formType || submission.type);
+  if (!data || !Object.keys(data).length) {
+    return renderSubmittedFormUnavailablePanel(submission, formType);
+  }
 
-  const formType = getFormTypeKeyFromSubmissionType(submission.type || submission.formType);
+  const typeLabel = getSubmittedFormTypeLabel(formType);
   const advisoryFields = [
     ["Client Type", data.advisoryClientType],
     ["Company / School / Agency", data.advisoryCompany],
@@ -7673,6 +7954,19 @@ function renderSubmittedFormDataPanel(submission) {
   const sections = [renderSubmittedSection("Advisory Service Sheet", advisoryFields)];
 
   if (formType === "copyright") {
+    const copyrightSupplementalEntries = Array.isArray(data.copyrightSupplementalEntries)
+      ? data.copyrightSupplementalEntries
+      : [];
+    const copyrightSupplementalSummary = copyrightSupplementalEntries
+      .map((entry, index) => {
+        const entryName =
+          joinSubmittedName(entry, ["firstName", "middleName", "surname", "suffix"]) ||
+          entry.institutionName ||
+          `Entry ${index + 1}`;
+        const roles = Array.isArray(entry.roles) && entry.roles.length ? entry.roles.join(", ") : "Contributor";
+        return `${index + 1}. ${entryName} - ${roles}`;
+      })
+      .join("\n");
     sections.push(
       renderSubmittedSection("Copyright Owner", [
         ["Owner Type", data.copyrightOwnerMode],
@@ -7715,6 +8009,9 @@ function renderSubmittedFormDataPanel(submission) {
         ["AI Details", data.copyrightAiDetails],
       ]),
       renderSubmittedSection("Declarations", [
+        ["Multiple Authors / Contributors", data.copyrightMultipleContributors],
+        ["Supplemental Form Entries", copyrightSupplementalEntries.length ? `${copyrightSupplementalEntries.length} entries / ${Math.ceil(copyrightSupplementalEntries.length / 2)} form(s)` : ""],
+        ["Authors / Contributors List", copyrightSupplementalSummary],
         ["Documents Submitted", data.copyrightSubmittedDocs],
         ["Terms Agreement", data.copyrightTermsAgreement],
         ["Privacy Agreement", data.copyrightPrivacyAgreement],
@@ -7724,6 +8021,7 @@ function renderSubmittedFormDataPanel(submission) {
     );
   } else if (formType === "utility" && (data.utilityApplicantFirstName || data.utilityApplicantOrganization)) {
     sections.push(
+      renderSubmittedSection("IP Disclosure", genericDisclosureFields),
       renderSubmittedSection("Utility Model Applicant", [
         ["Applicant Type", data.utilityApplicantType],
         ["Organization", data.utilityApplicantOrganization],
@@ -7751,6 +8049,7 @@ function renderSubmittedFormDataPanel(submission) {
     );
   } else if (formType === "industrial" && (data.industrialApplicantFirstName || data.industrialApplicantOrganization)) {
     sections.push(
+      renderSubmittedSection("IP Disclosure", genericDisclosureFields),
       renderSubmittedSection("Industrial Design Applicant", [
         ["Applicant Type", data.industrialApplicantType],
         ["Organization", data.industrialApplicantOrganization],
@@ -7778,17 +8077,21 @@ function renderSubmittedFormDataPanel(submission) {
       ]),
     );
   } else {
-    sections.push(renderSubmittedSection("Disclosure / Application Details", genericDisclosureFields));
+    sections.push(renderSubmittedSection("IP Disclosure", genericDisclosureFields));
   }
+  sections.push(renderSubmittedDocumentUploadsSection(formType, submission, data));
 
   const content = sections.join("");
-  if (!content.trim()) return "";
+  const packetPreview = renderSubmittedPaperPacketPreview(submission, formType, data);
+  if (!content.trim() && !packetPreview.trim()) return "";
 
   return `
-    <div class="detail-panel" style="margin-top:20px">
-      <h3><i class="fa-solid fa-clipboard-list"></i> Submitted Form Information</h3>
-      <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 4px;">These values are read directly from the applicant's saved form entry.</p>
-      ${content}
+    <div class="detail-panel submitted-form-panel" style="margin-top:20px">
+      <h3><i class="fa-solid fa-clipboard-list"></i> Submitted ${escapeHtml(typeLabel)} Intake Packet</h3>
+      <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px;">These values are shown from the applicant's saved form entry and attached submission record.</p>
+      ${renderSubmittedFormStepStrip(formType)}
+      ${packetPreview}
+      ${content ? `<div class="submitted-field-index">${content}</div>` : ""}
     </div>
   `;
 }
@@ -8317,14 +8620,6 @@ function renderPatentEditorHeader(title, subtitle) {
 }
 
 function getPatentFormSteps() {
-  if (currentFormType === "industrial") {
-    return [
-      "Advisory Sheet",
-      "Required Drawings",
-      "Preview & Submit",
-    ];
-  }
-
   return [
     "Advisory Sheet",
     "IP Disclosure",
@@ -8369,12 +8664,8 @@ function renderPatentGoogleForm(
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
   const typeLabel = getPatentIntakeTypeLabel();
   const isIndustrial = currentFormType === "industrial";
-  const heroCopy = isIndustrial
-    ? "Complete the Advisory Service Sheet, upload the required industrial design drawings, then review the finished paper-style form before submission."
-    : `Complete the Advisory Service Sheet and IP Disclosure Form first, attach optional ${typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.`;
-  const previewMeta = isIndustrial
-    ? "Advisory and drawing previews"
-    : "Advisory and disclosure previews";
+  const heroCopy = `Complete the Advisory Service Sheet and IP Disclosure Form first, attach ${isIndustrial ? "industrial design" : typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.`;
+  const previewMeta = "Advisory and disclosure previews";
   const finalButtonLabel = `Submit ${typeLabel} Intake`;
 
   return `
@@ -8389,7 +8680,7 @@ function renderPatentGoogleForm(
           <div class="patent-gform-meta">
             <span><i class="fa-solid fa-file-lines"></i> ${steps.length} guided sections</span>
             <span><i class="fa-solid fa-table-cells-large"></i> ${previewMeta}</span>
-            <span><i class="fa-solid fa-diagram-project"></i> 18-step ${typeLabel.toLowerCase()} progress map</span>
+            <span><i class="fa-solid fa-paperclip"></i> Submitted documents captured</span>
           </div>
         </div>
       </div>
@@ -8446,7 +8737,7 @@ function renderPatentGoogleForm(
               <li>The first form mirrors the PSU Advisory Service Sheet layout from your reference.</li>
               ${
                 isIndustrial
-                  ? `<li>Industrial design filings go from advisory intake directly to drawing uploads.</li>
+                  ? `<li>The disclosure section records the submitted design details for evaluator review.</li>
                      <li>The required drawings can be submitted as one PDF or as individual JPEG views.</li>`
                   : `<li>The disclosure section follows the 2026 IP Disclosure Form fields.</li>
                      <li>Technical drawings, abstract, and claims remain optional uploads at intake.</li>`
@@ -8461,10 +8752,6 @@ function renderPatentGoogleForm(
 
 function renderPatentGoogleStep() {
   if (currentWizardStep === 1) return renderPatentAdvisorySheetStep();
-  if (currentFormType === "industrial") {
-    if (currentWizardStep === 2) return renderPatentOptionalDocumentsStep();
-    return renderPatentPreviewStep();
-  }
   if (currentWizardStep === 2) return renderPatentDisclosureStep();
   if (currentWizardStep === 3) return renderPatentOptionalDocumentsStep();
   return renderPatentPreviewStep();
@@ -8734,9 +9021,9 @@ function renderPatentOptionalDocumentsStep() {
   const typeLabel = getPatentIntakeTypeLabel();
   const stepNumber = currentWizardStep;
   const entries = getRequirementUploadEntries(formType);
-  const sectionTitle = isIndustrial ? "Required Drawing Uploads" : "Optional Upload Checklist";
+  const sectionTitle = "Document Upload Checklist";
   const headerTitle = isIndustrial
-    ? "Upload Required Industrial Design Drawings"
+    ? "Upload Industrial Design Documents"
     : `Upload Optional ${typeLabel} Documents`;
   const headerCopy = isIndustrial
     ? "Submit the required design drawings either as one PDF file containing all views or as individual JPEG files."
@@ -8744,7 +9031,7 @@ function renderPatentOptionalDocumentsStep() {
 
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Step ${stepNumber} - ${isIndustrial ? "Required Drawings" : "Optional Documents"}</span>
+      <span class="patent-gform-kicker">Step ${stepNumber} - Optional Documents</span>
       <h2>${headerTitle}</h2>
       <p>${headerCopy}</p>
     </div>
@@ -9526,11 +9813,10 @@ function renderPatentDisclosureFormPaper() {
 }
 
 function renderPatentIntakeFormBundle({ includeFlow = false } = {}) {
-  const showDisclosure = currentFormType !== "industrial";
   return `
     <div class="patent-paper-stack psu-form-stack">
       ${renderPatentAdvisoryServiceSheetPaper()}
-      ${showDisclosure ? renderPatentDisclosureFormPaper() : ""}
+      ${renderPatentDisclosureFormPaper()}
       ${includeFlow ? renderPatentFlowReference({ activeIndex: 0 }) : ""}
     </div>
   `;
@@ -9820,14 +10106,9 @@ function renderPatentFormSheet() {
 }
 
 function renderPatentPreviewStep() {
-  const isIndustrial = currentFormType === "industrial";
   const stepCount = getPatentFormSteps().length;
-  const title = isIndustrial
-    ? "Review the Completed Industrial Design Intake"
-    : "Review the Completed PSU Forms";
-  const copy = isIndustrial
-    ? "The Advisory Service Sheet below is generated from your fill-up answers, and the required drawing uploads are summarized for checking before submission."
-    : "The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.";
+  const title = "Review the Completed PSU Forms";
+  const copy = "The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.";
 
   return `
     <div class="patent-gform-card">
@@ -9841,7 +10122,7 @@ function renderPatentPreviewStep() {
     </div>
 
     <div class="patent-gform-card">
-      <h3>${isIndustrial ? "Required Drawing Summary" : "Optional Document Summary"}</h3>
+      <h3>Optional Document Summary</h3>
       ${renderPatentSubmissionList()}
       ${
         wizardData.supportingNotes
@@ -9871,10 +10152,12 @@ function renderCopyrightEditorHeader(title, subtitle) {
 }
 
 function getCopyrightFormSteps() {
+  const isInstitution = wizardData.applicantTypeGroup === "Institution";
   return [
     "Advisory Sheet",
     "Upload Requirements",
-    "BCRR Form 2025-1",
+    isInstitution ? "BCRR Form 2025-2" : "BCRR Form 2025-1",
+    ...(isInstitution ? [] : ["BCRR Form 2025-2"]),
     "Preview & Submit",
   ];
 }
@@ -9990,6 +10273,9 @@ function renderCopyrightGoogleStep() {
   if (currentWizardStep === 3) {
     if (wizardData.applicantTypeGroup === 'Institution') return renderCopyrightSupplementalStep();
     return renderCopyrightFillFormStep();
+  }
+  if (currentWizardStep === 4 && wizardData.applicantTypeGroup !== 'Institution') {
+    return renderCopyrightAuthorsContributorsStep();
   }
   return renderCopyrightPreviewStep();
 }
@@ -10435,11 +10721,11 @@ function renderCopyrightDeclarationsUploadsStep() {
             <div class="patent-editor-inline-group" style="margin:0;">
               <span class="patent-editor-inline-group__label">With co-author / co-creator?</span>
               <div class="patent-choice-grid patent-choice-grid--two">
-                ${renderCopyrightChoice("copyrightHasCoAuthor", "no", "No")}
+            ${renderCopyrightChoice("copyrightHasCoAuthor", "no", "No")}
                 ${renderCopyrightChoice("copyrightHasCoAuthor", "yes", "Yes")}
               </div>
             </div>
-            ${renderPatentEditorInput("Co-author note", "copyright-coauthor-note", wizardData.copyrightCoAuthorNote, { placeholder: "If yes, note the co-author details / use supplemental form" })}
+            ${renderPatentEditorInput("Co-author note", "copyright-coauthor-note", wizardData.copyrightCoAuthorNote, { placeholder: "If yes, complete Authors / Contributors in the next step" })}
           </div>
 
           <div class="patent-editor-grid patent-editor-grid--two">
@@ -10549,6 +10835,112 @@ function renderCopyrightDeclarationsUploadsStep() {
   `;
 }
 
+function getCopyrightMultipleContributorsChoice() {
+  if (wizardData.copyrightMultipleContributors) {
+    return wizardData.copyrightMultipleContributors;
+  }
+  if (wizardData.copyrightHasCoAuthor === "yes") return "yes";
+  if (wizardData.copyrightHasCoAuthor === "no") return "no";
+  return "no";
+}
+
+function ensureCopyrightContributorEntries() {
+  if (!Array.isArray(wizardData.copyrightSupplementalEntries)) {
+    wizardData.copyrightSupplementalEntries = [];
+  }
+  if (!wizardData.copyrightSupplementalEntries.length) {
+    wizardData.copyrightSupplementalEntries.push({ roles: ["coauthor"] });
+  }
+  return wizardData.copyrightSupplementalEntries;
+}
+
+function getCopyrightSupplementalFormCount(entries = wizardData.copyrightSupplementalEntries || []) {
+  return Math.max(1, Math.ceil(entries.length / 2));
+}
+
+function shouldRenderCopyrightSupplementalSheets() {
+  return (
+    wizardData.applicantTypeGroup === "Institution" ||
+    (getCopyrightMultipleContributorsChoice() === "yes" &&
+      Array.isArray(wizardData.copyrightSupplementalEntries) &&
+      wizardData.copyrightSupplementalEntries.length > 0)
+  );
+}
+
+function renderCopyrightMultipleContributorsChoice(value, label) {
+  const selected = getCopyrightMultipleContributorsChoice() === value;
+  return `
+    <label class="patent-choice">
+      <input type="radio" name="copyrightMultipleContributors" value="${value}" ${selected ? "checked" : ""} onchange="setCopyrightMultipleContributors('${value}')" />
+      <span>${label}</span>
+    </label>
+  `;
+}
+
+function renderCopyrightAuthorsContributorsStep() {
+  const hasMultiple = getCopyrightMultipleContributorsChoice() === "yes";
+  const entries = hasMultiple ? ensureCopyrightContributorEntries() : [];
+  const formCount = getCopyrightSupplementalFormCount(entries);
+
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 4 - Authors / Contributors</span>
+      <h2>Authors / Contributors</h2>
+      <p>Answer this before the final preview. If the work has more than one author, creator, or contributor, complete the supplemental form below.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Multiple Authors / Contributors</div>
+          <div class="patent-editor-inline-group" style="margin-bottom:0;">
+            <span class="patent-editor-inline-group__label">Does this work have multiple authors or contributors?</span>
+            <div class="patent-choice-grid patent-choice-grid--two">
+              ${renderCopyrightMultipleContributorsChoice("yes", "Yes")}
+              ${renderCopyrightMultipleContributorsChoice("no", "No")}
+            </div>
+          </div>
+        </div>
+
+        ${
+          hasMultiple
+            ? `
+          <div class="patent-editor-section">
+            <div class="patent-paper__section-title">Supplemental Form Rule</div>
+            <div style="font-size:0.9rem; color:var(--gray-600); line-height:1.6;">
+              One supplemental form records up to <strong>2 additional authors/contributors</strong>. This submission currently has
+              <strong>${entries.length}</strong> additional entr${entries.length === 1 ? "y" : "ies"} and will generate
+              <strong>${formCount}</strong> supplemental form${formCount === 1 ? "" : "s"} in the preview.
+            </div>
+          </div>
+        `
+            : `
+          <div class="patent-editor-section">
+            <div style="padding:16px; border-radius:12px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.22); color:#0f766e; font-size:0.9rem; line-height:1.6;">
+              No supplemental form is needed. Continue to Preview & Submit.
+            </div>
+          </div>
+        `
+        }
+      </div>
+    </div>
+
+    ${
+      hasMultiple
+        ? renderCopyrightSupplementalStep({
+            kicker: "Supplemental Form",
+            title: "Additional Authors / Contributors",
+            description:
+              "Fill one entry for each additional author, creator, contributor, copyright owner, licensee, or mortgagee.",
+            addButtonLabel: "Add Author / Contributor",
+            primaryEntryTitle: "Author / Contributor #1",
+            supplementalEntryLabel: "Author / Contributor",
+          })
+        : ""
+    }
+  `;
+}
+
 function captureCopyrightSupplementalData() {
   if (!wizardData.copyrightSupplementalEntries) {
     wizardData.copyrightSupplementalEntries = [];
@@ -10602,7 +10994,7 @@ window.addCopyrightSupplementalEntry = function() {
   if (!wizardData.copyrightSupplementalEntries) {
     wizardData.copyrightSupplementalEntries = [];
   }
-  wizardData.copyrightSupplementalEntries.push({});
+  wizardData.copyrightSupplementalEntries.push({ roles: ["coauthor"] });
   refreshWizard();
 };
 
@@ -10614,9 +11006,27 @@ window.removeCopyrightSupplementalEntry = function(index) {
   refreshWizard();
 };
 
-function renderCopyrightSupplementalStep() {
+window.setCopyrightMultipleContributors = function(value) {
+  captureCopyrightGoogleData();
+  wizardData.copyrightMultipleContributors = value;
+  wizardData.copyrightHasCoAuthor = value;
+  if (value === "yes") {
+    ensureCopyrightContributorEntries();
+  }
+  refreshWizard();
+};
+
+function renderCopyrightSupplementalStep({
+  kicker = "Section 1",
+  title = "Institutional Registration (BCRR FORM 2025-2)",
+  description = "Use this form to register an institutional copyright owner. You can also add additional authors, creators, licensees, or mortgagees.",
+  addButtonLabel = "Add Another Entry",
+  primaryEntryTitle = "Primary Institutional Owner",
+  supplementalEntryLabel = "Supplemental Entry",
+} = {}) {
   if (!wizardData.copyrightSupplementalEntries || wizardData.copyrightSupplementalEntries.length === 0) {
-    wizardData.copyrightSupplementalEntries = [{}];
+    const defaultRole = primaryEntryTitle === "Primary Institutional Owner" ? "copyright_owner" : "coauthor";
+    wizardData.copyrightSupplementalEntries = [{ roles: [defaultRole] }];
   }
 
   const entriesHtml = wizardData.copyrightSupplementalEntries.map((entry, index) => {
@@ -10632,7 +11042,7 @@ function renderCopyrightSupplementalStep() {
     return `
       <div class="patent-editor-section copyright-supplemental-entry" style="margin-top: 24px; padding: 20px; border: 2px dashed var(--gray-200); border-radius: 12px; background: white;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <div class="patent-paper__section-title" style="margin-bottom: 0;">${index === 0 ? 'Primary Institutional Owner' : `Supplemental Entry #${index + 1}`}</div>
+          <div class="patent-paper__section-title" style="margin-bottom: 0;">${escapeHtml(index === 0 ? primaryEntryTitle : `${supplementalEntryLabel} #${index + 1}`)}</div>
           ${index > 0 ? `<button class="btn btn-sm btn-danger" onclick="removeCopyrightSupplementalEntry(${index})"><i class="fa-solid fa-trash"></i> Remove</button>` : ""}
         </div>
 
@@ -10751,9 +11161,9 @@ function renderCopyrightSupplementalStep() {
 
   return `
     <div class="patent-gform-card">
-      <span class="patent-gform-kicker">Section 1</span>
-      <h2>Institutional Registration (BCRR FORM 2025-2)</h2>
-      <p>Use this form to register an institutional copyright owner. You can also add additional authors, creators, licensees, or mortgagees.</p>
+      <span class="patent-gform-kicker">${escapeHtml(kicker)}</span>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(description)}</p>
     </div>
 
     <div class="patent-gform-card patent-gform-card--sheet">
@@ -10762,7 +11172,7 @@ function renderCopyrightSupplementalStep() {
         
         <div style="margin-top: 24px; text-align: center;">
           <button class="btn btn-secondary" onclick="addCopyrightSupplementalEntry()">
-            <i class="fa-solid fa-plus"></i> Add Another Entry
+            <i class="fa-solid fa-plus"></i> ${escapeHtml(addButtonLabel)}
           </button>
         </div>
       </div>
@@ -10801,9 +11211,12 @@ function renderCopyrightIntakeFormBundle() {
 function renderCopyrightSubmissionList() {
   if (wizardData.applicantTypeGroup === 'Institution') {
     const mainEntry = wizardData.copyrightSupplementalEntries?.[0];
+    const entryCount = wizardData.copyrightSupplementalEntries?.length || 0;
+    const supplementalFormCount = getCopyrightSupplementalFormCount(wizardData.copyrightSupplementalEntries || []);
     const summary = [
       `Main Institution: ${mainEntry?.institutionName || "Unknown"}`,
-      `Entries Count: ${wizardData.copyrightSupplementalEntries?.length || 0}`,
+      `Entries Count: ${entryCount}`,
+      `Supplemental forms: ${supplementalFormCount} (${entryCount ? "2 entries per form" : "none"})`,
       `Submission type: ${wizardData.copyrightSubmissionType || "electronic"}`,
       `Required uploads: ${getUploadedRequiredCount("copyright", wizardData)}/${getRequiredDocumentCount("copyright")}`,
     ];
@@ -10814,10 +11227,18 @@ function renderCopyrightSubmissionList() {
     `;
   }
 
+  const hasMultiple = getCopyrightMultipleContributorsChoice() === "yes";
+  const entryCount = hasMultiple ? wizardData.copyrightSupplementalEntries?.length || 0 : 0;
+  const supplementalFormCount = hasMultiple
+    ? getCopyrightSupplementalFormCount(wizardData.copyrightSupplementalEntries || [])
+    : 0;
   const summary = [
     `Work title: ${wizardData.copyrightWorkTitle || wizardData.title || "Untitled work"}`,
     `Owner mode: ${wizardData.copyrightOwnerMode || "individual"}`,
     `Classification: ${wizardData.copyrightWorkClassification || "Not yet selected"}`,
+    `Multiple authors/contributors: ${hasMultiple ? "Yes" : "No"}`,
+    `Additional entries: ${entryCount}`,
+    `Supplemental forms: ${supplementalFormCount} (${hasMultiple ? "2 entries per form" : "not needed"})`,
     `Submission type: ${wizardData.copyrightSubmissionType || "electronic"}`,
     `Required uploads: ${getUploadedRequiredCount("copyright", wizardData)}/${getRequiredDocumentCount("copyright")}`,
   ];
@@ -10893,6 +11314,7 @@ function renderCopyrightFormSheetBundle() {
       ${renderCopyrightFormSheetPage2()}
       ${renderCopyrightReferencePage3()}
     </div>
+    ${shouldRenderCopyrightSupplementalSheets() ? renderCopyrightSupplementalSheetBundle() : ""}
   `;
 }
 
@@ -11626,6 +12048,14 @@ function captureCopyrightGoogleData() {
     document.querySelector('input[name="copyrightHasCoAuthor"]:checked')?.value ||
     wizardData.copyrightHasCoAuthor ||
     "no";
+  wizardData.copyrightMultipleContributors =
+    document.querySelector('input[name="copyrightMultipleContributors"]:checked')?.value ||
+    wizardData.copyrightMultipleContributors ||
+    wizardData.copyrightHasCoAuthor ||
+    "no";
+  if (wizardData.copyrightMultipleContributors === "yes") {
+    ensureCopyrightContributorEntries();
+  }
   wizardData.copyrightPublished =
     document.querySelector('input[name="copyrightPublished"]:checked')?.value ||
     wizardData.copyrightPublished ||
@@ -14430,24 +14860,38 @@ function saveFormDraft() {
   const typeLabel = typeMap[currentFormType] || "Draft";
   
   if (!wizardData.draftId) {
+    const filingUser =
+      isLoggedIn && normalizeRole(currentRole) === "applicant" ? getCurrentUser() : null;
     wizardData.draftId = `DRAFT-${Date.now()}`;
     const draftSub = {
       id: wizardData.draftId,
       type: typeLabel,
       title: wizardData.title || "(Untitled Draft)",
       applicant: wizardData.name || "Current User",
+      applicantUserId: filingUser?.id || null,
+      email: wizardData.email || filingUser?.email || "",
+      department: wizardData.college || wizardData.dept || filingUser?.dept || "",
+      formType: currentFormType,
+      formData: { ...wizardData },
+      data: { ...wizardData },
       status: "Draft",
       date: new Date().toISOString().split('T')[0],
       isDraft: true
     };
+    syncSubmissionDisplayFields(draftSub);
     submissions.unshift(draftSub);
   } else {
     const d = submissions.find(s => s.id === wizardData.draftId);
     if (d) {
       d.title = wizardData.title || "(Untitled Draft)";
       d.type = typeLabel;
+      d.formType = currentFormType;
+      d.formData = { ...wizardData };
+      d.data = { ...wizardData };
+      syncSubmissionDisplayFields(d);
     }
   }
+  persistSubmissions();
   showToast("Application draft saved successfully!", "success");
 }
 
@@ -15057,15 +15501,40 @@ function syncWizardData() {
 
 function saveDraft() {
   const draftId = selectedSubmissionId || `DRAFT-${Date.now()}`;
+  const typeMap = {
+    patent: "Patent",
+    copyright: "Copyright",
+    utility: "Utility Model",
+    industrial: "Industrial Design",
+  };
+  const filingUser =
+    isLoggedIn && normalizeRole(currentRole) === "applicant" ? getCurrentUser() : null;
+  const draftSummary = buildSubmissionSummaryFromFormData(currentFormType, wizardData, {
+    title: wizardData.title || "Untitled Application",
+    applicant: filingUser?.name || "Current User",
+    department: filingUser?.dept || "",
+    email: filingUser?.email || "",
+    contact: "",
+    description: wizardData.desc || wizardData.description || "",
+  });
   const draft = {
     id: draftId,
-    type: currentFormType,
+    type: typeMap[currentFormType] || currentFormType,
     step: currentWizardStep,
     data: { ...wizardData },
+    formData: { ...wizardData },
     date: new Date().toISOString().split('T')[0],
     status: "Draft",
-    title: wizardData.title || "Untitled Application"
+    title: draftSummary.title || "Untitled Application",
+    applicant: draftSummary.applicant || "Current User",
+    applicantUserId: filingUser?.id || null,
+    department: draftSummary.department || "",
+    email: draftSummary.email || "",
+    contact: draftSummary.contact || "",
+    description: draftSummary.description || "",
+    formType: currentFormType,
   };
+  syncSubmissionDisplayFields(draft);
 
   // Find existing or add new
   const idx = submissions.findIndex(s => s.id === draftId);
@@ -15074,6 +15543,7 @@ function saveDraft() {
   } else {
     submissions.push(draft);
   }
+  persistSubmissions();
   
   showToast("Draft saved successfully!");
   navigateTo("user-dashboard");
@@ -15133,6 +15603,7 @@ window.confirmDiscardDraft = function(id) {
   const idx = submissions.findIndex((sub) => sub.id === id);
   if (idx !== -1) {
     submissions.splice(idx, 1);
+    persistSubmissions();
     showToast("Draft discarded successfully.");
     closeModal();
     navigateTo("user-dashboard");
@@ -15371,6 +15842,7 @@ window.confirmCancellation = function(id) {
 
   s.status = "Cancelled";
   s.cancellationReason = finalReason;
+  persistSubmissions();
 
   showCancellationDocumentModal(id, finalReason);
   showToast("Cancellation request captured. Matching form opened.");
@@ -15612,11 +16084,13 @@ function submitForm() {
   };
   const refNum = `PSU-${prefix[currentFormType]}-2026-${String(submissions.length + 1).padStart(3, "0")}`;
   const typeLabel = typeMap[currentFormType] || "Application";
+  const filingUser =
+    isLoggedIn && normalizeRole(currentRole) === "applicant" ? getCurrentUser() : null;
   const submittedSummary = buildSubmissionSummaryFromFormData(currentFormType, wizardData, {
     title: wizardData.title || `Untitled ${typeLabel} Application`,
-    applicant: "Unnamed Applicant",
-    department: `${typeLabel} Filing`,
-    email: "",
+    applicant: filingUser?.name || "Unnamed Applicant",
+    department: filingUser?.dept || `${typeLabel} Filing`,
+    email: filingUser?.email || "",
     contact: "",
     description: wizardData.desc || wizardData.description || wizardData.title || "Newly submitted application.",
   });
@@ -15634,6 +16108,7 @@ function submitForm() {
       type: typeLabel,
       title: submittedSummary.title || `Untitled ${typeLabel} Application`,
       applicant: submittedSummary.applicant || "Unnamed Applicant",
+      applicantUserId: filingUser?.id || null,
       department: submittedSummary.department || `${typeLabel} Filing`,
       email: submittedSummary.email || "",
       contact: submittedSummary.contact || "",
@@ -15641,9 +16116,7 @@ function submitForm() {
       date: new Date().toISOString().split("T")[0],
       description:
         submittedSummary.description ||
-        (currentFormType === "industrial"
-          ? `${typeLabel} intake generated through the Advisory Service Sheet and required drawing upload workflow.`
-          : `${typeLabel} intake generated through the Advisory Service Sheet and IP Disclosure workflow.`),
+        `${typeLabel} intake generated through the Advisory Service Sheet, IP Disclosure, and document upload workflow.`,
       frozen: false,
       formType: formTypeKey,
       formStyle: `PSU ${typeLabel} Intake`,
@@ -15654,7 +16127,9 @@ function submitForm() {
       formData: { ...wizardData },
     };
 
+    syncSubmissionDisplayFields(newPatentSubmission);
     submissions.unshift(newPatentSubmission);
+    persistSubmissions();
 
     const patentConfirmationTarget =
       currentPage === "forms"
@@ -15667,11 +16142,7 @@ function submitForm() {
         <div class="confirmation-screen">
           <div class="check-circle"><i class="fa-solid fa-check"></i></div>
           <h2>${typeLabel} intake submitted</h2>
-          <p style="color:var(--gray-500)">${
-            currentFormType === "industrial"
-              ? "The Advisory Service Sheet and required drawing uploads were received and are now queued for PSU review. The completed paper-style form is shown below."
-              : "The Advisory Service Sheet and IP Disclosure Form were received and are now queued for PSU review. The completed paper-style forms are shown below."
-          }</p>
+          <p style="color:var(--gray-500)">The Advisory Service Sheet, IP Disclosure Form, and document uploads were received and are now queued for PSU review. The completed paper-style forms are shown below.</p>
           <div class="ref-number">${refNum}</div>
           <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">Internal tracking reference for this guided submission.</p>
           <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
@@ -15697,6 +16168,7 @@ function submitForm() {
     type: typeMap[currentFormType],
     title: submittedSummary.title || `${typeMap[currentFormType]} Submission`,
     applicant: submittedSummary.applicant || "Unnamed Applicant",
+    applicantUserId: filingUser?.id || null,
     department: submittedSummary.department || "PSU Applicant",
     email: submittedSummary.email || "",
     contact: submittedSummary.contact || "",
@@ -15712,7 +16184,9 @@ function submitForm() {
     workType: submittedSummary.workType || wizardData.worktype || "",
     formData: { ...wizardData },
   };
+  syncSubmissionDisplayFields(newSub);
   submissions.unshift(newSub);
+  persistSubmissions();
 
   const confirmationTarget =
     currentPage === "forms"
@@ -16817,8 +17291,14 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
     if (sq) {
       const q = sq.toLowerCase();
       filtered = filtered.filter(
-        (s) =>
-          s.id.toLowerCase().includes(q) || s.title.toLowerCase().includes(q),
+        (s) => {
+          const display = getSubmissionDisplayData(s);
+          return (
+            s.id.toLowerCase().includes(q) ||
+            display.title.toLowerCase().includes(q) ||
+            display.applicant.toLowerCase().includes(q)
+          );
+        },
       );
     }
 
@@ -16840,6 +17320,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
 
     return filtered
       .map((s) => {
+        const display = getSubmissionDisplayData(s);
         const isCR = s.type === "Copyright";
         const flow = isCR ? COPYRIGHT_OPERATION_FLOW : getIPOPHLOperationFlow(s);
         const stageIdx = isCR
@@ -16861,7 +17342,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
             </div>
             <div>
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <h3 style="font-size:1.05rem; font-weight:800; color:var(--navy); margin:0">${s.title}</h3>
+                <h3 style="font-size:1.05rem; font-weight:800; color:var(--navy); margin:0">${escapeHtml(display.title)}</h3>
                 ${typeBadge(s.type)}
                 ${needsAction ? '<span class="badge badge-rejected" style="font-size:0.7rem;"><i class="fa-solid fa-triangle-exclamation"></i> ACTION REQUIRED</span>' : ""}
               </div>
@@ -16936,7 +17417,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
                   <span style="color:var(--gray-500);">College / Dept</span>
-                  <span style="font-weight:600; color:var(--navy);">${s.department || "N/A"}</span>
+                  <span style="font-weight:600; color:var(--navy);">${escapeHtml(display.department || "N/A")}</span>
                 </div>
                 <div style="border-top:1px solid var(--gray-200); margin:8px 0; padding-top:12px;">
                   <button class="btn btn-sm btn-outline-navy" style="width:100%; justify-content:center;" onclick="viewSubmission('${s.id}')">
@@ -18967,6 +19448,7 @@ window.assignEvaluator = function(submissionId, evaluatorId) {
     });
   }
 
+  persistSubmissions();
   showToast(specialist ? `Assigned to ${specialist.name}` : `Assignment removed`);
   renderDashboardContent('submission-detail');
 };
@@ -18996,7 +19478,67 @@ function normalizeSubmissionWorkflowDefaults() {
   });
 }
 
+loadStoredSubmissions();
 normalizeSubmissionWorkflowDefaults();
+syncAllSubmissionDisplayFields();
+persistSubmissions();
+
+function getInitialPageFromUrl() {
+  if (typeof window === "undefined") return "landing";
+
+  const params = new URLSearchParams(window.location.search || "");
+  const roleParam = params.get("role") || params.get("portal") || params.get("login");
+  if (roleParam) return getLoginPageForRole(roleParam);
+
+  const pageParam = params.get("page") || params.get("route");
+  const hashToken = (window.location.hash || "")
+    .replace(/^#\/?/, "")
+    .trim()
+    .toLowerCase();
+  const pathToken = (window.location.pathname || "")
+    .split("/")
+    .pop()
+    .replace(/\.html$/i, "")
+    .trim()
+    .toLowerCase();
+  const directRouteMap = {
+    admin: "admin-login",
+    "admin-login": "admin-login",
+    "admin-dashboard": "admin-login",
+    evaluator: "evaluator-login",
+    "evaluator-login": "evaluator-login",
+    "evaluator-dashboard": "evaluator-login",
+    reviewer: "evaluator-login",
+    "reviewer-login": "evaluator-login",
+    "reviewer-dashboard": "evaluator-login",
+    applicant: "login",
+    "applicant-login": "login",
+    login: "login",
+  };
+  const allowedPublicPages = new Set([
+    "landing",
+    "faq",
+    "guidelines",
+    "marketplace",
+    "contact",
+    "forms",
+    "terms",
+    "signup",
+    "forgot-password",
+    "reset-password",
+  ]);
+
+  for (const token of [pageParam, hashToken, pathToken]) {
+    const normalized = String(token || "")
+      .replace(/^\/+|\/+$/g, "")
+      .toLowerCase();
+    if (!normalized || normalized === "index" || normalized === "main") continue;
+    if (directRouteMap[normalized]) return directRouteMap[normalized];
+    if (allowedPublicPages.has(normalized)) return normalized;
+  }
+
+  return "landing";
+}
 
 // ===== INIT =====
 document.addEventListener("DOMContentLoaded", () => {
@@ -19005,7 +19547,7 @@ document.addEventListener("DOMContentLoaded", () => {
   } else if (isLoggedIn) {
     navigateTo("admin-dashboard");
   } else {
-    navigateTo("landing");
+    navigateTo(getInitialPageFromUrl());
   }
 });
 

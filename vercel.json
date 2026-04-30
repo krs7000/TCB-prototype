@@ -5,5 +5,23 @@
       "destination": "/main/",
       "permanent": false
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/admin-login",
+      "destination": "/main/index.html"
+    },
+    {
+      "source": "/evaluator-login",
+      "destination": "/main/index.html"
+    },
+    {
+      "source": "/main/admin-login",
+      "destination": "/main/index.html"
+    },
+    {
+      "source": "/main/evaluator-login",
+      "destination": "/main/index.html"
+    }
   ]
 }

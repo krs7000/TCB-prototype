@@ -42,14 +42,6 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <ul class="nav-links" id="navLinks">
-          <li>
-            <select id="publicRoleSelect" onchange="switchRole(this.value)" style="background:var(--gray-50); border:1px solid var(--gray-200); padding:4px 12px; border-radius:6px; font-size:0.8rem; font-weight:600; color:var(--navy); outline:none; cursor:pointer; font-family:'Inter', sans-serif; margin-right: 10px;">
-              <option value="applicant" style="color:#000">Applicant</option>
-              <option value="evaluator" style="color:#000">Evaluator</option>
-              <option value="superadmin" style="color:#000">Admin</option>
-            </select>
-          </li>
-
           <li class="nav-item-dropdown">
             <a href="javascript:void(0)" class="nav-link">Services <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; margin-left: 4px; opacity: 0.7;"></i></a>
             <div class="dropdown-content">
@@ -122,14 +114,6 @@
         <!-- Applicant Top Navigation -->
         <nav id="dashboard-top-nav" style="display: none; align-items: center; gap: 24px; margin-left: auto; margin-right: 32px;"></nav>
         <div class="topbar-right">
-          <div class="demo-role-switch">
-            <span class="switch-label">Switch Role</span>
-            <select id="topbarRoleSelect" onchange="switchRole(this.value)" style="background:var(--gray-50); border:1px solid var(--gray-200); padding:6px 24px 6px 12px; border-radius:6px; font-size:0.85rem; font-weight:600; color:var(--navy); outline:none; cursor:pointer; font-family:'Inter', sans-serif;">
-              <option value="applicant">Applicant</option>
-              <option value="evaluator">Evaluator</option>
-              <option value="superadmin">Admin</option>
-            </select>
-          </div>
           <div class="notif-bell-wrap" id="notifBell" onclick="toggleNotifications()">
             <i class="fa-solid fa-bell"></i>
             <span class="notif-badge" id="notifBadge">2</span>
@@ -421,8 +405,8 @@
         <div class="login-card">
           <div class="login-header">
             <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
-            <h2>Welcome Back</h2>
-            <p>Login to The Creator's Bulwark</p>
+            <h2 id="loginTitle">Applicant Login</h2>
+            <p id="loginSubtitle">Login to The Creator's Bulwark</p>
           </div>
           <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
@@ -445,7 +429,7 @@
               <label class="checkbox-label">
                 <input type="checkbox" /> Remember me
               </label>
-              <a href="javascript:void(0)" class="forgot-link" onclick="navigateTo('forgot-password')">Forgot Password?</a>
+              <a href="javascript:void(0)" class="forgot-link" id="loginForgotLink" onclick="navigateTo('forgot-password')">Forgot Password?</a>
             </div>
 
 
@@ -454,7 +438,7 @@
               <i class="fa-solid fa-right-to-bracket"></i> Sign In
             </button>
           </form>
-          <div class="login-footer">
+          <div class="login-footer" id="loginApplicantFooter">
             <p>Don't have an account? <a href="#" onclick="navigateTo('signup')">Sign up now</a></p>
             <a href="#" onclick="navigateTo('landing')" class="back-link"><i class="fa-solid fa-arrow-left"></i> Return to Homepage</a>
             <div style="margin-top: 15px; font-size: 0.75rem; color: var(--gray-400);">
