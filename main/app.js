@@ -1559,6 +1559,61 @@ function pushRoleNotification(role, notification) {
   }
 }
 
+function getApplicantNotificationUserId(submission) {
+  return getSubmissionApplicantUser(submission)?.id || submission?.applicantUserId || null;
+}
+
+function isClosedSubmissionStatus(status) {
+  return ["Approved", "Rejected", "Archived", "Cancelled"].includes(status);
+}
+
+function markIPOPHLWebsiteVerified(submission, options = {}) {
+  if (!submission || !IPOPHL_TYPES.has(submission.type)) return false;
+  const alreadyVerified = Boolean(submission.ipophlWebsiteVerified || submission.ipophlVerifiedAt);
+  const timestamp = formatAuditTimestamp();
+
+  if (!alreadyVerified) {
+    submission.ipophlWebsiteVerified = true;
+    submission.ipophlVerifiedAt = timestamp;
+  }
+
+  if (options.notifyEvaluator && !alreadyVerified) {
+    pushRoleNotification("reviewer", {
+      userId: options.evaluatorId || getCurrentUser().id,
+      icon: "fa-circle-check",
+      color: "#22c55e",
+      title: "IPOPHL Submission Verified",
+      body: `${submission.id} has been verified after IPOPHL website submission. Record the IPOPHL email once received to notify the applicant.`,
+      type: "ipophl-website-verified",
+      submissionId: submission.id,
+    });
+  }
+
+  return !alreadyVerified;
+}
+
+function pushIPOPHLVerificationEmailNotifications(submission, evaluator) {
+  pushRoleNotification("reviewer", {
+    userId: evaluator?.id || getCurrentUser().id,
+    icon: "fa-envelope-circle-check",
+    color: "#22c55e",
+    title: "IPOPHL Email Received",
+    body: `Official IPOPHL verification email for ${submission.id} was recorded. The applicant has been notified automatically.`,
+    type: "ipophl-verification-email",
+    submissionId: submission.id,
+  });
+
+  pushRoleNotification("applicant", {
+    userId: getApplicantNotificationUserId(submission),
+    icon: "fa-envelope-circle-check",
+    color: "#22c55e",
+    title: "IPOPHL Verification Received",
+    body: `IPOPHL verified your ${submission.type} application ${submission.id}. The evaluator received the official IPOPHL email and your application is now confirmed for IPOPHL processing.`,
+    type: "ipophl-verification-email",
+    submissionId: submission.id,
+  });
+}
+
 function updateNotificationByRequestId(requestId, updates) {
   Object.values(mockNotifications).forEach((notifications) => {
     notifications.forEach((notification) => {
@@ -6606,6 +6661,12 @@ function changeStatus(id, newStatus) {
   const previousStatus = sub.status;
   sub.status = newStatus;
   syncSubmissionWorkflowState(sub);
+  if (IPOPHL_TYPES.has(sub.type) && newStatus === "Validated") {
+    markIPOPHLWebsiteVerified(sub, {
+      evaluatorId: getCurrentUser().id,
+      notifyEvaluator: previousStatus !== "Validated",
+    });
+  }
   persistSubmissions();
   addAuditLog({
     accountName: getCurrentUser().name,
@@ -7100,6 +7161,109 @@ function getIPOPHLTrackingSteps(submission) {
   });
 }
 
+function renderIPOPHLVerificationEmailPanel(submission, reviewerCanAdvance) {
+  if (!IPOPHL_TYPES.has(submission.type)) return "";
+
+  const currentUserCanRecord =
+    normalizeRole(currentRole) === "reviewer" &&
+    reviewerCanAdvance &&
+    !isClosedSubmissionStatus(submission.status);
+  const websiteVerified = Boolean(
+    submission.ipophlWebsiteVerified || submission.ipophlVerifiedAt,
+  );
+  const emailReceived = Boolean(
+    submission.ipophlVerificationEmailReceived || submission.ipophlEmailReceivedAt,
+  );
+  const verifiedAt = submission.ipophlVerifiedAt || "";
+  const emailAt = submission.ipophlEmailReceivedAt || "";
+
+  const panelTone = emailReceived
+    ? {
+        bg: "rgba(34,197,94,0.08)",
+        border: "rgba(34,197,94,0.22)",
+        color: "#15803d",
+        icon: "fa-envelope-circle-check",
+        label: "IPOPHL Email Received",
+      }
+    : {
+        bg: "rgba(59,130,246,0.06)",
+        border: "rgba(59,130,246,0.18)",
+        color: "#1d4ed8",
+        icon: "fa-envelope-open-text",
+        label: websiteVerified ? "Awaiting IPOPHL Email" : "IPOPHL Verification Email",
+      };
+
+  return `
+    <div style="margin-bottom:16px; padding:14px 16px; background:${panelTone.bg}; border:1px solid ${panelTone.border}; border-radius:10px;">
+      <div style="display:flex; gap:12px; align-items:flex-start;">
+        <i class="fa-solid ${panelTone.icon}" style="color:${panelTone.color}; font-size:1.15rem; margin-top:2px;"></i>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:.78rem; font-weight:800; color:${panelTone.color}; text-transform:uppercase; letter-spacing:.08em;">${panelTone.label}</div>
+          <div style="font-size:.86rem; color:var(--gray-600); margin-top:5px; line-height:1.5;">
+            ${
+              emailReceived
+                ? `Official IPOPHL verification email was recorded${emailAt ? ` on ${escapeHtml(emailAt)}` : ""}. Applicant notification was sent automatically.`
+                : websiteVerified
+                  ? `The IPOPHL website submission is verified${verifiedAt ? ` as of ${escapeHtml(verifiedAt)}` : ""}. Record the IPOPHL email once the evaluator receives it.`
+                  : "Record the official IPOPHL email after the evaluator receives verification from IPOPHL."
+            }
+          </div>
+          ${
+            currentUserCanRecord && !emailReceived
+              ? `<button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="recordIPOPHLVerificationEmail('${submission.id}')"><i class="fa-solid fa-envelope-circle-check"></i> Record IPOPHL Email Received</button>`
+              : ""
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.recordIPOPHLVerificationEmail = function(submissionId) {
+  const submission = submissions.find((s) => s.id === submissionId);
+  if (!submission) return;
+  if (!IPOPHL_TYPES.has(submission.type)) {
+    showToast("IPOPHL email tracking is only for Patent, Utility Model, and Industrial Design cases.");
+    return;
+  }
+  if (!canAdvanceSubmission(submission)) {
+    showToast("Only the assigned evaluator can record the IPOPHL email for this case.");
+    return;
+  }
+  if (submission.ipophlVerificationEmailReceived || submission.ipophlEmailReceivedAt) {
+    showToast("The IPOPHL email has already been recorded for this case.");
+    return;
+  }
+
+  const evaluator = getCurrentUser();
+  const previousStatus = submission.status;
+  const timestamp = formatAuditTimestamp();
+
+  markIPOPHLWebsiteVerified(submission, {
+    evaluatorId: evaluator.id,
+    notifyEvaluator: false,
+  });
+  submission.ipophlVerificationEmailReceived = true;
+  submission.ipophlEmailReceivedAt = timestamp;
+  submission.ipophlEmailReceivedBy = evaluator.name;
+  if (!isClosedSubmissionStatus(submission.status)) {
+    submission.status = "Validated";
+  }
+  syncSubmissionWorkflowState(submission);
+  pushIPOPHLVerificationEmailNotifications(submission, evaluator);
+  persistSubmissions();
+  addAuditLog({
+    accountName: evaluator.name,
+    action: "Recorded IPOPHL Email",
+    record: submission.id,
+    details: `Recorded official IPOPHL verification email and notified the applicant. Previous status: ${previousStatus}.`,
+    module: submission.type,
+  });
+
+  showToast("IPOPHL email recorded. Applicant notified automatically.");
+  renderDashboardContent("submission-detail");
+};
+
 function renderCopyrightOperationTimeline(submission) {
   const activeIdx = getCopyrightStageIndex(submission);
   const closed =
@@ -7418,6 +7582,7 @@ function renderSubmissionDetail() {
           </div>`
               : ""
           }
+          ${renderIPOPHLVerificationEmailPanel(s, reviewerCanAdvance)}
           ${
             reviewerCanAdvance && !frozen
               ? `
@@ -7464,6 +7629,7 @@ function renderSubmissionDetail() {
           ${
             normalizedRole === "reviewer"
               ? `<div class="timeline">
+            ${s.ipophlVerificationEmailReceived ? `<div class="timeline-item"><div class="time">${escapeHtml(s.ipophlEmailReceivedAt || "Just now")}</div><div class="event"><i class="fa-solid fa-envelope-circle-check" style="color:#22c55e"></i> IPOPHL verification email recorded; applicant notified.</div></div>` : ""}
             ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
@@ -7473,6 +7639,7 @@ function renderSubmissionDetail() {
               : showCopyrightOperationalFlow
               ? renderCopyrightOperationTimeline(s)
               : `<div class="timeline">
+            ${s.ipophlVerificationEmailReceived ? `<div class="timeline-item"><div class="time">${escapeHtml(s.ipophlEmailReceivedAt || "Just now")}</div><div class="event"><i class="fa-solid fa-envelope-circle-check" style="color:#22c55e"></i> IPOPHL verification email recorded; applicant notified.</div></div>` : ""}
             ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
             <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
             <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
