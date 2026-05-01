@@ -1597,8 +1597,8 @@ function pushIPOPHLVerificationEmailNotifications(submission, evaluator) {
     userId: evaluator?.id || getCurrentUser().id,
     icon: "fa-envelope-circle-check",
     color: "#22c55e",
-    title: "IPOPHL Email Received",
-    body: `Official IPOPHL verification email for ${submission.id} was recorded. The applicant has been notified automatically.`,
+    title: "Email from IPOPHL Received",
+    body: `IPOPHL sent an official verification email for ${submission.id}. This evaluator notification confirms receipt, and the applicant has also been notified automatically.`,
     type: "ipophl-verification-email",
     submissionId: submission.id,
   });
@@ -7202,7 +7202,7 @@ function renderIPOPHLVerificationEmailPanel(submission, reviewerCanAdvance) {
           <div style="font-size:.86rem; color:var(--gray-600); margin-top:5px; line-height:1.5;">
             ${
               emailReceived
-                ? `Official IPOPHL verification email was recorded${emailAt ? ` on ${escapeHtml(emailAt)}` : ""}. Applicant notification was sent automatically.`
+                ? `Official IPOPHL verification email was recorded${emailAt ? ` on ${escapeHtml(emailAt)}` : ""}. Evaluator and applicant notifications were sent automatically.`
                 : websiteVerified
                   ? `The IPOPHL website submission is verified${verifiedAt ? ` as of ${escapeHtml(verifiedAt)}` : ""}. Record the IPOPHL email once the evaluator receives it.`
                   : "Record the official IPOPHL email after the evaluator receives verification from IPOPHL."
@@ -7260,7 +7260,7 @@ window.recordIPOPHLVerificationEmail = function(submissionId) {
     module: submission.type,
   });
 
-  showToast("IPOPHL email recorded. Applicant notified automatically.");
+  showToast("IPOPHL email recorded. Evaluator and applicant notifications sent automatically.");
   renderDashboardContent("submission-detail");
 };
 
