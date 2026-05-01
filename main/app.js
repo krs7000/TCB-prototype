@@ -1977,6 +1977,29 @@ function statusBadge(status) {
 
 // ===== NAVIGATION =====
 let navHistory = [];
+const DASHBOARD_BACK_ROLES = new Set(["superadmin", "admin", "reviewer"]);
+const DASHBOARD_ROOT_PAGES = new Set(["user-dashboard", "admin-dashboard"]);
+const DASHBOARD_PAGE_LABELS = {
+  "admin-dashboard": "Dashboard",
+  "user-dashboard": "Home",
+  "admin-submissions": {
+    reviewer: "Cases",
+    default: "All Submissions",
+  },
+  "reviewer-my-cases": "My Cases",
+  messages: "Messages",
+  "submission-detail": "Submission Details",
+  "admin-records": "IP Records",
+  "admin-marketplace": "Market Listing",
+  "audit-log": "Audit Log",
+  "admin-users": "User Manager",
+  "admin-settings": "System Config",
+  "role-permissions": "Role Permissions",
+  "create-account": "Create Account",
+  "project-blueprint": "Project Blueprint",
+  "admin-announcements": "Announcements",
+  "user-profile": "Profile",
+};
 
 window.goBack = function () {
   if (navHistory.length > 0) {
@@ -1985,21 +2008,76 @@ window.goBack = function () {
   }
 };
 
+function humanizePageLabel(page) {
+  return String(page || "")
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function getDashboardPageLabel(page, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  const label = DASHBOARD_PAGE_LABELS[page];
+  if (!label) return humanizePageLabel(page) || "Dashboard";
+  if (typeof label === "string") return label;
+  return label[normalizedRole] || label.default || humanizePageLabel(page);
+}
+
+function getDashboardBackConfig(page = currentPage, role = currentRole) {
+  const normalizedRole = normalizeRole(role);
+  if (!DASHBOARD_BACK_ROLES.has(normalizedRole) || DASHBOARD_ROOT_PAGES.has(page)) {
+    return null;
+  }
+
+  const previousPage = navHistory[navHistory.length - 1];
+  const canReturnToHistory =
+    previousPage &&
+    previousPage !== page &&
+    canAccessDashboardPage(previousPage, normalizedRole);
+  const target = canReturnToHistory ? previousPage : getDefaultDashboardPage(normalizedRole);
+
+  return {
+    target,
+    fromHistory: Boolean(canReturnToHistory),
+    targetLabel: getDashboardPageLabel(target, normalizedRole),
+    label: `Back to ${getDashboardPageLabel(target, normalizedRole)}`,
+  };
+}
+
+window.goDashboardBack = function () {
+  const backConfig = getDashboardBackConfig();
+  if (!backConfig) return;
+  if (backConfig.fromHistory) {
+    window.goBack();
+    return;
+  }
+  navigateTo(backConfig.target);
+};
+
 function renderBackNav(customTarget = null, customLabel = null) {
   const role = normalizeRole(currentRole);
-  const defaultTarget = (role === "superadmin" || role === "admin") ? "admin-dashboard" : "user-dashboard";
-  const defaultLabel = (role === "superadmin" || role === "admin") ? "Dashboard" : "Home";
+  const dynamicBack = customTarget ? null : getDashboardBackConfig(currentPage, role);
+  const defaultTarget = getDefaultDashboardPage(role);
   
-  const target = customTarget || defaultTarget;
-  const label = customLabel || defaultLabel;
+  const target = customTarget || dynamicBack?.target || defaultTarget;
+  const label = customLabel || dynamicBack?.targetLabel || getDashboardPageLabel(target, role);
+  const action = dynamicBack ? "goDashboardBack()" : `navigateTo('${target}')`;
+  const text = dynamicBack?.label || `Back to ${label}`;
   
   return `
     <div class="back-nav-wrap">
-      <div class="back-nav-link" onclick="navigateTo('${target}')">
-        <i class="fa-solid fa-arrow-left"></i> Back to ${label}
+      <div class="back-nav-link" onclick="${action}">
+        <i class="fa-solid fa-arrow-left"></i> ${text}
       </div>
     </div>
   `;
+}
+
+function prependDashboardBackNav(page, container) {
+  if (!container || container.querySelector(".back-nav-wrap")) return;
+  if (!getDashboardBackConfig(page, currentRole)) return;
+  container.insertAdjacentHTML("afterbegin", renderBackNav());
 }
 
 function navigateTo(page, isBack = false, params = null) {
@@ -2179,7 +2257,6 @@ function navigateTo(page, isBack = false, params = null) {
 
   // Update UI Back Buttons
   const pubBack = document.getElementById("ui-back-btn-public");
-  const dashBack = document.getElementById("ui-back-btn-dashboard");
   const topbarRight = document.querySelector(".topbar-right");
   const NO_BACK_PAGES = ["landing", "forms", "marketplace", "faq", "guidelines", "contact", "about", "news"];
   const showBack = navHistory.length > 0 && !NO_BACK_PAGES.includes(page);
@@ -2189,10 +2266,6 @@ function navigateTo(page, isBack = false, params = null) {
   
   // Dashboard elements for Applicants
   const IS_APPLICANT = userRole === 'applicant';
-
-  if (dashBack) {
-    dashBack.style.display = "none";
-  }
 
   if (topbarRight) {
     topbarRight.style.display = "flex";
@@ -3944,6 +4017,7 @@ function renderDashboardContent(page) {
           </div>
         `;
     }
+    prependDashboardBackNav(page, mc);
   } catch (err) {
     console.error("Dashboard Render Error:", err);
     mc.innerHTML = `
@@ -6574,6 +6648,42 @@ function requestDocs(id) {
   }
 }
 
+function requestFormCorrection(id) {
+  const sub = submissions.find((s) => s.id === id);
+  if (!sub) return;
+  if (!canEditSubmission(sub)) {
+    showToast(`${getRoleMeta().label} cannot edit this case.`);
+    return;
+  }
+
+  const correction = prompt(
+    "Please describe the form error the applicant must correct (e.g., wrong inventor name, missing signature name, incorrect Form 110 answer):",
+    "",
+  );
+
+  if (correction !== null) {
+    const note = correction.trim();
+    if (!note) {
+      showToast("No correction request was sent.");
+      return;
+    }
+
+    sub.status = "Under Review";
+    sub.statusNote = `Form correction needed: ${note}`;
+    syncSubmissionWorkflowState(sub);
+    persistSubmissions();
+    addAuditLog({
+      accountName: getCurrentUser().name,
+      action: "Requested Form Correction",
+      record: sub.id,
+      details: `Requested applicant form correction: ${note}.`,
+      module: sub.type,
+    });
+    showToast(`Form correction request sent to ${sub.applicant}`);
+    navigateTo(getDefaultDashboardPage());
+  }
+}
+
 function archiveSubmission(id) {
   const submission = submissions.find((s) => s.id === id);
   if (!submission) return;
@@ -7208,6 +7318,18 @@ function renderSubmissionDetail() {
       <div><strong style="color:#d97706;">Manual Review Policy</strong><p style="font-size:.82rem; color:var(--gray-500); margin:2px 0 0;">This system does not use automated or AI-driven document assessment. All submissions undergo human evaluation by authorized IP Office personnel before status is updated.</p></div>
     </div>
 
+    ${
+      s.statusNote
+        ? `<div style="padding:16px 18px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.22); border-radius:10px; margin-bottom:24px; display:flex; align-items:flex-start; gap:12px;">
+      <i class="fa-solid fa-circle-exclamation" style="color:var(--red); font-size:1.15rem; margin-top:2px;"></i>
+      <div>
+        <strong style="color:var(--red);">Action Required</strong>
+        <p style="font-size:.86rem; color:var(--gray-700); margin:4px 0 0; line-height:1.55;">${escapeHtml(s.statusNote)}</p>
+      </div>
+    </div>`
+        : ""
+    }
+
     <div class="detail-layout">
       <div>
         <div class="detail-panel">
@@ -7327,6 +7449,8 @@ function renderSubmissionDetail() {
               reviewerCanTake
                 ? `<button class="btn btn-primary btn-sm" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>`
                 : `
+            ${reviewerCanAdvance ? `<button class="btn btn-outline-danger btn-sm" onclick="requestFormCorrection('${s.id}')"><i class="fa-solid fa-pen-to-square"></i> Request Form Correction</button>` : ""}
+            ${reviewerCanAdvance ? `<button class="btn btn-outline-danger btn-sm" onclick="requestDocs('${s.id}')"><i class="fa-solid fa-triangle-exclamation"></i> Request Requirements</button>` : ""}
             ${canArchiveSubmission(s) ? `<button class="btn btn-secondary btn-sm" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
             ${canUnarchiveSubmission(s) ? `<button class="btn btn-primary btn-sm" onclick="unarchiveSubmission('${s.id}')"><i class="fa-solid fa-box-open"></i> Unarchive</button>` : ""}
             `
@@ -8149,6 +8273,16 @@ function getSubmittedFormStepLabels(formType) {
     ];
   }
 
+  if (formType === "patent") {
+    return [
+      "Advisory Sheet",
+      "IP Disclosure",
+      "Form 110 Supplemental Sheet",
+      "Optional Documents",
+      "Preview & Submit",
+    ];
+  }
+
   return ["Advisory Sheet", "IP Disclosure", "Optional Documents", "Preview & Submit"];
 }
 
@@ -8292,6 +8426,18 @@ function renderSubmittedFormDataPanel(submission) {
   ];
 
   const sections = [renderSubmittedSection("Advisory Service Sheet", advisoryFields)];
+  const patentSupplementalEntries = Array.isArray(data.patentSupplementalEntries)
+    ? data.patentSupplementalEntries
+    : [];
+  const patentSupplementalSummary = patentSupplementalEntries
+    .map((entry, index) => {
+      const entryName =
+        joinSubmittedName(entry, ["firstName", "middleName", "lastName"]) ||
+        entry.company ||
+        `Entry ${index + 1}`;
+      return `${index + 1}. ${entryName} - ${entry.role || "Inventor"}`;
+    })
+    .join("\n");
 
   if (formType === "copyright") {
     const copyrightSupplementalEntries = Array.isArray(data.copyrightSupplementalEntries)
@@ -8418,6 +8564,15 @@ function renderSubmittedFormDataPanel(submission) {
     );
   } else {
     sections.push(renderSubmittedSection("IP Disclosure", genericDisclosureFields));
+    if (formType === "patent") {
+      sections.push(
+        renderSubmittedSection("Form 110 Supplemental Sheet", [
+          ["Multiple Inventors / Authors", data.patentMultipleCreators],
+          ["Supplemental Entries", patentSupplementalEntries.length ? `${patentSupplementalEntries.length} entries / ${getPatentSupplementalFormCount(patentSupplementalEntries)} form(s)` : ""],
+          ["Inventors / Authors List", patentSupplementalSummary],
+        ]),
+      );
+    }
   }
   sections.push(renderSubmittedDocumentUploadsSection(formType, submission, data));
 
@@ -8960,9 +9115,20 @@ function renderPatentEditorHeader(title, subtitle) {
 }
 
 function getPatentFormSteps() {
-  return [
+  const sharedSteps = [
     "Advisory Sheet",
     "IP Disclosure",
+  ];
+  if (currentFormType === "patent") {
+    return [
+      ...sharedSteps,
+      "Form 110 Supplemental Sheet",
+      "Optional Documents",
+      "Preview & Submit",
+    ];
+  }
+  return [
+    ...sharedSteps,
     "Optional Documents",
     "Preview & Submit",
   ];
@@ -9004,7 +9170,10 @@ function renderPatentGoogleForm(
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
   const typeLabel = getPatentIntakeTypeLabel();
   const isIndustrial = currentFormType === "industrial";
-  const heroCopy = `Complete the Advisory Service Sheet and IP Disclosure Form first, attach ${isIndustrial ? "industrial design" : typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.`;
+  const hasPatentSupplementalStep = currentFormType === "patent";
+  const heroCopy = hasPatentSupplementalStep
+    ? "Complete the Advisory Service Sheet and IP Disclosure Form first, answer the Form 110 supplemental sheet question, attach patent documents, then review the finished paper-style forms before submission."
+    : `Complete the Advisory Service Sheet and IP Disclosure Form first, attach ${isIndustrial ? "industrial design" : typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.`;
   const previewMeta = "Advisory and disclosure previews";
   const finalButtonLabel = `Submit ${typeLabel} Intake`;
 
@@ -9027,7 +9196,7 @@ function renderPatentGoogleForm(
 
       <div class="patent-gform-layout">
         <div class="patent-gform-main">
-          <div class="patent-step-strip">
+          <div class="patent-step-strip" style="--patent-step-count:${steps.length}">
             ${steps
               .map(
                 (step, index) => `
@@ -9080,6 +9249,7 @@ function renderPatentGoogleForm(
                   ? `<li>The disclosure section records the submitted design details for evaluator review.</li>
                      <li>The required drawings can be submitted as one PDF or as individual JPEG views.</li>`
                   : `<li>The disclosure section follows the 2026 IP Disclosure Form fields.</li>
+                     ${hasPatentSupplementalStep ? `<li>Form 110 is required only when the work has multiple inventors or authors.</li>` : ""}
                      <li>Technical drawings, abstract, and claims remain optional uploads at intake.</li>`
               }
             </ul>
@@ -9093,6 +9263,11 @@ function renderPatentGoogleForm(
 function renderPatentGoogleStep() {
   if (currentWizardStep === 1) return renderPatentAdvisorySheetStep();
   if (currentWizardStep === 2) return renderPatentDisclosureStep();
+  if (currentFormType === "patent") {
+    if (currentWizardStep === 3) return renderPatentSupplementalSheetStep();
+    if (currentWizardStep === 4) return renderPatentOptionalDocumentsStep();
+    return renderPatentPreviewStep();
+  }
   if (currentWizardStep === 3) return renderPatentOptionalDocumentsStep();
   return renderPatentPreviewStep();
 }
@@ -9344,6 +9519,212 @@ function renderPatentDisclosureStep() {
             ${renderPatentEditorInput("Head, TTPU", "disclosure-ttpu-head", wizardData.disclosureTtpuHead || "", { placeholder: "For noting" })}
           </div>
         </div>
+      </div>
+    </div>
+  `;
+}
+
+function getPatentMultipleCreatorsChoice() {
+  if (wizardData.patentMultipleCreators) return wizardData.patentMultipleCreators;
+  return "no";
+}
+
+function ensurePatentSupplementalEntries() {
+  if (!Array.isArray(wizardData.patentSupplementalEntries)) {
+    wizardData.patentSupplementalEntries = [];
+  }
+  if (!wizardData.patentSupplementalEntries.length) {
+    wizardData.patentSupplementalEntries.push({
+      sequenceNo: "2",
+      type: "individual",
+      role: "inventor",
+      entity: "small",
+      sex: "",
+      country: "Philippines",
+    });
+  }
+  return wizardData.patentSupplementalEntries;
+}
+
+function getPatentSupplementalFormCount(entries = wizardData.patentSupplementalEntries || []) {
+  return Math.max(1, Math.ceil(entries.length / 8));
+}
+
+function shouldRenderPatentSupplementalSheet() {
+  return (
+    currentFormType === "patent" &&
+    getPatentMultipleCreatorsChoice() === "yes" &&
+    Array.isArray(wizardData.patentSupplementalEntries) &&
+    wizardData.patentSupplementalEntries.length > 0
+  );
+}
+
+function renderPatentMultipleCreatorsChoice(value, label) {
+  const selected = getPatentMultipleCreatorsChoice() === value;
+  return `
+    <label class="patent-choice">
+      <input type="radio" name="patentMultipleCreators" value="${value}" ${selected ? "checked" : ""} onchange="setPatentMultipleCreators('${value}')" />
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `;
+}
+
+function renderPatentSupplementalChoice(type, name, value, label, selectedValue) {
+  const checked = selectedValue === value;
+  return `
+    <label class="patent-choice">
+      <input type="${type}" name="${name}" value="${value}" ${checked ? "checked" : ""} />
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `;
+}
+
+function renderPatentSupplementalEntryEditor(entry, index) {
+  const sequenceValue = entry.sequenceNo || String(index + 2);
+  const countryOptions = [
+    { value: "", label: "Select country" },
+    { value: "Philippines", label: "Philippines" },
+    { value: "United States", label: "United States" },
+    { value: "Japan", label: "Japan" },
+    { value: "Singapore", label: "Singapore" },
+    { value: "Australia", label: "Australia" },
+    { value: "China", label: "China" },
+    { value: "Korea", label: "Korea" },
+  ];
+
+  return `
+    <div class="patent-editor-section patent-supplemental-entry" data-index="${index}">
+      <div class="patent-supplemental-entry__head">
+        <div class="patent-paper__section-title">Form 110 Entry #${index + 1}</div>
+        ${
+          index > 0
+            ? `<button class="btn btn-sm btn-danger" onclick="removePatentSupplementalEntry(${index})"><i class="fa-solid fa-trash"></i> Remove</button>`
+            : ""
+        }
+      </div>
+
+      <div class="patent-editor-grid patent-editor-grid--two">
+        ${renderPatentEditorInput("Sequence No.", `patent-supp-seq-${index}`, sequenceValue, { placeholder: "e.g. 2" })}
+        ${renderPatentEditorInput("Position", `patent-supp-position-${index}`, entry.position || "", { placeholder: "Position or title, if applicable" })}
+      </div>
+
+      <div class="patent-editor-inline-group">
+        <span class="patent-editor-inline-group__label">Type</span>
+        <div class="patent-choice-grid">
+          ${renderPatentSupplementalChoice("radio", `patent-supp-type-${index}`, "individual", "Individual", entry.type || "individual")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-type-${index}`, "company", "Company / Corp.", entry.type || "individual")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-type-${index}`, "school", "School", entry.type || "individual")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-type-${index}`, "government", "Government", entry.type || "individual")}
+        </div>
+      </div>
+
+      <div class="patent-editor-inline-group">
+        <span class="patent-editor-inline-group__label">Role</span>
+        <div class="patent-choice-grid">
+          ${renderPatentSupplementalChoice("radio", `patent-supp-role-${index}`, "applicant", "Applicant", entry.role || "inventor")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-role-${index}`, "inventor", "Inventor", entry.role || "inventor")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-role-${index}`, "maker", "Maker", entry.role || "inventor")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-role-${index}`, "designer", "Designer", entry.role || "inventor")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-role-${index}`, "author", "Author", entry.role || "inventor")}
+        </div>
+      </div>
+
+      <div class="patent-editor-grid patent-editor-grid--two">
+        ${renderPatentEditorInput("Name of Company / Corporation / Government Agency / School", `patent-supp-company-${index}`, entry.company || "", { placeholder: "Use for organizations" })}
+        <div class="patent-editor-inline-group" style="margin:0;">
+          <span class="patent-editor-inline-group__label">Entity</span>
+          <div class="patent-choice-grid patent-choice-grid--two">
+            ${renderPatentSupplementalChoice("radio", `patent-supp-entity-${index}`, "big", "Big Entity", entry.entity || "small")}
+            ${renderPatentSupplementalChoice("radio", `patent-supp-entity-${index}`, "small", "Small Entity", entry.entity || "small")}
+          </div>
+        </div>
+      </div>
+
+      <div class="patent-editor-inline-group">
+        <span class="patent-editor-inline-group__label">Sex</span>
+        <div class="patent-choice-grid patent-choice-grid--two">
+          ${renderPatentSupplementalChoice("radio", `patent-supp-sex-${index}`, "male", "Male", entry.sex || "")}
+          ${renderPatentSupplementalChoice("radio", `patent-supp-sex-${index}`, "female", "Female", entry.sex || "")}
+        </div>
+      </div>
+
+      <div class="patent-editor-grid patent-editor-grid--three">
+        ${renderPatentEditorInput("Last Name", `patent-supp-last-name-${index}`, entry.lastName || "", { placeholder: "Surname" })}
+        ${renderPatentEditorInput("First Name", `patent-supp-first-name-${index}`, entry.firstName || "", { placeholder: "Given name" })}
+        ${renderPatentEditorInput("Middle Name", `patent-supp-middle-name-${index}`, entry.middleName || "", { placeholder: "Optional" })}
+      </div>
+
+      <div class="patent-editor-grid patent-editor-grid--one">
+        ${renderPatentEditorInput("Address", `patent-supp-address-${index}`, entry.address || "", { placeholder: "Street, village, subdivision, barangay", fullWidth: true })}
+      </div>
+
+      <div class="patent-editor-grid patent-editor-grid--four">
+        ${renderPatentEditorInput("Town / City", `patent-supp-town-${index}`, entry.town || "", { placeholder: "City or municipality" })}
+        ${renderPatentEditorInput("Province / State", `patent-supp-province-${index}`, entry.province || "", { placeholder: "Province or state" })}
+        ${renderPatentEditorInput("ZIP Code", `patent-supp-zip-${index}`, entry.zip || "", { placeholder: "Postal code" })}
+        ${renderPatentEditorSelect("Country of Residence", `patent-supp-country-${index}`, entry.country || "", countryOptions)}
+      </div>
+
+      <div class="patent-editor-grid patent-editor-grid--three">
+        ${renderPatentEditorInput("Contact No.", `patent-supp-contact-${index}`, entry.contact || "", { placeholder: "Mobile or landline" })}
+        ${renderPatentEditorInput("Email Address", `patent-supp-email-${index}`, entry.email || "", { type: "email", placeholder: "name@example.com" })}
+        ${renderPatentEditorInput("Nationality", `patent-supp-nationality-${index}`, entry.nationality || "", { placeholder: "e.g. Filipino" })}
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentSupplementalSheetStep() {
+  const hasMultiple = getPatentMultipleCreatorsChoice() === "yes";
+  const entries = hasMultiple ? ensurePatentSupplementalEntries() : [];
+  const formCount = getPatentSupplementalFormCount(entries);
+
+  return `
+    <div class="patent-gform-card">
+      <span class="patent-gform-kicker">Step 3 - IPOPHL Form 110</span>
+      <h2>Supplemental Sheet</h2>
+      <p>Answer the question first. If there is more than one inventor or author, complete the Form 110 entries below.</p>
+    </div>
+
+    <div class="patent-gform-card patent-gform-card--sheet">
+      <div class="patent-editor-sheet">
+        <div class="patent-editor-section">
+          <div class="patent-paper__section-title">Supplemental Sheet Question</div>
+          <div class="patent-editor-inline-group" style="margin-bottom:0;">
+            <span class="patent-editor-inline-group__label">Does this work have multiple inventors or authors?</span>
+            <div class="patent-choice-grid patent-choice-grid--two">
+              ${renderPatentMultipleCreatorsChoice("yes", "Yes")}
+              ${renderPatentMultipleCreatorsChoice("no", "No")}
+            </div>
+          </div>
+        </div>
+
+        ${
+          hasMultiple
+            ? `
+          <div class="patent-editor-section">
+            <div class="patent-paper__section-title">Form 110 Rule</div>
+            <div style="font-size:0.9rem; color:var(--gray-600); line-height:1.6;">
+              One IPOPHL Form 110 supplemental sheet records up to <strong>8 additional people or organizations</strong>.
+              This submission currently has <strong>${entries.length}</strong> entr${entries.length === 1 ? "y" : "ies"} and will generate
+              <strong>${formCount}</strong> supplemental sheet${formCount === 1 ? "" : "s"} in the preview.
+            </div>
+          </div>
+          ${entries.map((entry, index) => renderPatentSupplementalEntryEditor(entry, index)).join("")}
+          <div style="margin-top:24px; text-align:center;">
+            <button class="btn btn-secondary" onclick="addPatentSupplementalEntry()">
+              <i class="fa-solid fa-plus"></i> Add Inventor / Author
+            </button>
+          </div>
+        `
+            : `
+          <div class="patent-editor-section">
+            <div style="padding:16px; border-radius:12px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.22); color:#0f766e; font-size:0.9rem; line-height:1.6;">
+              No Form 110 supplemental sheet is needed. Continue to Optional Documents.
+            </div>
+          </div>
+        `
+        }
       </div>
     </div>
   `;
@@ -9865,9 +10246,23 @@ function renderPatentOfficialOfficeRow(label, value) {
 function renderPatentSubmissionList() {
   const files = wizardData.files || [];
   const items = [];
+  const supplementalEntries = Array.isArray(wizardData.patentSupplementalEntries)
+    ? wizardData.patentSupplementalEntries
+    : [];
+  const hasSupplemental = shouldRenderPatentSupplementalSheet();
 
   if (files.length) {
     items.push(...files.map((file) => `Attachment: ${file.name}`));
+  }
+
+  items.push(
+    `Multiple inventors/authors: ${getPatentMultipleCreatorsChoice() === "yes" ? "Yes" : "No"}`,
+  );
+
+  if (hasSupplemental) {
+    items.push(
+      `Form 110 supplemental sheet: ${supplementalEntries.length} entr${supplementalEntries.length === 1 ? "y" : "ies"} / ${getPatentSupplementalFormCount(supplementalEntries)} form${getPatentSupplementalFormCount(supplementalEntries) === 1 ? "" : "s"}`,
+    );
   }
 
   if (wizardData.drawingsCount) {
@@ -10148,11 +10543,149 @@ function renderPatentDisclosureFormPaper() {
   `;
 }
 
+function renderPatentSupplementalOfficialBlock(entry = {}, absoluteIndex = 0) {
+  const sequenceNo = entry.sequenceNo || String(absoluteIndex + 2);
+  const type = entry.type || "individual";
+  const role = entry.role || "inventor";
+  const entity = entry.entity || "small";
+  const sex = entry.sex || "";
+  const typeMarkup = `
+    <div class="patent-official-choice-row">
+      ${renderPatentOfficialMark("Individual", type === "individual")}
+      ${renderPatentOfficialMark("Company/Corp.", type === "company")}
+      ${renderPatentOfficialMark("School", type === "school")}
+      ${renderPatentOfficialMark("Government", type === "government")}
+    </div>
+  `;
+  const roleMarkup = `
+    <div class="patent-official-choice-row">
+      ${renderPatentOfficialMark("Applicant", role === "applicant")}
+      ${renderPatentOfficialMark("Inventor", role === "inventor")}
+      ${renderPatentOfficialMark("Maker", role === "maker")}
+      ${renderPatentOfficialMark("Designer", role === "designer")}
+      ${renderPatentOfficialMark("Author", role === "author")}
+    </div>
+  `;
+  const entityMarkup = `
+    <div class="patent-official-choice-row">
+      ${renderPatentOfficialMark("Big (Total Assets > P100M)", entity === "big")}
+      ${renderPatentOfficialMark("Small (Total Assets below P100M)", entity === "small")}
+    </div>
+  `;
+  const sexMarkup = `
+    <div class="patent-official-choice-row">
+      ${renderPatentOfficialMark("Male", sex === "male")}
+      ${renderPatentOfficialMark("Female", sex === "female")}
+    </div>
+  `;
+
+  return `
+    <div class="patent-supplemental-official-block">
+      <div class="patent-supplemental-official-title">
+        <span>SEQ. # ${escapeHtml(sequenceNo)}</span>
+        <span>PERSONAL INFO / ORGANIZATION INFO</span>
+      </div>
+      <div class="patent-official-row patent-official-row--two">
+        ${renderPatentOfficialCell("Type", typeMarkup, {
+          raw: true,
+          valueClass: "patent-official-cell__value--choices",
+        })}
+        ${renderPatentOfficialCell("Role", roleMarkup, {
+          raw: true,
+          valueClass: "patent-official-cell__value--choices",
+        })}
+      </div>
+      <div class="patent-official-row patent-official-row--two">
+        ${renderPatentOfficialCell("Name of Company / Corporation / Government Agency / School", entry.company)}
+        ${renderPatentOfficialCell("Entity", entityMarkup, {
+          raw: true,
+          valueClass: "patent-official-cell__value--choices",
+        })}
+      </div>
+      <div class="patent-official-row patent-official-row--two">
+        ${renderPatentOfficialCell("Position", entry.position)}
+        ${renderPatentOfficialCell("Sex", sexMarkup, {
+          raw: true,
+          valueClass: "patent-official-cell__value--choices",
+        })}
+      </div>
+      <div class="patent-official-row patent-official-row--three">
+        ${renderPatentOfficialCell("Last Name", entry.lastName)}
+        ${renderPatentOfficialCell("First Name", entry.firstName)}
+        ${renderPatentOfficialCell("Middle Name", entry.middleName)}
+      </div>
+      <div class="patent-official-row patent-official-row--one">
+        ${renderPatentOfficialCell("Address (Complete street info, village, subdivision, barangay)", entry.address)}
+      </div>
+      <div class="patent-official-row patent-official-row--four">
+        ${renderPatentOfficialCell("Town / City", entry.town)}
+        ${renderPatentOfficialCell("Province / State", entry.province)}
+        ${renderPatentOfficialCell("Zip Code", entry.zip)}
+        ${renderPatentOfficialCell("Country of Residence", entry.country)}
+      </div>
+      <div class="patent-official-row patent-official-row--three">
+        ${renderPatentOfficialCell("Contact No.", entry.contact)}
+        ${renderPatentOfficialCell("Email Address", entry.email)}
+        ${renderPatentOfficialCell("Nationality", entry.nationality)}
+      </div>
+    </div>
+  `;
+}
+
+function renderPatentSupplementalOfficialFooter(pageNumber, totalPages) {
+  return `
+    <div class="patent-official-footer">
+      <span>IPOPHL Form 110 - Supplemental Sheet</span>
+      <span>IPOPHL is an ISO 9001:2015 QMS Certified government agency</span>
+      <span>Page ${pageNumber} of ${totalPages}</span>
+    </div>
+  `;
+}
+
+function renderPatentSupplementalSheetBundle() {
+  if (!shouldRenderPatentSupplementalSheet()) return "";
+
+  const entries = wizardData.patentSupplementalEntries || [];
+  const pageChunks = [];
+  for (let i = 0; i < entries.length; i += 4) {
+    pageChunks.push(entries.slice(i, i + 4));
+  }
+  const totalPages = pageChunks.length || 1;
+
+  return pageChunks
+    .map((chunk, pageIndex) => `
+      <div class="patent-paper-wrap patent-paper-wrap--official">
+        <div class="patent-paper patent-paper--official patent-paper--official-page2 patent-supplemental-official-paper">
+          <div class="patent-supplemental-official-head">
+            <div>
+              <div class="patent-official-brand__agency">Intellectual Property Office of the Philippines</div>
+              <div class="patent-official-brand__meta">28 Upper McKinley Rd., Fort Bonifacio, Taguig City 1634 PH</div>
+              <div class="patent-official-brand__meta">+63 (2) 7238-6300 | ask@ipophil.gov.ph</div>
+              <div class="patent-official-brand__title">SUPPLEMENTAL SHEET</div>
+            </div>
+            <div>
+              <div class="patent-official-office__form">IPOPHL Form 110</div>
+              <div class="patent-official-brand__meta">Page ${pageIndex + 1} of ${totalPages}</div>
+            </div>
+          </div>
+          ${chunk
+            .map((entry, chunkIndex) =>
+              renderPatentSupplementalOfficialBlock(entry, pageIndex * 4 + chunkIndex),
+            )
+            .join("")}
+          ${renderPatentSupplementalOfficialFooter(pageIndex + 1, totalPages)}
+        </div>
+      </div>
+    `)
+    .join("");
+}
+
 function renderPatentIntakeFormBundle({ includeFlow = false } = {}) {
   return `
     <div class="patent-paper-stack psu-form-stack">
       ${renderPatentAdvisoryServiceSheetPaper()}
       ${renderPatentDisclosureFormPaper()}
+      ${renderPatentSupplementalSheetBundle()}
       ${includeFlow ? renderPatentFlowReference({ activeIndex: 0 }) : ""}
     </div>
   `;
@@ -10444,7 +10977,9 @@ function renderPatentFormSheet() {
 function renderPatentPreviewStep() {
   const stepCount = getPatentFormSteps().length;
   const title = "Review the Completed PSU Forms";
-  const copy = "The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.";
+  const copy = shouldRenderPatentSupplementalSheet()
+    ? "The Advisory Service Sheet, IP Disclosure Form, and Form 110 supplemental sheet below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version."
+    : "The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.";
 
   return `
     <div class="patent-gform-card">
@@ -10542,7 +11077,7 @@ function renderCopyrightGoogleForm(
 
       <div class="patent-gform-layout">
         <div class="patent-gform-main">
-          <div class="patent-step-strip">
+          <div class="patent-step-strip" style="--patent-step-count:${steps.length}">
             ${steps
               .map(
                 (step, index) => `
@@ -15268,6 +15803,87 @@ function captureAdvisoryServiceSheetData() {
   wizardData.advisoryServiceAvailed = getLockedAdvisoryServiceAvailed();
 }
 
+function capturePatentSupplementalData() {
+  const selectedMultiple = document.querySelector('input[name="patentMultipleCreators"]:checked');
+  if (selectedMultiple) {
+    wizardData.patentMultipleCreators = selectedMultiple.value;
+  } else if (!wizardData.patentMultipleCreators) {
+    wizardData.patentMultipleCreators = "no";
+  }
+  if (wizardData.patentMultipleCreators === "no") {
+    wizardData.patentSupplementalEntries = [];
+    return;
+  }
+
+  const entryNodes = document.querySelectorAll(".patent-supplemental-entry");
+  if (!entryNodes.length) return;
+
+  wizardData.patentSupplementalEntries = Array.from(entryNodes).map((entryNode, index) => {
+    const getValue = (idBase) =>
+      document.getElementById(`${idBase}-${index}`)?.value || "";
+    const getRadio = (nameBase, fallback = "") =>
+      document.querySelector(`input[name="${nameBase}-${index}"]:checked`)?.value ||
+      fallback;
+
+    return {
+      sequenceNo: getValue("patent-supp-seq") || String(index + 2),
+      type: getRadio("patent-supp-type", "individual"),
+      role: getRadio("patent-supp-role", "inventor"),
+      company: getValue("patent-supp-company"),
+      entity: getRadio("patent-supp-entity", "small"),
+      position: getValue("patent-supp-position"),
+      sex: getRadio("patent-supp-sex"),
+      lastName: getValue("patent-supp-last-name"),
+      firstName: getValue("patent-supp-first-name"),
+      middleName: getValue("patent-supp-middle-name"),
+      address: getValue("patent-supp-address"),
+      town: getValue("patent-supp-town"),
+      province: getValue("patent-supp-province"),
+      zip: getValue("patent-supp-zip"),
+      country: getValue("patent-supp-country"),
+      contact: getValue("patent-supp-contact"),
+      email: getValue("patent-supp-email"),
+      nationality: getValue("patent-supp-nationality"),
+    };
+  });
+}
+
+window.setPatentMultipleCreators = function(value) {
+  capturePatentSupplementalData();
+  wizardData.patentMultipleCreators = value;
+  if (value === "yes") {
+    ensurePatentSupplementalEntries();
+  } else {
+    wizardData.patentSupplementalEntries = [];
+  }
+  refreshWizard();
+};
+
+window.addPatentSupplementalEntry = function() {
+  capturePatentSupplementalData();
+  const entries = ensurePatentSupplementalEntries();
+  entries.push({
+    sequenceNo: String(entries.length + 2),
+    type: "individual",
+    role: "inventor",
+    entity: "small",
+    sex: "",
+    country: "Philippines",
+  });
+  refreshWizard();
+};
+
+window.removePatentSupplementalEntry = function(index) {
+  capturePatentSupplementalData();
+  if (Array.isArray(wizardData.patentSupplementalEntries)) {
+    wizardData.patentSupplementalEntries.splice(index, 1);
+  }
+  if (!wizardData.patentSupplementalEntries.length) {
+    ensurePatentSupplementalEntries();
+  }
+  refreshWizard();
+};
+
 function validateWizardStep() {
   return true; // Bypassed for prototyping
   const stepContainer = document.getElementById('wizardBody');
@@ -15364,6 +15980,8 @@ function captureWizardData() {
       ["disclosureTtpuHead", "disclosure-ttpu-head"],
       ["supportingNotes", "patent-supporting-notes"],
     ].forEach(([key, id]) => captureValue(key, id, wizardData[key] || ""));
+
+    capturePatentSupplementalData();
 
     wizardData.title =
       document.getElementById("patent-title")?.value ||
@@ -16239,6 +16857,7 @@ function createSubmissionWizardSeed() {
     requirementUploads: {},
     certificateDelivery: "pickup",
     privacyAgreement: "agree",
+    patentMultipleCreators: "no",
   };
 }
 
@@ -17295,7 +17914,7 @@ function closeModal() {
   }
   document.getElementById("modalOverlay").classList.remove("active", "marketplace-detail-overlay");
   const modalCard = document.querySelector("#modalOverlay .modal-card");
-  if (modalCard) modalCard.classList.remove("xl", "marketplace-detail-modal");
+  if (modalCard) modalCard.classList.remove("xl", "marketplace-detail-modal", "form-document-modal");
   // Reset title display for regular modals
   document.getElementById("modalTitle").style.display = "block";
 }
@@ -17695,7 +18314,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                     needsAction
                       ? `
                     <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="viewSubmission('${s.id}')">
-                      <i class="fa-solid fa-upload"></i> Upload Requirements
+                      <i class="fa-solid fa-circle-exclamation"></i> Resolve Action Required
                     </button>
                   `
                       : ""
@@ -19258,6 +19877,124 @@ function animateStats() {
   });
 }
 
+const FORM_DOCUMENTS = {
+  "patent-request-form": {
+    title: "Patent Application Request - Form 100",
+    category: "Patent",
+    code: "IPOPHL Form 100",
+    label: "Request Form",
+    fileName: "01 Patent Application Request -Form 100.pdf",
+    path: "assets/forms/patent-application-request-form-100.pdf",
+    description: "Official Patent Application Request form for patent filing.",
+  },
+  "patent-supplemental-sheet": {
+    title: "Patent Supplemental Sheet - Form 110",
+    category: "Patent",
+    code: "IPOPHL Form 110",
+    label: "Supplemental Sheet",
+    fileName: "02 Supplemental Sheet -Form 110.pdf",
+    path: "assets/forms/patent-supplemental-sheet-form-110.pdf",
+    description: "Official supplemental sheet for additional inventors, authors, applicants, or related parties.",
+  },
+  "copyright-registration-form": {
+    title: "Copyright Registry Enrollment Form 2025",
+    category: "Copyright",
+    code: "Copyright Registry Enrollment",
+    label: "Registration Form",
+    fileName: "Copyright Registry Enrollment Form 2025.pdf",
+    path: "assets/forms/copyright-registry-enrollment-form-2025.pdf",
+    description: "Official copyright registry enrollment form for copyright registration filing.",
+  },
+  "copyright-supplemental-form": {
+    title: "Copyright Revised Supplemental Form 2025",
+    category: "Copyright",
+    code: "Copyright Supplemental Form",
+    label: "Supplemental Form",
+    fileName: "Revised-Supplemental-Form-2025.pdf",
+    path: "assets/forms/copyright-revised-supplemental-form-2025.pdf",
+    description: "Official revised supplemental form for additional copyright registration details.",
+  },
+  "copyright-other-services": {
+    title: "BCRR Form 3 - Other Services 2025",
+    category: "Copyright",
+    code: "BCRR Form 3",
+    label: "Other Services",
+    fileName: "2025_Rev_BCRR_Form_3_Other_Services.pdf",
+    path: "assets/forms/copyright-other-services-form-2025.pdf",
+    description: "Official BCRR form for copyright-related other services requests.",
+  },
+  "design-registration-form": {
+    title: "Industrial Design Registration Form - IPOPHL Form 300",
+    category: "Industrial Design",
+    code: "IPOPHL Form 300",
+    label: "Registration Form",
+    fileName: "Registration Form -IPOPHLForm300.pdf",
+    path: "assets/forms/industrial-design-registration-form-300.pdf",
+    description: "Official registration form for industrial design filing.",
+  },
+};
+
+function escapeJsString(value) {
+  return String(value ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, "\\n");
+}
+
+function getFormDocumentKey(categoryId, formLabel) {
+  return `${categoryId}-${String(formLabel).toLowerCase().replace(/\s+/g, "-")}`;
+}
+
+function getFormClickAction(categoryId, formLabel) {
+  const documentKey = getFormDocumentKey(categoryId, formLabel);
+  if (FORM_DOCUMENTS[documentKey]) {
+    return `showFormDocument('${documentKey}')`;
+  }
+  return `showToast('No downloadable file is attached for ${escapeJsString(formLabel)} yet.')`;
+}
+
+window.showFormDocument = function(documentKey) {
+  const documentMeta = FORM_DOCUMENTS[documentKey];
+  if (!documentMeta) {
+    showToast("Form document not found.");
+    return;
+  }
+
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalCard = document.querySelector("#modalOverlay .modal-card");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  if (!modalOverlay || !modalCard || !modalTitle || !modalBody) return;
+
+  modalCard.classList.add("xl", "form-document-modal");
+  modalTitle.innerHTML = `<i class="fa-solid fa-file-pdf"></i> ${escapeHtml(documentMeta.title)}`;
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div class="form-document-preview">
+      <div class="form-document-toolbar">
+        <div>
+          <span class="form-document-kicker">${escapeHtml(documentMeta.category)} Document</span>
+          <h4>${escapeHtml(documentMeta.code)}</h4>
+          <p>${escapeHtml(documentMeta.description)}</p>
+        </div>
+        <div class="form-document-actions">
+          <a class="btn btn-outline-navy" href="${documentMeta.path}" target="_blank" rel="noopener noreferrer">
+            <i class="fa-solid fa-up-right-from-square"></i> Open PDF
+          </a>
+          <a class="btn btn-primary" href="${documentMeta.path}" download="${escapeHtml(documentMeta.fileName)}">
+            <i class="fa-solid fa-download"></i> Download
+          </a>
+        </div>
+      </div>
+      <iframe class="form-document-frame" src="${documentMeta.path}#toolbar=1&navpanes=0" title="${escapeHtml(documentMeta.title)}"></iframe>
+      <div class="form-document-fallback">
+        If the preview does not load in your browser, open the PDF in a new tab or download it directly.
+      </div>
+    </div>
+  `;
+  modalOverlay.classList.add("active");
+};
+
 
 function renderForms() {
   const categories = [
@@ -19327,7 +20064,7 @@ function renderForms() {
               <div style="background: var(--gray-50); color: var(--gray-700); padding: 10px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-align: center; line-height: 1.3; cursor: pointer; border: 1px solid transparent; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; min-height: 44px;"
                    onmouseover="this.style.background='white'; this.style.borderColor='${cat.color}44'; this.style.color='var(--navy)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.04)'"
                    onmouseout="this.style.background='var(--gray-50)'; this.style.borderColor='transparent'; this.style.color='var(--gray-700)'; this.style.boxShadow='none'"
-                   onclick="showToast('Downloading: ${form}')">
+                   onclick="${getFormClickAction(cat.id, form)}">
                 ${form}
               </div>
             `).join('')}

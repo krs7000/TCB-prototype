@@ -1785,9 +1785,15 @@ textarea {
 .topbar-container {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   width: 100%;
   height: 100%;
+}
+.topbar-left-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 .sidebar-toggle {
   background: none;
@@ -1823,6 +1829,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 24px;
+  margin-left: auto;
 }
 
 /* Status Hub Bar (Tab Style above Table) */
@@ -2070,6 +2077,10 @@ body.top-nav-layout #main-content {
 
 body.top-nav-layout .sidebar-toggle {
   display: none !important; /* No toggle if no sidebar */
+}
+
+body.top-nav-layout .topbar-right {
+  margin-left: 0;
 }
 
 body.top-nav-layout .topbar-brand, 
@@ -3441,7 +3452,7 @@ body.compact-layout .sidebar-toggle {
 }
 .patent-step-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--patent-step-count, 4), minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -3741,6 +3752,17 @@ body.compact-layout .sidebar-toggle {
   border-color: rgba(34, 197, 94, 0.24);
   background: rgba(34, 197, 94, 0.08);
   color: #166534;
+}
+.patent-supplemental-entry {
+  border-style: dashed;
+  background: #fff;
+}
+.patent-supplemental-entry__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 .patent-preview-list {
   list-style: none;
@@ -4388,6 +4410,42 @@ body.compact-layout .sidebar-toggle {
   font-size: 0.62rem;
   line-height: 1.25;
   color: #6b7280;
+}
+
+.patent-supplemental-official-paper {
+  display: grid;
+  gap: 10px;
+}
+
+.patent-supplemental-official-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #111827;
+}
+
+.patent-supplemental-official-block {
+  border-top: 1px solid #000;
+}
+
+.patent-supplemental-official-title {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border-left: 1px solid #000;
+  border-right: 1px solid #000;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.patent-supplemental-official-title span:first-child {
+  min-width: 82px;
 }
 
 .psu-form-stack {
@@ -5324,6 +5382,12 @@ body.compact-layout .sidebar-toggle {
   .patent-official-header {
     grid-template-columns: 1fr;
   }
+  .patent-supplemental-entry__head,
+  .patent-supplemental-official-head {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
   .patent-official-checklist-grid,
   .patent-official-signature-grid {
     grid-template-columns: 1fr;
@@ -5775,6 +5839,96 @@ body.compact-layout .sidebar-toggle {
 }
 .modal-body {
   padding: 24px;
+}
+
+.modal-card.form-document-modal {
+  max-width: min(1120px, calc(100vw - 32px));
+  width: min(1120px, calc(100vw - 32px));
+  overflow: hidden;
+}
+
+.modal-card.form-document-modal .modal-body {
+  padding: 0;
+}
+
+.form-document-preview {
+  display: grid;
+  grid-template-rows: auto minmax(420px, 68vh) auto;
+  background: var(--gray-50);
+}
+
+.form-document-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.form-document-kicker {
+  display: inline-flex;
+  margin-bottom: 4px;
+  color: var(--gold-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-document-toolbar h4 {
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 900;
+  margin: 0;
+}
+
+.form-document-toolbar p {
+  color: var(--gray-500);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  margin: 4px 0 0;
+}
+
+.form-document-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.form-document-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: white;
+}
+
+.form-document-fallback {
+  padding: 12px 22px;
+  border-top: 1px solid var(--gray-200);
+  color: var(--gray-500);
+  font-size: 0.8rem;
+  background: white;
+}
+
+@media (max-width: 700px) {
+  .form-document-preview {
+    grid-template-rows: auto minmax(360px, 62vh) auto;
+  }
+  .form-document-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .form-document-actions {
+    justify-content: stretch;
+  }
+  .form-document-actions .btn {
+    flex: 1 1 150px;
+    justify-content: center;
+  }
 }
 
 /* =============== TOAST =============== */
