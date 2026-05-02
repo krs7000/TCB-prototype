@@ -788,6 +788,7 @@ let systemUsers = [
     id: 0,
     name: "Dr. Elena Vance",
     email: "elena.vance@globalresearch.org",
+    contactNumber: "+1 415 555 0198",
     role: "applicant",
     dept: "External Partner",
     status: "Active",
@@ -845,6 +846,7 @@ let systemUsers = [
     id: 9,
     name: "Juan dela Cruz",
     email: "juan.delacruz@psu.edu.ph",
+    contactNumber: "0918 123 4567",
     role: "applicant",
     dept: "College of Sciences",
     status: "Active",
@@ -854,6 +856,7 @@ let systemUsers = [
     id: 8,
     name: "Maria Santos",
     email: "maria.santos@psu.edu.ph",
+    contactNumber: "0927 654 3210",
     role: "applicant",
     dept: "College of Engineering",
     status: "Active",
@@ -863,6 +866,7 @@ let systemUsers = [
     id: 10,
     name: "Anna Reyes",
     email: "anna.reyes@psu.edu.ph",
+    contactNumber: "0917 222 8090",
     role: "applicant",
     dept: "Research Office",
     status: "Active",
@@ -3426,6 +3430,7 @@ function createApplicantUserFromSignup(data) {
     lastName: data.lastName,
     name: data.fullName,
     email: data.email,
+    contactNumber: data.contactNumber || "",
     role: "applicant",
     dept: data.type === "psu_member" ? "PSU Community" : "External",
     status: "Active",
@@ -4141,9 +4146,15 @@ function getFormTypeKeyFromSubmissionType(type = "") {
 
 function renderRequirementChecklistPanel(
   formType = currentFormType,
-  { data = wizardData, compact = false } = {},
+  {
+    data = wizardData,
+    compact = false,
+    showDownloadButtons = false,
+    submissionId = null,
+  } = {},
 ) {
   const entries = getRequirementUploadEntries(formType, data);
+  const resolvedSubmissionId = submissionId || data?.id || selectedSubmissionId || "";
   const containerStyle = compact
     ? "display:flex; flex-direction:column; gap:10px;"
     : "display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;";
@@ -4155,6 +4166,11 @@ function renderRequirementChecklistPanel(
         const detailList = Array.isArray(entry.doc.details) && entry.doc.details.length
           ? `<ul style="margin:6px 0 0; padding-left:16px; color:var(--gray-500); line-height:1.5;">${entry.doc.details.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
           : "";
+        const downloadButton = showDownloadButtons
+          ? `<button type="button" class="btn btn-outline-navy btn-sm" style="padding:6px 10px; font-size:0.72rem;" onclick="downloadEvaluatorCaseDocument('${escapeJsString(resolvedSubmissionId)}', '${escapeJsString(entry.key)}')">
+              <i class="fa-solid fa-download"></i> Download
+            </button>`
+          : "";
         return `
           <div style="font-size:${compact ? "0.78rem" : "0.82rem"}; color:var(--gray-600); display:flex; align-items:flex-start; gap:10px; padding:${compact ? "10px 12px" : "10px"}; background:white; border-radius:10px; border:1px solid ${uploaded ? "rgba(34,197,94,0.18)" : "var(--gray-50)"};">
             <i class="fa-solid fa-${uploaded ? "circle-check" : "circle"}" style="color:${uploaded ? "var(--green)" : "var(--gray-300)"}; font-size:0.8rem; margin-top:3px;"></i>
@@ -4164,7 +4180,10 @@ function renderRequirementChecklistPanel(
               ${detailList}
               ${entry.file ? `<div style="font-size:0.72rem; color:var(--gray-400); margin-top:4px;">${escapeHtml(entry.file.name)}</div>` : ""}
             </div>
-            <span style="font-size:0.65rem; font-weight:800; color:${entry.doc.type === "Required" ? "var(--red)" : "var(--gray-400)"}; text-transform:uppercase; white-space:nowrap;">${entry.doc.type}</span>
+            <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; flex-shrink:0;">
+              <span style="font-size:0.65rem; font-weight:800; color:${entry.doc.type === "Required" ? "var(--red)" : "var(--gray-400)"}; text-transform:uppercase; white-space:nowrap;">${entry.doc.type}</span>
+              ${downloadButton}
+            </div>
           </div>
         `;
       }).join("")}
@@ -5902,7 +5921,7 @@ function renderFaq() {
       },
       {
         q: "What are the required documents to file a patent?",
-        a: "<strong>Required Documents:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Patent Application Form (PSU-IPO-PAT-01)</li><li>Invention Disclosure Statement</li><li>Technical Drawings / Diagrams</li><li>Abstract (150 words max)</li><li>Claims Statement</li></ul>",
+        a: "<strong>Current Filing Packet:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Generated Advisory Service Sheet</li><li>Generated IP Disclosure Form</li><li>Form 110 Supplemental Sheet when there are multiple inventors/authors</li><li>Optional: Technical Drawings / Diagrams, Abstract, and Claims Statement</li></ul>",
       },
     ],
 
@@ -5925,7 +5944,7 @@ function renderFaq() {
       },
       {
         q: "What are the required documents to register a copyright?",
-        a: "<strong>Required Documents:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Copyright Registration Form (PSU-IPO-CR-01)</li><li>Complete Copy of the Work</li><li>Valid Philippine ID (Digitized)</li></ul>",
+        a: "<strong>Current Filing Packet:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Generated Advisory Service Sheet</li><li>BCRR Form 2025-1 or BCRR Form 2025-2</li><li>Valid ID and copy of the work</li><li>Affidavit of Ownership plus TIN/SSS/GSIS or business details when required</li></ul>",
       },
     ],
     utilityModel: [
@@ -5939,7 +5958,7 @@ function renderFaq() {
       },
       {
         q: "What are the required documents to file a utility model?",
-        a: "<strong>Required Documents:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Utility Model Application Form</li><li>Technical Description</li><li>Drawings/Illustrations</li><li>Claims Statement</li></ul>",
+        a: "<strong>Current Filing Packet:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Generated Advisory Service Sheet</li><li>Generated IP Disclosure Form</li><li>Optional: Technical Drawings / Diagrams</li><li>Optional: Abstract and Claims Statement</li></ul>",
       },
     ],
     industrialDesign: [
@@ -5957,7 +5976,7 @@ function renderFaq() {
       },
       {
         q: "What are the required documents to register an industrial design?",
-        a: "<strong>Required Documents:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Industrial Design Application Form</li><li>Design Representation (Photos/3D)</li><li>Description of Design</li></ul>",
+        a: "<strong>Current Filing Packet:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Generated Advisory Service Sheet</li><li>Generated IP Disclosure Form</li><li>Required Drawings: perspective, front, back, left, right, top, and bottom views</li><li>Description and claim of design</li></ul>",
       },
     ],
   };
@@ -7978,6 +7997,7 @@ function renderSubmissionDetail() {
   const topSecretAccess = s.hasTopSecretAnnex
     ? getDownloadAccess(s, "top_secret")
     : "deny";
+  const hideEvaluatorDocumentActions = normalizedRole === "reviewer";
   const copyrightStage =
     s.type === "Copyright"
       ? COPYRIGHT_OPERATION_FLOW.find(
@@ -8075,11 +8095,16 @@ function renderSubmissionDetail() {
           <div style="padding:16px;background:var(--gray-50);border-radius:8px;margin-bottom:12px">
             <div style="font-size:0.76rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:10px;">Required Documents</div>
             <div style="font-size:0.9rem; font-weight:700; color:var(--navy); margin-bottom:12px;">${requiredUploadedCount} of ${requiredDocCount} required files uploaded</div>
-            ${renderRequirementChecklistPanel(formTypeKey, { data: s, compact: true })}
+            ${renderRequirementChecklistPanel(formTypeKey, {
+              data: s,
+              compact: true,
+              showDownloadButtons: normalizedRole === "reviewer",
+              submissionId: s.id,
+            })}
           </div>
           <div class="detail-actions" style="margin-top:0; margin-bottom:12px;">
-            ${renderDocumentUploadActionButton(s)}
-            ${confidentialAccess === "allow" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Downloading confidential packet for ${s.id}')"><i class="fa-solid fa-download"></i> Download Confidential</button>` : ""}
+            ${hideEvaluatorDocumentActions ? "" : renderDocumentUploadActionButton(s)}
+            ${!hideEvaluatorDocumentActions && confidentialAccess === "allow" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Downloading confidential packet for ${s.id}')"><i class="fa-solid fa-download"></i> Download Confidential</button>` : ""}
             ${topSecretAccess === "allow" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Downloading top secret annex for ${s.id}')"><i class="fa-solid fa-shield-halved"></i> Download Top Secret</button>` : ""}
             ${topSecretAccess === "approval" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Top secret download for ${s.id} requires super admin approval.')"><i class="fa-solid fa-key"></i> Top Secret Approval</button>` : ""}
             
@@ -8116,9 +8141,13 @@ function renderSubmissionDetail() {
               }
             </div>
           </div>
-          <div style="margin-bottom:16px; padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:10px;">
+          ${
+            normalizedRole === "reviewer"
+              ? ""
+              : `<div style="margin-bottom:16px; padding:16px; background:var(--gray-50); border:1px solid var(--gray-100); border-radius:10px;">
             ${renderApplicantStatusLegend(s.status)}
-          </div>
+          </div>`
+          }
           ${
             copyrightStage
               ? `<div style="padding:12px 14px; background:rgba(255,127,80,0.06); border:1px solid rgba(255,127,80,0.18); border-radius:10px; margin-bottom:16px;">
@@ -8217,22 +8246,22 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect original inventions & technical breakthroughs",
       term: "20 years from filing date",
       requirements: [
-        "Global Novelty — never before disclosed",
-        "Inventive Step — non-obvious to experts",
-        "Industrial Applicability — can be manufactured",
+        "Global novelty - the invention has not been publicly disclosed before filing.",
+        "Inventive step - the solution is not obvious to a person skilled in the field.",
+        "Industrial applicability - the invention can be made, used, or practiced.",
       ],
       process: [
-        { n: 1, t: "Disclosure", d: "Document technical details and field of use." },
-        { n: 2, t: "Verification", d: "IP Office checks for novelty and completeness." },
-        { n: 3, t: "Drafting", d: "Prepare formal claims and technical drawings." },
-        { n: 4, t: "Filing", d: "Submit the finalized packet for evaluator review." },
-        { n: 5, t: "Endorsement", d: "IP Office forwards to IPOPHL for registration." }
+        { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
+        { n: 2, t: "Advisory Sheet", d: "Complete the online Advisory Service Sheet with service and title details." },
+        { n: 3, t: "IP Disclosure", d: "Enter the technical background, problem, description, novelty, advantages, and funding source." },
+        { n: 4, t: "Supplemental Sheet", d: "Use Form 110 when the work has multiple inventors or authors." },
+        { n: 5, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
       ],
       docs: [
-        "Invention Disclosure Form (PSU-IPO-PAT-01)",
-        "Technical Drawings / Schematics (PDF)",
-        "Claims & Abstract Document",
-        "Abstract and Claims Statement"
+        "Generated Advisory Service Sheet",
+        "Generated IP Disclosure Form",
+        "Form 110 Supplemental Sheet when there are multiple inventors/authors",
+        "Optional: Technical Drawings / Diagrams, Abstract, and Claims Statement"
       ]
     },
     {
@@ -8244,22 +8273,22 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Rapid protection for practical innovations",
       term: "7 years (non-renewable)",
       requirements: [
-        "Novelty — new to the world",
-        "Industrial Applicability",
-        "Lower 'Inventive Step' threshold than patents"
+        "Novelty - the utility model has not been publicly disclosed before filing.",
+        "Industrial applicability - the model has a practical use.",
+        "Practical improvement - the model improves the usefulness or operation of an article."
       ],
       process: [
-        { n: 1, t: "Prototype", d: "Ensure the model is functional and documented." },
-        { n: 2, t: "Drawings", d: "Prepare technical illustrations of the model." },
-        { n: 3, t: "Application", d: "Fill form with specific use-case descriptions." },
-        { n: 4, t: "Review", d: "IP Office verifies the novelty of the model." },
-        { n: 5, t: "Submission", d: "Direct forwarding to IPOPHL registry." }
+        { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
+        { n: 2, t: "Advisory Sheet", d: "Complete the online Advisory Service Sheet for the utility model service." },
+        { n: 3, t: "IP Disclosure", d: "Describe the technical problem, solution, application, and expected advantage." },
+        { n: 4, t: "Optional Files", d: "Attach drawings, abstract, or claims when available for the evaluator." },
+        { n: 5, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
       ],
       docs: [
-        "UM Application Form (PSU-IPO-UM-01)",
-        "Technical Description of Utility",
-        "Functional Drawings / Photos",
-        "Claims Statement"
+        "Generated Advisory Service Sheet",
+        "Generated IP Disclosure Form",
+        "Optional: Technical Drawings / Diagrams",
+        "Optional: Abstract and Claims Statement"
       ]
     },
     {
@@ -8271,22 +8300,22 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Safeguard the unique visual style of products",
       term: "5 years (renewable up to 15)",
       requirements: [
-        "Ornamental Novelty — unique visual appeal",
-        "Applied to a practical article",
-        "Non-functional aesthetics only"
+        "Ornamental novelty - the visual appearance is new.",
+        "Applied to a practical article.",
+        "Protects appearance only, not technical function."
       ],
       process: [
-        { n: 1, t: "Photography", d: "Capture high-res photos from 7 standard angles." },
-        { n: 2, t: "Statement", d: "Describe the specific ornamental features." },
-        { n: 3, t: "Checklist", d: "Finalize high-fidelity 3D renders or images." },
-        { n: 4, t: "Submission", d: "Upload visual representations to the hub." },
-        { n: 5, t: "Registration", d: "Verified design is sent for national protection." }
+        { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
+        { n: 2, t: "Advisory Sheet", d: "Complete the online Advisory Service Sheet for the industrial design service." },
+        { n: 3, t: "IP Disclosure", d: "Describe the design, claim, ornamental features, and product application." },
+        { n: 4, t: "Drawings", d: "Upload the required seven design views as one PDF or individual JPEG files." },
+        { n: 5, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
       ],
       docs: [
-        "ID Application Form (PSU-IPO-ID-01)",
-        "7-Angle Representation (Front, Back, Top, etc)",
-        "Description of Ornamental Aspects",
-        "Description of Design"
+        "Generated Advisory Service Sheet",
+        "Generated IP Disclosure Form",
+        "Required Drawings: perspective, front, back, left, right, top, and bottom views",
+        "Description and claim of design"
       ]
     },
 
@@ -8299,35 +8328,41 @@ function renderIpGuidelines(filterId = null) {
       subtitle: "Protect creative works, code, and literature",
       term: "Lifetime + 50 years",
       requirements: [
-        "Originality — must be your own creation",
-        "Fixation in tangible form",
-        "Creative expression (not just logic)"
+        "Originality - the work must be independently created.",
+        "Fixation - the work must be captured in a tangible or digital form.",
+        "Creative expression - protects expression, not ideas or procedures."
       ],
       process: [
-        { n: 1, t: "Finalization", d: "Ensure the work is complete in its final form." },
-        { n: 2, t: "Compilation", d: "Prepare the 'Best Copy' of the work for filing." },
-        { n: 3, t: "Review", d: "IP Office verifies author IDs and affiliations." },
-        { n: 4, t: "Submission", d: "Send the filing packet for evaluator review and validation." },
-        { n: 5, t: "Certified", d: "Forwarded to the National Library after validation." }
+        { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
+        { n: 2, t: "Advisory Sheet", d: "Complete the online Advisory Service Sheet for copyright service." },
+        { n: 3, t: "BCRR Forms", d: "Complete BCRR Form 2025-1 for individuals or BCRR Form 2025-2 for institutions." },
+        { n: 4, t: "Requirements", d: "Attach the valid ID, copy of work, affidavit of ownership, and conditional applicant documents." },
+        { n: 5, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
       ],
       docs: [
-        "CR Registration Form (PSU-IPO-CR-01)",
-        "Full Digital Copy of the Work",
-        "Valid Philippine ID (Digitized)",
-        "Complete Copy of the Work"
+        "Generated Advisory Service Sheet",
+        "BCRR Form 2025-1 or BCRR Form 2025-2",
+        "Valid ID and copy of the work",
+        "Affidavit of Ownership plus TIN/SSS/GSIS or business details when required"
       ]
     }
   ];
+
+  const selectedType = filterId ? types.find((t) => t.id === filterId) : null;
+  const visibleTypes = selectedType ? [selectedType] : types;
+  const pageTitle = selectedType
+    ? `${selectedType.title} Guidelines`
+    : "IP Application Guidelines";
 
   return `
 
     <div class="page-header" style="margin-bottom:36px">
       <span class="m-eyebrow" style="display:block; margin-bottom:12px;">Pre-Filing Intelligence</span>
-      <h1 style="color:var(--navy); font-weight:800; font-size:2.2rem;"><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:12px"></i>${filterId ? types.find(t => t.id === filterId).title + ' Guidelines' : 'IP Application Guidelines'}</h1>
-      <p style="color:var(--gray-500); font-size:1.05rem;">A comprehensive guide to Intellectual Property protection and filing procedures at Palawan State University.</p>
+      <h1 style="color:var(--navy); font-weight:800; font-size:2.2rem;"><i class="fa-solid fa-book-open" style="color:var(--gold);margin-right:12px"></i>${pageTitle}</h1>
+      <p style="color:var(--gray-500); font-size:1.05rem;">Current filing guidance for the updated applicant portal, online intake packets, evaluator review, and case correction workflow.</p>
     </div>
 
-    ${filterId ? `
+    ${selectedType ? `
       <div style="margin-bottom: 24px;">
         <button class="btn btn-outline btn-sm" onclick="navigateTo('guidelines')">
           <i class="fa-solid fa-arrow-left"></i> View All Guidelines
@@ -8335,20 +8370,8 @@ function renderIpGuidelines(filterId = null) {
       </div>
     ` : ''}
 
-    <div style="background:linear-gradient(135deg, var(--navy-dark), var(--navy)); border-radius:24px; padding:32px 40px; margin-bottom:48px; color:white; position:relative; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.1);">
-      <div style="position:absolute; top:-40px; right:-40px; width:200px; height:200px; background:rgba(255,127,80,0.1); border-radius:50%;"></div>
-      <h2 style="font-size:1.2rem; font-weight:800; margin-bottom:16px; color:var(--gold); display:flex; align-items:center; gap:10px;">
-        <i class="fa-solid fa-shield-halved"></i> Institutional Protocol
-      </h2>
-      <ul style="color:rgba(255,255,255,0.85); font-size:0.92rem; line-height:1.8; padding-left:20px; list-style:none; margin-bottom:20px;">
-        <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> This system is a <strong>pre-filing optimization engine</strong>. Verified packets are forwarded to <strong>IPOPHL</strong> or the <strong>National Library</strong>.</li>
-        <li style="margin-bottom:8px;"><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Follow-up actions stay inside the review workspace when requirements need correction.</li>
-        <li><i class="fa-solid fa-circle-check" style="color:var(--gold); margin-right:10px;"></i> Review is performed <strong>manually</strong> by PSU IP Office specialists.</li>
-      </ul>
-    </div>
-
     <div style="display:flex; flex-direction:column; gap:32px; padding-bottom:80px;">
-      ${(filterId ? types.filter(t => t.id === filterId) : types).map(t => `
+      ${visibleTypes.map(t => `
         <div style="background:white; border-radius:24px; border:1px solid var(--gray-200); overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.03); transition:transform 0.3s ease;">
           <div style="background:${t.gradient}; padding:28px 36px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
             <div style="width:60px; height:60px; border-radius:18px; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; color:white; font-size:1.6rem;">
@@ -8422,20 +8445,18 @@ function getFormGuideContent() {
       icon: "fa-lightbulb",
       color: "#3b82f6",
       steps: [
-        "Prepare inventor details (name, ID, department, email)",
-        "Document your invention with detailed description and field of technology",
-        "Prepare technical drawings and claims statement",
-        "Upload all documents in PDF format",
-        "Submit and receive your reference number for tracking",
+        "Confirm applicant profile name, personal email, and contact number",
+        "Complete the Advisory Service Sheet",
+        "Complete the IP Disclosure Form",
+        "Attach optional drawings, abstract, and claims when available",
+        "Submit for evaluator review and track Action Required requests",
       ],
       docs: [
-        "Patent Application Form (PSU-IPO-PAT-01)",
-        "Invention Disclosure Statement (min 2 pages)",
-        "Technical Drawings / Diagrams",
-        "Abstract (150 words max)",
-        "Claims Statement",
-        "Proof of Concept (optional)",
-        "Prior Art Search Report (optional)",
+        "Generated Advisory Service Sheet",
+        "Generated IP Disclosure Form",
+        "Form 110 Supplemental Sheet when needed",
+        "Optional: Technical Drawings / Diagrams",
+        "Optional: Abstract and Claims Statement",
       ],
     },
 
@@ -8444,18 +8465,18 @@ function getFormGuideContent() {
       icon: "fa-copyright",
       color: "#10b981",
       steps: [
-        "List all authors/creators with contributions",
-        "Describe the work — title, type, date of creation",
-        "Upload complete copy of the work being registered",
-        "Submit and receive Certificate of Registration",
+        "Confirm applicant profile name, personal email, and contact number",
+        "Complete the Advisory Service Sheet",
+        "Complete BCRR Form 2025-1 or BCRR Form 2025-2",
+        "Attach the required copy of work and identity documents",
+        "Submit for evaluator review and track Action Required requests",
       ],
       docs: [
-        "Copyright Registration Form (PSU-IPO-CR-01)",
-        "Complete Copy of the Work",
-        "Valid Philippine ID (Digitized)",
-        "Declaration of Originality",
-        "Authorship Agreement (for multiple authors)",
-        "Publication History (if published, optional)",
+        "Generated Advisory Service Sheet",
+        "BCRR Form 2025-1 or BCRR Form 2025-2",
+        "Valid ID",
+        "Copy of the work",
+        "Affidavit of Ownership",
       ],
     },
     utility: {
@@ -8463,16 +8484,17 @@ function getFormGuideContent() {
       icon: "fa-gears",
       color: "#6366f1",
       steps: [
-        "Prepare inventor and technical details",
-        "Describe the technical innovation and its industrial use",
-        "Upload technical drawings/diagrams",
-        "Submit and track application",
+        "Confirm applicant profile name, personal email, and contact number",
+        "Complete the Advisory Service Sheet",
+        "Complete the IP Disclosure Form",
+        "Attach optional technical files when available",
+        "Submit for evaluator review and track Action Required requests",
       ],
       docs: [
-        "Utility Model Application Form",
-        "Technical Description",
-        "Technical Drawings",
-        "Claims Statement",
+        "Generated Advisory Service Sheet",
+        "Generated IP Disclosure Form",
+        "Optional: Technical Drawings / Diagrams",
+        "Optional: Abstract and Claims Statement",
       ],
     },
     industrial: {
@@ -8480,15 +8502,17 @@ function getFormGuideContent() {
       icon: "fa-pen-nib",
       color: "#ec4899",
       steps: [
-        "Provide applicant and product details",
-        "Upload high-quality representations (photos/drawings) of the design",
-        "Provide description of design features",
-        "Submit and track application",
+        "Confirm applicant profile name, personal email, and contact number",
+        "Complete the Advisory Service Sheet",
+        "Complete the IP Disclosure Form",
+        "Upload the required seven design views",
+        "Submit for evaluator review and track Action Required requests",
       ],
       docs: [
-        "Industrial Design Application Form",
-        "Design Representation Files",
-        "Description of Design",
+        "Generated Advisory Service Sheet",
+        "Generated IP Disclosure Form",
+        "Required Drawings",
+        "Description and claim of design",
       ],
     },
   };
@@ -8983,6 +9007,145 @@ function getSubmittedFormTypeLabel(formType) {
   return labels[formType] || "IP";
 }
 
+function slugifyDownloadName(value) {
+  return String(value || "download")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "download";
+}
+
+function downloadPrototypeTextFile(fileName, content) {
+  if (typeof Blob === "undefined" || typeof document === "undefined") {
+    showToast("Download is unavailable in this environment.");
+    return;
+  }
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  URL.revokeObjectURL(link.href);
+  link.remove();
+}
+
+function getEvaluatorSubmittedFormDownloadItems(formType, data = {}) {
+  const items = [{ key: "advisory", label: "Advisory Sheet" }];
+  if (formType === "copyright") {
+    const isInstitution = data.applicantTypeGroup === "Institution";
+    items.push({
+      key: isInstitution ? "bcrr-form-2025-2" : "bcrr-form-2025-1",
+      label: isInstitution ? "BCRR Form 2025-2" : "BCRR Form 2025-1",
+    });
+    if (
+      data.copyrightMultipleContributors === "yes" ||
+      (Array.isArray(data.copyrightSupplementalEntries) &&
+        data.copyrightSupplementalEntries.length)
+    ) {
+      items.push({
+        key: "copyright-supplemental",
+        label: "Copyright Supplemental Form",
+      });
+    }
+    return items;
+  }
+
+  items.push({ key: "ip-disclosure", label: "IP Disclosure Form" });
+  if (
+    formType === "patent" &&
+    (data.patentMultipleCreators === "yes" ||
+      (Array.isArray(data.patentSupplementalEntries) &&
+        data.patentSupplementalEntries.length))
+  ) {
+    items.push({ key: "form-110", label: "Form 110 Supplemental Sheet" });
+  }
+  return items;
+}
+
+function renderEvaluatorSubmittedFormDownloadActions(submission, formType, data = {}) {
+  if (normalizeRole(currentRole) !== "reviewer") return "";
+  const items = getEvaluatorSubmittedFormDownloadItems(formType, data);
+  if (!items.length) return "";
+  return `
+    <div style="display:flex; flex-direction:column; gap:8px; margin:0 0 14px; padding:12px; border:1px solid var(--gray-200); border-radius:10px; background:var(--gray-50);">
+      <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400);">Download Forms</div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        ${items
+          .map(
+            (item) => `
+          <button type="button" class="btn btn-outline-navy btn-sm" onclick="downloadEvaluatorCaseForm('${escapeJsString(submission.id)}', '${escapeJsString(item.label)}', '${escapeJsString(item.key)}')">
+            <i class="fa-solid fa-download"></i> Download ${escapeHtml(item.label)}
+          </button>
+        `,
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+window.downloadEvaluatorCaseForm = function(submissionId, formLabel, formKey = "form") {
+  const submission = submissions.find((item) => item.id === submissionId);
+  if (!submission || normalizeRole(currentRole) !== "reviewer") {
+    showToast("Only evaluators can download submitted case forms.");
+    return;
+  }
+  const display = getSubmissionDisplayData(submission);
+  const content = [
+    "The Creator's Bulwark - Submitted Form Download",
+    `Form: ${formLabel}`,
+    `Reference: ${submission.id}`,
+    `IP Type: ${submission.type}`,
+    `Title: ${display.title || submission.title || ""}`,
+    `Applicant: ${display.applicant || submission.applicant || ""}`,
+    `Date Filed: ${submission.date || ""}`,
+    "",
+    "This prototype download represents the generated applicant form packet shown in the evaluator case detail.",
+  ].join("\n");
+  downloadPrototypeTextFile(
+    `${submission.id}-${slugifyDownloadName(formKey || formLabel)}.txt`,
+    content,
+  );
+  showToast(`${formLabel} download started.`);
+};
+
+window.downloadEvaluatorCaseDocument = function(submissionId, docKey) {
+  const submission = submissions.find((item) => item.id === submissionId);
+  if (!submission || normalizeRole(currentRole) !== "reviewer") {
+    showToast("Only evaluators can download submitted case documents.");
+    return;
+  }
+  const formType = getFormTypeKeyFromSubmissionType(submission.formType || submission.type);
+  const data = getSubmissionFormData(submission);
+  const entry = getRequirementUploadEntries(formType, data).find(
+    (item) => item.key === docKey,
+  );
+  if (!entry) {
+    showToast("Document requirement not found.");
+    return;
+  }
+  if (!entry.file) {
+    showToast(`No submitted file is attached for ${entry.doc.name} yet.`);
+    return;
+  }
+  const fileSummary = getSubmittedUploadSummary(entry.file);
+  const content = [
+    "The Creator's Bulwark - Submitted Document Download",
+    `Document: ${entry.doc.name}`,
+    `Requirement Type: ${entry.doc.type}`,
+    `Reference: ${submission.id}`,
+    `IP Type: ${submission.type}`,
+    `Submitted File(s): ${fileSummary}`,
+    "",
+    "This prototype download represents the submitted document metadata shown in the evaluator case detail.",
+  ].join("\n");
+  downloadPrototypeTextFile(
+    `${submission.id}-${slugifyDownloadName(entry.doc.name)}.txt`,
+    content,
+  );
+  showToast(`${entry.doc.name} download started.`);
+};
+
 function getSubmittedFormStepLabels(formType) {
   if (formType === "copyright") {
     return [
@@ -9059,18 +9222,10 @@ function renderSubmittedPaperPacketPreview(submission, formType, data) {
       formType === "copyright"
         ? renderCopyrightIntakeFormBundle()
         : renderPatentIntakeFormBundle({ includeFlow: true });
-    const uploadSummary =
-      formType === "copyright"
-        ? renderCopyrightSubmissionList()
-        : renderPatentSubmissionList();
 
     return `
       <div class="submitted-paper-preview">
         ${packetHtml}
-        <div class="submitted-upload-summary">
-          <h4>Document Uploads</h4>
-          ${uploadSummary}
-        </div>
       </div>
     `;
   } finally {
@@ -9083,11 +9238,12 @@ function renderSubmittedPaperPacketPreview(submission, formType, data) {
 
 function renderSubmittedFormUnavailablePanel(submission, formType) {
   const typeLabel = getSubmittedFormTypeLabel(formType);
+  const showSubmittedStepStrip = normalizeRole(currentRole) !== "reviewer";
 
   return `
     <div class="detail-panel submitted-form-panel" style="margin-top:20px">
       <h3><i class="fa-solid fa-clipboard-list"></i> Submitted ${escapeHtml(typeLabel)} Intake Packet</h3>
-      ${renderSubmittedFormStepStrip(formType, false)}
+      ${showSubmittedStepStrip ? renderSubmittedFormStepStrip(formType, false) : ""}
       <div class="submitted-form-empty">
         <strong>No saved applicant fill-up packet is attached to this record.</strong>
         <p>This case only has the summary fields shown above, so the Advisory Sheet / IP Disclosure packet cannot be reconstructed from the record.</p>
@@ -9112,6 +9268,7 @@ function renderSubmittedFormDataPanel(submission) {
   }
 
   const typeLabel = getSubmittedFormTypeLabel(formType);
+  const showSubmittedStepStrip = normalizeRole(currentRole) !== "reviewer";
   const advisoryFields = [
     ["Client Type", data.advisoryClientType],
     ["Company / School / Agency", data.advisoryCompany],
@@ -9304,7 +9461,8 @@ function renderSubmittedFormDataPanel(submission) {
     <div class="detail-panel submitted-form-panel" style="margin-top:20px">
       <h3><i class="fa-solid fa-clipboard-list"></i> Submitted ${escapeHtml(typeLabel)} Intake Packet</h3>
       <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px;">This is the generated form packet from the applicant's saved submission answers.</p>
-      ${renderSubmittedFormStepStrip(formType)}
+      ${renderEvaluatorSubmittedFormDownloadActions(submission, formType, data)}
+      ${showSubmittedStepStrip ? renderSubmittedFormStepStrip(formType) : ""}
       ${packetPreview}
     </div>
   `;
@@ -19287,27 +19445,43 @@ function getProfileNameParts(user = {}) {
   };
 }
 
+function getFirstProvidedProfileValue(...values) {
+  return values
+    .map((value) => String(value || "").trim())
+    .find(Boolean) || "";
+}
+
 function getApplicantProfileDataForSubmission(submission) {
   const applicantUser = getSubmissionApplicantUser(submission);
   const display = getSubmissionDisplayData(submission);
-  const profileSource =
-    applicantUser ||
-    {
-      name: display.applicant || submission?.applicant || "",
-      email: display.email || submission?.email || "",
-      contact: display.contact || submission?.contact || "",
-    };
+  const submissionProfile = {
+    name: display.applicant || submission?.applicant || "",
+    email: display.email || submission?.email || "",
+    contact: display.contact || submission?.contact || "",
+    contactNumber: display.contactNumber || submission?.contactNumber || "",
+    phone: display.phone || submission?.phone || "",
+    applicantPhone: display.applicantPhone || submission?.applicantPhone || "",
+  };
+  const profileSource = {
+    ...submissionProfile,
+    ...(applicantUser || {}),
+  };
   const nameParts = getProfileNameParts(profileSource);
   return {
     firstName: nameParts.firstName || "Not provided",
     lastName: nameParts.lastName || "Not provided",
     email: profileSource.email || "Not provided",
     contact:
-      profileSource.contact ||
-      profileSource.contactNumber ||
-      profileSource.phone ||
-      profileSource.applicantPhone ||
-      "Not provided",
+      getFirstProvidedProfileValue(
+        applicantUser?.contact,
+        applicantUser?.contactNumber,
+        applicantUser?.phone,
+        applicantUser?.applicantPhone,
+        submissionProfile.contact,
+        submissionProfile.contactNumber,
+        submissionProfile.phone,
+        submissionProfile.applicantPhone,
+      ) || "Not provided",
   };
 }
 
@@ -19394,7 +19568,7 @@ function renderProfile() {
 
           <div class="form-row">
             <div class="form-group"><label>ORCID ID <span style="font-weight:400; color:var(--gray-400); font-size:0.75rem;">(Recommended)</span></label><input type="text" value="0000-0002-1825-0097" placeholder="xxxx-xxxx-xxxx-xxxx" /></div>
-            <div class="form-group"><label>Contact Number</label><input type="tel" value="0918 123 4567" /></div>
+            <div class="form-group"><label>Contact Number</label><input type="tel" value="${escapeHtml(user.contactNumber || user.contact || user.phone || user.applicantPhone || "")}" /></div>
           </div>
 
           <div class="form-group">
@@ -20507,27 +20681,6 @@ function renderContactUs() {
             </div>
           </div>
         </div>
-      </div>
-      
-      <div class="contact-form-card" style="background:white; padding:40px; border-radius:24px; border:1px solid var(--gray-200); box-shadow:0 15px 40px -15px rgba(0,0,0,0.08);">
-        <h3 style="color:var(--navy); margin-bottom:32px; font-weight:800; font-size:1.5rem;">Direct Message</h3>
-        <form onsubmit="event.preventDefault(); showToast('Your inquiry has been logged. We will contact you via email shortly.')">
-          <div class="form-group">
-            <label style="font-weight:700; font-size:0.85rem; color:var(--navy-dark);">Sender Profile</label>
-            <input type="text" placeholder="Your full name" required style="border-radius:12px; border:1px solid var(--gray-200); padding:12px 16px;">
-          </div>
-          <div class="form-group">
-            <label style="font-weight:700; font-size:0.85rem; color:var(--navy-dark);">Connectivity Lead</label>
-            <input type="email" placeholder="your@email.com" required style="border-radius:12px; border:1px solid var(--gray-200); padding:12px 16px;">
-          </div>
-          <div class="form-group">
-            <label style="font-weight:700; font-size:0.85rem; color:var(--navy-dark);">Inquiry Details</label>
-            <textarea placeholder="Describe your technical or legal concern..." style="border-radius:12px; border:1px solid var(--gray-200); padding:12px 16px; min-height:140px; resize:vertical;" required></textarea>
-          </div>
-          <button class="btn btn-primary" style="width:100%; justify-content:center; padding:16px; border-radius:12px; font-weight:700; font-size:1rem; margin-top:8px;">
-            <i class="fa-solid fa-paper-plane" style="margin-right:8px;"></i> Broadcast Inquiry
-          </button>
-        </form>
       </div>
     </div>
       <div class="contact-chat-widget">
