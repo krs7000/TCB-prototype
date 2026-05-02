@@ -1567,6 +1567,32 @@ function isClosedSubmissionStatus(status) {
   return ["Approved", "Rejected", "Archived", "Cancelled"].includes(status);
 }
 
+const IPOPHL_EMAIL_STATUS_OPTIONS = [
+  "Verified by IPOPHL",
+  "Accepted for Processing",
+  "For Formality Examination",
+  "For Further Requirements",
+  "Registered / Certificate Issued",
+];
+
+function getDefaultIPOPHLEmailStatus(submission) {
+  return submission?.ipophlEmailStatus || IPOPHL_EMAIL_STATUS_OPTIONS[0];
+}
+
+function getPortalStatusForIPOPHLEmailStatus(emailStatus) {
+  if (emailStatus === "Registered / Certificate Issued") return "Approved";
+  if (emailStatus === "For Further Requirements") return "Under Review";
+  return "Validated";
+}
+
+function getIPOPHLEmailStatusFromNotification(notification, submission = null) {
+  return (
+    notification?.ipophlEmailStatus ||
+    submission?.ipophlEmailStatus ||
+    IPOPHL_EMAIL_STATUS_OPTIONS[0]
+  );
+}
+
 function markIPOPHLWebsiteVerified(submission, options = {}) {
   if (!submission || !IPOPHL_TYPES.has(submission.type)) return false;
   const alreadyVerified = Boolean(submission.ipophlWebsiteVerified || submission.ipophlVerifiedAt);
@@ -1592,25 +1618,51 @@ function markIPOPHLWebsiteVerified(submission, options = {}) {
   return !alreadyVerified;
 }
 
-function pushIPOPHLVerificationEmailNotifications(submission, evaluator) {
-  pushRoleNotification("reviewer", {
-    userId: evaluator?.id || getCurrentUser().id,
-    icon: "fa-envelope-circle-check",
-    color: "#22c55e",
-    title: "Email from IPOPHL Received",
-    body: `IPOPHL sent an official verification email for ${submission.id}. This evaluator notification confirms receipt, and the applicant has also been notified automatically.`,
-    type: "ipophl-verification-email",
-    submissionId: submission.id,
-  });
+function ensureIPOPHLApplicantStatusNotification(submission, evaluator, source = {}) {
+  if (!submission) return false;
+  const emailStatus = getIPOPHLEmailStatusFromNotification(source, submission);
+  const emailSummary = source.ipophlEmailSummary || submission.ipophlEmailSummary || "";
+  const alreadySent =
+    submission.ipophlApplicantNotifiedStatus === emailStatus &&
+    submission.ipophlApplicantNotifiedSummary === emailSummary &&
+    submission.ipophlApplicantNotifiedAt;
+
+  if (alreadySent) return false;
 
   pushRoleNotification("applicant", {
     userId: getApplicantNotificationUserId(submission),
     icon: "fa-envelope-circle-check",
     color: "#22c55e",
     title: "IPOPHL Verification Received",
-    body: `IPOPHL verified your ${submission.type} application ${submission.id}. The evaluator received the official IPOPHL email and your application is now confirmed for IPOPHL processing.`,
+    body: `IPOPHL email status for ${submission.type} application ${submission.id}: ${emailStatus}. The evaluator received the official IPOPHL email and forwarded this status to you.`,
     type: "ipophl-verification-email",
     submissionId: submission.id,
+    ipophlEmailStatus: emailStatus,
+    ipophlEmailSummary: emailSummary,
+    ipophlEmailReceivedAt: submission.ipophlEmailReceivedAt || source.ipophlEmailReceivedAt || "",
+  });
+
+  submission.ipophlApplicantNotifiedStatus = emailStatus;
+  submission.ipophlApplicantNotifiedSummary = emailSummary;
+  submission.ipophlApplicantNotifiedAt = formatAuditTimestamp();
+  return true;
+}
+
+function pushIPOPHLVerificationEmailNotifications(submission, evaluator) {
+  const emailStatus = getDefaultIPOPHLEmailStatus(submission);
+  const emailSummary = submission.ipophlEmailSummary || "";
+
+  pushRoleNotification("reviewer", {
+    userId: evaluator?.id || getCurrentUser().id,
+    icon: "fa-envelope-circle-check",
+    color: "#22c55e",
+    title: "Email from IPOPHL Received",
+    body: `IPOPHL sent an official email for ${submission.id}. Email status: ${emailStatus}. Click this notification to sync the status to the applicant side.`,
+    type: "ipophl-verification-email",
+    submissionId: submission.id,
+    ipophlEmailStatus: emailStatus,
+    ipophlEmailSummary: emailSummary,
+    ipophlEmailReceivedAt: submission.ipophlEmailReceivedAt || "",
   });
 }
 
@@ -2784,6 +2836,17 @@ function showNotificationDetail(notification, options = {}) {
   const modalBody = document.getElementById("modalBody");
   const modalOverlay = document.getElementById("modalOverlay");
   const submissionId = getNotificationSubmissionId(notification);
+  const submission = submissionId
+    ? submissions.find((item) => item.id === submissionId)
+    : null;
+  const isIPOPHLEmailNotification = notification.type === "ipophl-verification-email";
+  const emailStatus = isIPOPHLEmailNotification
+    ? getIPOPHLEmailStatusFromNotification(notification, submission)
+    : "";
+  const emailSummary =
+    notification.ipophlEmailSummary || submission?.ipophlEmailSummary || "";
+  const emailReceivedAt =
+    notification.ipophlEmailReceivedAt || submission?.ipophlEmailReceivedAt || "";
   modalTitle.textContent = "Notification Details";
   modalTitle.style.display = "block";
   modalBody.innerHTML = `
@@ -2796,6 +2859,16 @@ function showNotificationDetail(notification, options = {}) {
         <p>${escapeHtml(notification.body)}</p>
         <div class="notification-detail-time">${escapeHtml(notification.time || "Just now")}</div>
         ${submissionId ? `<div class="notification-detail-ref"><strong>Reference:</strong> ${escapeHtml(submissionId)}</div>` : ""}
+        ${
+          isIPOPHLEmailNotification
+            ? `<div class="notification-detail-record">
+                <div><strong>IPOPHL Email Status</strong><span>${escapeHtml(emailStatus)}</span></div>
+                <div><strong>Portal Status</strong><span>${escapeHtml(submission?.status || "Validated")}</span></div>
+                <div><strong>Email Received</strong><span>${escapeHtml(emailReceivedAt || notification.time || "Just now")}</span></div>
+                ${emailSummary ? `<div><strong>Email Note</strong><span>${escapeHtml(emailSummary)}</span></div>` : ""}
+              </div>`
+            : ""
+        }
         ${options.note ? `<div class="notification-detail-note"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(options.note)}</div>` : ""}
       </div>
       <div class="detail-actions" style="justify-content:flex-end; margin-top:22px;">
@@ -2876,6 +2949,25 @@ window.openNotificationContent = function(notificationId) {
   if (!notification) return;
   markNotificationRead(notification);
   closeNotificationDropdown();
+
+  if (
+    notification.type === "ipophl-verification-email" &&
+    normalizeRole(currentRole) === "reviewer"
+  ) {
+    const submissionId = getNotificationSubmissionId(notification);
+    const submission = submissions.find((item) => item.id === submissionId);
+    if (submission) {
+      const sent = ensureIPOPHLApplicantStatusNotification(
+        submission,
+        getCurrentUser(),
+        notification,
+      );
+      if (sent) {
+        persistSubmissions();
+        renderNotifications();
+      }
+    }
+  }
 
   if (notification.type === "marketplace-approval" && notification.requestId) {
     showMarketplaceApprovalNotice(notification.requestId);
@@ -7555,6 +7647,8 @@ function renderIPOPHLVerificationEmailPanel(submission, reviewerCanAdvance) {
   );
   const verifiedAt = submission.ipophlVerifiedAt || "";
   const emailAt = submission.ipophlEmailReceivedAt || "";
+  const emailStatus = getDefaultIPOPHLEmailStatus(submission);
+  const emailSummary = submission.ipophlEmailSummary || "";
 
   const panelTone = emailReceived
     ? {
@@ -7581,15 +7675,24 @@ function renderIPOPHLVerificationEmailPanel(submission, reviewerCanAdvance) {
           <div style="font-size:.86rem; color:var(--gray-600); margin-top:5px; line-height:1.5;">
             ${
               emailReceived
-                ? `Official IPOPHL verification email was recorded${emailAt ? ` on ${escapeHtml(emailAt)}` : ""}. Evaluator and applicant notifications were sent automatically.`
+                ? `Official IPOPHL email was recorded${emailAt ? ` on ${escapeHtml(emailAt)}` : ""}. Status from IPOPHL email: ${escapeHtml(emailStatus)}. The applicant notification is sent when the evaluator opens the IPOPHL email notification.`
                 : websiteVerified
                   ? `The IPOPHL website submission is verified${verifiedAt ? ` as of ${escapeHtml(verifiedAt)}` : ""}. Record the IPOPHL email once the evaluator receives it.`
                   : "Record the official IPOPHL email after the evaluator receives verification from IPOPHL."
             }
           </div>
           ${
-            currentUserCanRecord && !emailReceived
-              ? `<button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="recordIPOPHLVerificationEmail('${submission.id}')"><i class="fa-solid fa-envelope-circle-check"></i> Record IPOPHL Email Received</button>`
+            emailReceived
+              ? `<div style="margin-top:10px; padding:10px 12px; border-radius:8px; background:white; border:1px solid rgba(34,197,94,0.18);">
+                  <div style="font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:${panelTone.color};">Current IPOPHL Email Status</div>
+                  <div style="font-size:.9rem; font-weight:800; color:var(--navy); margin-top:3px;">${escapeHtml(emailStatus)}</div>
+                  ${emailSummary ? `<div style="font-size:.8rem; color:var(--gray-500); margin-top:4px;">${escapeHtml(emailSummary)}</div>` : ""}
+                </div>`
+              : ""
+          }
+          ${
+            currentUserCanRecord
+              ? `<button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="recordIPOPHLVerificationEmail('${submission.id}')"><i class="fa-solid fa-envelope-circle-check"></i> ${emailReceived ? "Update IPOPHL Email Status" : "Record IPOPHL Email Received"}</button>`
               : ""
           }
         </div>
@@ -7598,7 +7701,14 @@ function renderIPOPHLVerificationEmailPanel(submission, reviewerCanAdvance) {
   `;
 }
 
-window.recordIPOPHLVerificationEmail = function(submissionId) {
+function renderIPOPHLEmailStatusOptions(selectedStatus) {
+  return IPOPHL_EMAIL_STATUS_OPTIONS.map(
+    (status) =>
+      `<option value="${escapeHtml(status)}" ${status === selectedStatus ? "selected" : ""}>${escapeHtml(status)}</option>`,
+  ).join("");
+}
+
+function showIPOPHLEmailStatusModal(submissionId) {
   const submission = submissions.find((s) => s.id === submissionId);
   if (!submission) return;
   if (!IPOPHL_TYPES.has(submission.type)) {
@@ -7609,13 +7719,66 @@ window.recordIPOPHLVerificationEmail = function(submissionId) {
     showToast("Only the assigned evaluator can record the IPOPHL email for this case.");
     return;
   }
-  if (submission.ipophlVerificationEmailReceived || submission.ipophlEmailReceivedAt) {
-    showToast("The IPOPHL email has already been recorded for this case.");
-    return;
-  }
+
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const selectedStatus = getDefaultIPOPHLEmailStatus(submission);
+
+  modalTitle.textContent = "Record IPOPHL Email Status";
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div style="display:grid; gap:16px;">
+      <div style="padding:14px 16px; border-radius:10px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.16); color:var(--gray-700); font-size:0.88rem; line-height:1.55;">
+        Record the status written in the official IPOPHL email. This creates an evaluator notification first. When the evaluator opens that notification, the same status is sent to the applicant side.
+      </div>
+      <div style="padding:12px 14px; border-radius:10px; background:var(--gray-50); border:1px solid var(--gray-100);">
+        <div style="font-size:.75rem; font-weight:800; color:var(--gray-400); text-transform:uppercase; letter-spacing:.08em;">Application</div>
+        <div style="font-size:.95rem; font-weight:800; color:var(--navy); margin-top:4px;">${escapeHtml(submission.id)} - ${escapeHtml(submission.title)}</div>
+      </div>
+      <label class="form-group">
+        <span style="font-size:.85rem;font-weight:700;display:block;margin-bottom:6px;">Status from IPOPHL Email</span>
+        <select id="ipophlEmailStatusSelect" style="width:100%;">
+          ${renderIPOPHLEmailStatusOptions(selectedStatus)}
+        </select>
+      </label>
+      <label class="form-group">
+        <span style="font-size:.85rem;font-weight:700;display:block;margin-bottom:6px;">Email Note / Reference</span>
+        <textarea id="ipophlEmailSummaryInput" style="min-height:90px;" placeholder="Optional: paste a short note from the IPOPHL email, reference number, or next instruction.">${escapeHtml(submission.ipophlEmailSummary || "")}</textarea>
+      </label>
+      <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="closeModal(); renderDashboardContent('submission-detail')">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmIPOPHLEmailStatus('${submission.id}')">
+          <i class="fa-solid fa-paper-plane"></i> Notify Evaluator
+        </button>
+      </div>
+    </div>
+  `;
+  modalOverlay.classList.add("active");
+}
+
+function saveIPOPHLEmailStatus(submission, options = {}) {
+  if (!submission) return false;
 
   const evaluator = getCurrentUser();
   const previousStatus = submission.status;
+  const emailStatus =
+    options.ipophlEmailStatus ||
+    options.emailStatus ||
+    getDefaultIPOPHLEmailStatus(submission);
+  const emailSummary = String(
+    options.ipophlEmailSummary || options.emailSummary || "",
+  ).trim();
+  const statusUnchanged =
+    submission.ipophlVerificationEmailReceived &&
+    submission.ipophlEmailStatus === emailStatus &&
+    (submission.ipophlEmailSummary || "") === emailSummary;
+
+  if (statusUnchanged) {
+    showToast("This IPOPHL email status is already recorded.");
+    return false;
+  }
+
   const timestamp = formatAuditTimestamp();
 
   markIPOPHLWebsiteVerified(submission, {
@@ -7625,8 +7788,10 @@ window.recordIPOPHLVerificationEmail = function(submissionId) {
   submission.ipophlVerificationEmailReceived = true;
   submission.ipophlEmailReceivedAt = timestamp;
   submission.ipophlEmailReceivedBy = evaluator.name;
+  submission.ipophlEmailStatus = emailStatus;
+  submission.ipophlEmailSummary = emailSummary;
   if (!isClosedSubmissionStatus(submission.status)) {
-    submission.status = "Validated";
+    submission.status = getPortalStatusForIPOPHLEmailStatus(emailStatus);
   }
   syncSubmissionWorkflowState(submission);
   pushIPOPHLVerificationEmailNotifications(submission, evaluator);
@@ -7635,12 +7800,38 @@ window.recordIPOPHLVerificationEmail = function(submissionId) {
     accountName: evaluator.name,
     action: "Recorded IPOPHL Email",
     record: submission.id,
-    details: `Recorded official IPOPHL verification email and notified the applicant. Previous status: ${previousStatus}.`,
+    details: `Recorded official IPOPHL email status "${emailStatus}" and notified the evaluator and applicant. Previous portal status: ${previousStatus}.`,
     module: submission.type,
   });
 
-  showToast("IPOPHL email recorded. Evaluator and applicant notifications sent automatically.");
+  showToast("IPOPHL email recorded. Evaluator notified; opening that notification sends the status to the applicant.");
   renderDashboardContent("submission-detail");
+  return true;
+}
+
+window.recordIPOPHLVerificationEmail = function(submissionId, options = null) {
+  const submission = submissions.find((s) => s.id === submissionId);
+  if (!submission) return;
+  if (options) {
+    saveIPOPHLEmailStatus(submission, options);
+    return;
+  }
+  showIPOPHLEmailStatusModal(submissionId);
+};
+
+window.confirmIPOPHLEmailStatus = function(submissionId) {
+  const submission = submissions.find((s) => s.id === submissionId);
+  if (!submission) return;
+  const emailStatus =
+    document.getElementById("ipophlEmailStatusSelect")?.value ||
+    getDefaultIPOPHLEmailStatus(submission);
+  const emailSummary =
+    document.getElementById("ipophlEmailSummaryInput")?.value || "";
+  const saved = saveIPOPHLEmailStatus(submission, {
+    emailStatus,
+    emailSummary,
+  });
+  if (saved) closeModal();
 };
 
 function renderCopyrightOperationTimeline(submission) {
