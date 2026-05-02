@@ -1003,7 +1003,7 @@ function setLoginMode(role = "applicant") {
     applicant: {
       title: "Applicant Login",
       subtitle: "Track your submissions and continue your IP filings.",
-      emailPlaceholder: "@psu.palawan.edu.ph or personal email",
+      emailPlaceholder: "Personal email",
     },
     reviewer: {
       title: "Evaluator Login",
@@ -1018,7 +1018,7 @@ function setLoginMode(role = "applicant") {
   }[selectedLoginRole] || {
     title: "Applicant Login",
     subtitle: "Login to The Creator's Bulwark",
-    emailPlaceholder: "@psu.palawan.edu.ph or personal email",
+    emailPlaceholder: "Personal email",
   };
 
   if (title) title.textContent = copy.title;
@@ -1896,15 +1896,6 @@ function renderApplicantActionRequiredControls(submission) {
       <button class="btn btn-primary btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'auto')">
         <i class="fa-solid fa-wand-magic-sparkles"></i> Resolve Request
       </button>
-      <button class="btn btn-outline-navy btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'advisory')">
-        <i class="fa-solid fa-file-signature"></i> Edit Advisory Sheet
-      </button>
-      <button class="btn btn-outline-navy btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'disclosure')">
-        <i class="fa-solid fa-file-pen"></i> ${getActionRequiredFormLabel(submission)}
-      </button>
-      <button class="btn btn-secondary btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'documents')">
-        <i class="fa-solid fa-upload"></i> Replace Documents
-      </button>
     </div>
   `;
 }
@@ -1914,15 +1905,10 @@ function renderDocumentUploadActionButton(submission) {
   const applicantActionRequired =
     normalizeRole(currentRole) === "applicant" &&
     Boolean(getActiveActionRequiredItems(submission).length);
-  const action = applicantActionRequired
-    ? `openActionRequiredEditor('${submission.id}', 'documents')`
-    : `showToast('Document upload slot opened for ${submission.id}')`;
-  const label = applicantActionRequired
-    ? "Replace Requested Documents"
-    : "Upload Documents";
+  if (applicantActionRequired) return "";
   return `
-    <button class="btn btn-secondary btn-sm" onclick="${action}">
-      <i class="fa-solid fa-upload"></i> ${label}
+    <button class="btn btn-secondary btn-sm" onclick="showToast('Document upload slot opened for ${submission.id}')">
+      <i class="fa-solid fa-upload"></i> Upload Documents
     </button>
   `;
 }
@@ -2544,7 +2530,10 @@ function navigateTo(page, isBack = false, params = null) {
   const pubBack = document.getElementById("ui-back-btn-public");
   const topbarRight = document.querySelector(".topbar-right");
   const NO_BACK_PAGES = ["landing", "forms", "marketplace", "faq", "guidelines", "contact", "about", "news"];
-  const showBack = navHistory.length > 0 && !NO_BACK_PAGES.includes(page);
+  const isApplicantLoginPage =
+    isLoginPage(page) && getLoginRoleForPage(page) === "applicant";
+  const showBack =
+    navHistory.length > 0 && !NO_BACK_PAGES.includes(page) && !isApplicantLoginPage;
   const userRole = normalizeRole(currentRole);
   
   if (pubBack) pubBack.style.display = showBack ? "block" : "none";
@@ -2676,11 +2665,9 @@ function setMarketView(view) {
 
 function filterFullMarketplace() {
   const search = document.getElementById("marketSearch")?.value.toLowerCase() || "";
-  const college = document.getElementById("marketCollege")?.value || "All";
   let filtered = marketplaceItems.filter((item) => {
     if (item.archived) return false;
     if (activeMarketType !== "All" && item.type !== activeMarketType) return false;
-    if (college !== "All" && item.college !== college) return false;
     if (
       search &&
       !item.title.toLowerCase().includes(search) &&
@@ -2709,9 +2696,10 @@ function filterFullMarketplace() {
 }
 
 function resetMarketFilters() {
-  document.getElementById("marketSearch").value = "";
-  document.getElementById("marketCollege").value = "All";
-  document.getElementById("marketStatus").value = "All";
+  const search = document.getElementById("marketSearch");
+  const status = document.getElementById("marketStatus");
+  if (search) search.value = "";
+  if (status) status.value = "All";
   const allChip = document.querySelector('.filter-chip[data-type="All"]');
   if (allChip) setMarketType("All", allChip);
   else filterFullMarketplace();
@@ -2966,7 +2954,6 @@ function renderInnovationList(items) {
         <h4>${item.title}</h4>
         <div class="list-inventor"><i class="fa-solid fa-user"></i> ${item.inventor}</div>
       </div>
-      <div class="list-college"><i class="fa-solid fa-building-columns"></i> ${item.college}</div>
       <div class="list-tags">${typeBadge(item.type)}</div>
       <div class="list-action">
         <button class="btn btn-sm btn-icon"><i class="fa-solid fa-arrow-right"></i></button>
@@ -3200,15 +3187,12 @@ function initLandingProposalSections() {
 
 function filterLandingMarketplace() {
   const type = landingMpType;
-  const college =
-    document.getElementById("landingFilterCollege")?.value || "All";
   const search =
     document.getElementById("landingSearch")?.value.toLowerCase() || "";
 
   let filtered = marketplaceItems.filter((item) => {
     if (item.archived) return false;
     if (type !== "All" && item.type !== type) return false;
-    if (college !== "All" && item.college !== college) return false;
     if (
       search &&
       !item.title.toLowerCase().includes(search) &&
@@ -3290,15 +3274,89 @@ window.updateRegEmailHint = function() {
   }
 };
 
+function getSignupFormData() {
+  const firstName = String(document.getElementById("regFirstName")?.value || "").trim();
+  const lastName = String(document.getElementById("regLastName")?.value || "").trim();
+  const email = String(document.getElementById("regEmail")?.value || "").trim();
+  const password = document.getElementById("regPassword")?.value || "";
+  const confirmPassword = document.getElementById("regPasswordConfirm")?.value || "";
+  const type = document.getElementById("regType")?.value || "applicant";
+  const termsAccepted = Boolean(document.getElementById("regTerms")?.checked);
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  return {
+    firstName,
+    lastName,
+    fullName,
+    email,
+    password,
+    confirmPassword,
+    type,
+    termsAccepted,
+  };
+}
+
+function validateSignupFormData(data) {
+  const emailError = document.getElementById("regEmailError");
+  const passwordError = document.getElementById("regPasswordError");
+  if (emailError) emailError.innerText = "";
+  if (passwordError) passwordError.innerText = "";
+
+  if (!data.firstName || !data.lastName) {
+    showToast("Please enter your first name and last name.", "warning");
+    return false;
+  }
+  if (!data.email) {
+    if (emailError) emailError.innerText = "Email address is required.";
+    showToast("Please enter your email address.", "warning");
+    return false;
+  }
+  if (!data.password || !data.confirmPassword) {
+    if (passwordError) passwordError.innerText = "Password and confirmation are required.";
+    showToast("Please enter and confirm your password.", "warning");
+    return false;
+  }
+  if (data.password !== data.confirmPassword) {
+    if (passwordError) passwordError.innerText = "Passwords do not match.";
+    showToast("Passwords do not match.", "warning");
+    return false;
+  }
+  if (!data.termsAccepted) {
+    showToast("Please agree to the Terms & Conditions.", "warning");
+    return false;
+  }
+  return true;
+}
+
+function createApplicantUserFromSignup(data) {
+  return {
+    id: Math.max(...systemUsers.map((user) => Number(user.id) || 0)) + 1,
+    firstName: data.firstName,
+    lastName: data.lastName,
+    name: data.fullName,
+    email: data.email,
+    role: "applicant",
+    dept: data.type === "psu_member" ? "PSU Community" : "External",
+    status: "Active",
+    dateCreated: new Date().toISOString().split("T")[0],
+  };
+}
+
 window.handleSignUp = function(e) {
   if (e) e.preventDefault();
+
+  const signupData = getSignupFormData();
+  if (!validateSignupFormData(signupData)) return;
+
+  const newUser = createApplicantUserFromSignup(signupData);
+  systemUsers.push(newUser);
   
   // PROTOTYPE BYPASS: Go directly to dashboard
   isLoggedIn = true;
   currentRole = 'applicant';
+  ACTIVE_ROLE_USER_IDS.applicant = newUser.id;
   updateTopbarRole();
   
-  showToast("Prototype Access: Account created and logged in!");
+  showToast(`Prototype Access: Account created for ${newUser.name}.`);
 
   if (pendingAction && pendingAction.type === 'registration') {
     const action = pendingAction;
@@ -3320,26 +3378,22 @@ window.verifySignupOtp = function() {
   
   // In a real app, we'd verify the 'code' here.
   // For the prototype, any 6-digit code works.
+  if (!pendingSignupData) {
+    pendingSignupData = getSignupFormData();
+    if (!validateSignupFormData(pendingSignupData)) return;
+  }
   
-  const newUser = {
-    id: systemUsers.length + 1,
-    name: pendingSignupData.username, // Using username as name for simplicity in this prototype
-    username: pendingSignupData.username,
-    email: pendingSignupData.email,
-    role: 'applicant',
-    dept: pendingSignupData.type === 'psu_member' ? 'PSU Community' : 'External',
-    status: 'Active',
-    dateCreated: new Date().toISOString().split('T')[0]
-  };
+  const newUser = createApplicantUserFromSignup(pendingSignupData);
   
   systemUsers.push(newUser);
   
   // AUTOMATIC LOGIN
   isLoggedIn = true;
   currentRole = 'applicant'; // Standard applicant role
+  ACTIVE_ROLE_USER_IDS.applicant = newUser.id;
   updateTopbarRole();
   
-  showToast(`Account verified! Welcome, ${pendingSignupData.username}. Logging you in...`);
+  showToast(`Account verified! Welcome, ${pendingSignupData.fullName}. Logging you in...`);
   
   // Reset and navigate to Dashboard
   pendingSignupData = null;
@@ -7823,24 +7877,7 @@ function renderSubmissionDetail() {
 
     <div class="detail-layout">
       <div>
-        <div class="detail-panel">
-          <h3><i class="fa-solid fa-user"></i> Applicant Information</h3>
-          <div class="detail-row"><span class="label">Name</span><span class="value">${escapeHtml(submittedSummary.applicant || s.applicant)}</span></div>
-          <div class="detail-row"><span class="label">Department</span><span class="value">${escapeHtml(submittedSummary.department || s.department || "Not provided")}</span></div>
-          <div class="detail-row"><span class="label">Email</span><span class="value">${escapeHtml(submittedSummary.email || s.email || "Not provided")}</span></div>
-          <div class="detail-row"><span class="label">Contact</span><span class="value">${escapeHtml(submittedSummary.contact || s.contact || "Not provided")}</span></div>
-        </div>
-        <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-file-lines"></i> IP Details</h3>
-          <div class="detail-row"><span class="label">Type</span><span class="value">${typeBadge(s.type)}</span></div>
-          <div class="detail-row"><span class="label">Title</span><span class="value">${escapeHtml(submittedSummary.title || s.title)}</span></div>
-          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">National Library Lane</span><span class="value">${escapeHtml(submittedSummary.registrationLane || s.registrationLane || "Copyright")}</span></div>` : ""}
-          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Work Type</span><span class="value">${escapeHtml(submittedSummary.workType || s.workType || "Creative Work")}</span></div>` : ""}
-          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Official Duty Work</span><span class="value">${s.officialDutyWork ? "Yes" : "No"}</span></div>` : ""}
-          ${s.type === "Copyright" ? `<div class="detail-row"><span class="label">Approved Letter-Request</span><span class="value">${s.letterRequestApproved ? "Yes" : "No"}</span></div>` : ""}
-          <div class="detail-row"><span class="label">Description</span><span class="value">${escapeHtml(submittedSummary.description || s.description || "Not provided")}</span></div>
-          <div class="detail-row"><span class="label">Date Filed</span><span class="value">${s.date}</span></div>
-        </div>
+        ${renderCaseApplicantProfilePanel(s)}
         ${renderSubmittedFormDataPanel(s)}
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-paperclip"></i> Documents</h3>
@@ -9069,17 +9106,15 @@ function renderSubmittedFormDataPanel(submission) {
   }
   sections.push(renderSubmittedDocumentUploadsSection(formType, submission, data));
 
-  const content = sections.join("");
   const packetPreview = renderSubmittedPaperPacketPreview(submission, formType, data);
-  if (!content.trim() && !packetPreview.trim()) return "";
+  if (!packetPreview.trim()) return renderSubmittedFormUnavailablePanel(submission, formType);
 
   return `
     <div class="detail-panel submitted-form-panel" style="margin-top:20px">
       <h3><i class="fa-solid fa-clipboard-list"></i> Submitted ${escapeHtml(typeLabel)} Intake Packet</h3>
-      <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px;">These values are shown from the applicant's saved form entry and attached submission record.</p>
+      <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px;">This is the generated form packet from the applicant's saved submission answers.</p>
       ${renderSubmittedFormStepStrip(formType)}
       ${packetPreview}
-      ${content ? `<div class="submitted-field-index">${content}</div>` : ""}
     </div>
   `;
 }
@@ -17846,7 +17881,6 @@ function renderAdminMarketplacePage() {
               <th>Product Title</th>
               <th>IP Type</th>
               <th>Inventor / Lead</th>
-              <th>College / External</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -17863,7 +17897,6 @@ function renderAdminMarketplacePage() {
                   <td>${item.title}</td>
                   <td>${typeBadge(item.type)}</td>
                   <td>${item.inventor}</td>
-                  <td>${item.college}</td>
                   <td>
                     <div class="action-btns">
                       <button class="btn btn-sm btn-outline-navy" onclick="showInnovationDetail(${item.id})"><i class="fa-solid fa-eye"></i> View</button>
@@ -17873,7 +17906,7 @@ function renderAdminMarketplacePage() {
                 </tr>`,
                     )
                     .join("")
-                : `<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--gray-400);">No ${adminMarketplaceView === "archived" ? "archived" : "active"} market listings available.</td></tr>`
+                : `<tr><td colspan="5" style="text-align:center;padding:48px;color:var(--gray-400);">No ${adminMarketplaceView === "archived" ? "archived" : "active"} market listings available.</td></tr>`
             }
           </tbody>
         </table>
@@ -18049,7 +18082,6 @@ window.showMarketListingModal = function(id = null) {
         title: "",
         type: "Patent",
         inventor: "",
-        college: "College of Engineering",
         description: "",
         contactPerson: "",
         contactEmail: "",
@@ -18085,10 +18117,6 @@ window.showMarketListingModal = function(id = null) {
           <label>Inventor / Lead *</label>
           <input type="text" id="marketInventor" value="${escapeHtml(item.inventor || "")}" ${readOnly ? "disabled" : ""} required />
         </div>
-        <div class="form-group">
-          <label>College / External *</label>
-          <input type="text" id="marketCollege" value="${escapeHtml(item.college || "")}" ${readOnly ? "disabled" : ""} required />
-        </div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -18123,14 +18151,13 @@ window.saveMarketListing = function(event, id) {
   const title = document.getElementById("marketTitle").value.trim();
   const type = document.getElementById("marketType").value;
   const inventor = document.getElementById("marketInventor").value.trim();
-  const college = document.getElementById("marketCollege").value.trim();
   const description = document.getElementById("marketDescription").value.trim();
   const contactPerson =
     document.getElementById("marketContactPerson").value.trim() || inventor;
   const contactEmail = document.getElementById("marketContactEmail").value.trim();
   const image = document.getElementById("marketImage").value.trim();
 
-  if (!title || !type || !inventor || !college || !description) {
+  if (!title || !type || !inventor || !description) {
     showToast("Please complete all required listing fields.");
     return;
   }
@@ -18144,7 +18171,6 @@ window.saveMarketListing = function(event, id) {
       fullTitle: entry.fullTitle || title.toUpperCase(),
       type,
       inventor,
-      college,
       description,
       longDescription: entry.longDescription || description,
       contactPerson,
@@ -18171,7 +18197,6 @@ window.saveMarketListing = function(event, id) {
       fullTitle: title.toUpperCase(),
       type,
       inventor,
-      college,
       description,
       longDescription: description,
       features: [],
@@ -18412,7 +18437,7 @@ function renderInnovationCards(items) {
       <div class="innovation-card-img" ${item.image ? `style="background:url('${item.image}') center/cover no-repeat"` : ""}>${!item.image ? `<i class="${item.icon}"></i>` : ""}</div>
       <div class="innovation-card-body">
         <h4>${item.title}</h4>
-        <div class="innovation-meta">${typeBadge(item.type)} <span><i class="fa-solid fa-user"></i> ${item.inventor}</span> <span><i class="fa-solid fa-building-columns"></i> ${item.college}</span></div>
+        <div class="innovation-meta">${typeBadge(item.type)} <span><i class="fa-solid fa-user"></i> ${item.inventor}</span></div>
         <p>${item.description.substring(0, 100)}...</p>
         <span class="learn-more">Learn More <i class="fa-solid fa-arrow-right"></i></span>
       </div>
@@ -18423,13 +18448,11 @@ function renderInnovationCards(items) {
 
 function filterMarketplace() {
   const type = currentMpType;
-  const college = "All";
 
   const search = document.getElementById("mpSearch")?.value.toLowerCase() || "";
   let filtered = marketplaceItems.filter((item) => {
     if (item.archived) return false;
     if (type !== "All" && item.type !== type) return false;
-    if (college !== "All" && item.college !== college) return false;
     if (
       search &&
       !item.title.toLowerCase().includes(search) &&
@@ -18941,15 +18964,6 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                   `
                       : ""
                   }
-                  ${
-                    needsAction
-                      ? `
-                    <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="openActionRequiredEditor('${s.id}', 'auto')">
-                      <i class="fa-solid fa-circle-exclamation"></i> Resolve Action Required
-                    </button>
-                  `
-                      : ""
-                  }
                 </div>
               </div>
             </div>
@@ -19066,12 +19080,66 @@ function renderApplicantSettings() {
   `;
 }
 
+function getProfileNameParts(user = {}) {
+  if (user.firstName || user.lastName) {
+    return {
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+    };
+  }
+  const parts = String(user.name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
+}
+
+function getApplicantProfileDataForSubmission(submission) {
+  const applicantUser = getSubmissionApplicantUser(submission);
+  const display = getSubmissionDisplayData(submission);
+  const profileSource =
+    applicantUser ||
+    {
+      name: display.applicant || submission?.applicant || "",
+      email: display.email || submission?.email || "",
+      contact: display.contact || submission?.contact || "",
+    };
+  const nameParts = getProfileNameParts(profileSource);
+  return {
+    firstName: nameParts.firstName || "Not provided",
+    lastName: nameParts.lastName || "Not provided",
+    email: profileSource.email || "Not provided",
+    contact:
+      profileSource.contact ||
+      profileSource.contactNumber ||
+      profileSource.phone ||
+      profileSource.applicantPhone ||
+      "Not provided",
+  };
+}
+
+function renderCaseApplicantProfilePanel(submission) {
+  const profile = getApplicantProfileDataForSubmission(submission);
+  return `
+    <div class="detail-panel">
+      <h3><i class="fa-solid fa-user"></i> Applicant Profile</h3>
+      <div class="detail-row"><span class="label">First Name</span><span class="value">${escapeHtml(profile.firstName)}</span></div>
+      <div class="detail-row"><span class="label">Last Name</span><span class="value">${escapeHtml(profile.lastName)}</span></div>
+      <div class="detail-row"><span class="label">Email Address</span><span class="value">${escapeHtml(profile.email)}</span></div>
+      <div class="detail-row"><span class="label">Contact Number</span><span class="value">${escapeHtml(profile.contact)}</span></div>
+    </div>
+  `;
+}
+
 function renderProfile() {
   const user = getCurrentUser();
   const role = getRoleMeta().label;
   const normalizedRole = normalizeRole(currentRole);
   const isAdminProfile =
     normalizedRole === "admin" || normalizedRole === "superadmin";
+  const profileName = getProfileNameParts(user);
   
   return `
     ${renderBackNav()}
@@ -19125,22 +19193,12 @@ function renderProfile() {
           </div>
           
           <div class="form-row">
-            <div class="form-group"><label>Full Name</label><input type="text" value="${user.name}" style="background:var(--gray-50);" /></div>
-            <div class="form-group"><label>Email Address</label><input type="email" value="${user.email}" disabled style="background:var(--gray-100); cursor:not-allowed;" /></div>
+            <div class="form-group"><label>First Name</label><input type="text" value="${escapeHtml(profileName.firstName)}" style="background:var(--gray-50);" /></div>
+            <div class="form-group"><label>Last Name</label><input type="text" value="${escapeHtml(profileName.lastName)}" style="background:var(--gray-50);" /></div>
           </div>
 
           <div class="form-row">
-            <div class="form-group"><label>College / Department</label>
-              <select>
-                <option ${user.dept === 'College of Engineering' ? 'selected' : ''}>College of Engineering</option>
-                <option ${user.dept === 'College of Sciences' ? 'selected' : ''}>College of Sciences</option>
-                <option ${user.dept === 'College of Agriculture' ? 'selected' : ''}>College of Agriculture</option>
-                <option ${user.dept === 'College of Arts' ? 'selected' : ''}>College of Arts</option>
-                <option ${user.dept === 'Research Office' ? 'selected' : ''}>Research Office</option>
-                <option ${user.dept === 'External Partner' ? 'selected' : ''}>External Partner</option>
-              </select>
-            </div>
-            <div class="form-group"><label>Employee / Student ID</label><input type="text" value="PSU-2026-8842" /></div>
+            <div class="form-group"><label>Email Address</label><input type="email" value="${user.email}" disabled style="background:var(--gray-100); cursor:not-allowed;" /></div>
           </div>
 
           <div class="form-row">
