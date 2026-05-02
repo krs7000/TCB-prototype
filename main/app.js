@@ -1730,6 +1730,236 @@ function canUploadDocuments(submission, role = currentRole) {
   return canEditSubmission(submission, role);
 }
 
+function getActionRequiredSubmission(role = currentRole) {
+  const submission = submissions.find((s) => s.id === selectedSubmissionId);
+  if (!getActiveActionRequiredItems(submission).length) return null;
+  if (normalizeRole(role) !== "applicant") return null;
+  return isOwnSubmission(submission, role) ? submission : null;
+}
+
+function getActionRequiredTargetLabel(target = "", submission = null) {
+  const labels = {
+    advisory: "Advisory Service Sheet",
+    disclosure: getActionRequiredFormLabel(submission),
+    documents: "Uploaded Requirement / Document",
+    other: "Other Correction",
+  };
+  return labels[target] || labels.other;
+}
+
+function getFormPageForFormType(formType = "") {
+  const map = {
+    patent: "patent-form",
+    copyright: "copyright-form",
+    utility: "utility-form",
+    industrial: "industrial-form",
+  };
+  return map[getFormTypeKeyFromSubmissionType(formType)] || "patent-form";
+}
+
+function getDocumentUploadStepForFormType(formType = "") {
+  const normalized = getFormTypeKeyFromSubmissionType(formType);
+  if (normalized === "copyright") return 2;
+  if (normalized === "patent") return 4;
+  return 3;
+}
+
+function getActionRequiredTargetFromNote(note = "") {
+  const text = String(note || "").toLowerCase();
+  if (/(advisory|service sheet|client)/.test(text)) return "advisory";
+  if (/(disclosure|inventor|invention|novel|background|description|creator|registry|bcrr|enrollment)/.test(text)) {
+    return "disclosure";
+  }
+  if (/(document|requirement|upload|file|drawing|signature|declaration|pdf|jpg|jpeg|copy|affidavit)/.test(text)) {
+    return "documents";
+  }
+  return "advisory";
+}
+
+function getActiveActionRequiredItems(submission) {
+  if (!submission) return [];
+  const structuredItems = Array.isArray(submission.actionRequiredItems)
+    ? submission.actionRequiredItems.filter((item) => !item.resolved)
+    : [];
+  if (structuredItems.length) return structuredItems;
+  if (!submission.statusNote) return [];
+  return [
+    {
+      id: "legacy-status-note",
+      target: getActionRequiredTargetFromNote(submission.statusNote),
+      field: "Evaluator note",
+      instruction: submission.statusNote,
+      dueDate: "",
+      requestedAt: "",
+      requestedBy: "",
+      legacy: true,
+    },
+  ];
+}
+
+function buildActionRequiredStatusNote(submission) {
+  const items = getActiveActionRequiredItems(submission).filter((item) => !item.legacy);
+  if (!items.length) return submission?.statusNote || "";
+  if (items.length === 1) {
+    const item = items[0];
+    const area = getActionRequiredTargetLabel(item.target, submission);
+    const field = item.field ? ` - ${item.field}` : "";
+    const due = item.dueDate ? ` Due: ${item.dueDate}.` : "";
+    return `${area}${field}: ${item.instruction}${due}`;
+  }
+  return `${items.length} correction items pending: ${items
+    .map((item) => {
+      const area = getActionRequiredTargetLabel(item.target, submission);
+      return item.field ? `${area} (${item.field})` : area;
+    })
+    .join("; ")}.`;
+}
+
+function getPrimaryActionRequiredTarget(submission) {
+  const firstItem = getActiveActionRequiredItems(submission)[0];
+  return firstItem?.target || getActionRequiredTargetFromNote(submission?.statusNote);
+}
+
+function getActionRequiredWizardStep(submission, target = "auto") {
+  const formType = getFormTypeKeyFromSubmissionType(
+    submission?.formType || submission?.type || currentFormType,
+  );
+  const resolvedTarget =
+    target === "auto" ? getPrimaryActionRequiredTarget(submission) : target;
+  if (resolvedTarget === "documents") return getDocumentUploadStepForFormType(formType);
+  if (resolvedTarget === "disclosure") return formType === "copyright" ? 3 : 2;
+  return 1;
+}
+
+function getActionRequiredFormLabel(submission) {
+  const formType = getFormTypeKeyFromSubmissionType(
+    submission?.formType || submission?.type || currentFormType,
+  );
+  return formType === "copyright" ? "Edit Registry Form" : "Edit IP Disclosure";
+}
+
+function renderActionRequiredItemChecklist(submission) {
+  const items = getActiveActionRequiredItems(submission);
+  if (!items.length) return "";
+  return `
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+      ${items
+        .map((item, index) => {
+          const target = item.target || "other";
+          const area = getActionRequiredTargetLabel(target, submission);
+          const field = item.field || "Not specified";
+          const instruction = item.instruction || item.note || submission.statusNote || "";
+          const due = item.dueDate || "";
+          const requester = item.requestedBy || "Evaluator";
+          const requestedAt = item.requestedAt
+            ? new Date(item.requestedAt).toLocaleDateString()
+            : "";
+          return `
+            <div style="background:white; border:1px solid rgba(239,68,68,0.18); border-radius:10px; padding:12px 14px;">
+              <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; margin-bottom:8px;">
+                <div style="font-size:.74rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--red);">
+                  Request ${index + 1} - ${escapeHtml(area)}
+                </div>
+                ${due ? `<div style="font-size:.75rem; font-weight:800; color:#b45309;"><i class="fa-solid fa-calendar-day"></i> Due ${escapeHtml(due)}</div>` : ""}
+              </div>
+              <div style="display:grid; gap:8px;">
+                <div>
+                  <div style="font-size:.72rem; font-weight:800; text-transform:uppercase; color:var(--gray-400); margin-bottom:2px;">Exact field / file</div>
+                  <div style="font-size:.88rem; font-weight:700; color:var(--navy);">${escapeHtml(field)}</div>
+                </div>
+                <div>
+                  <div style="font-size:.72rem; font-weight:800; text-transform:uppercase; color:var(--gray-400); margin-bottom:2px;">Required change</div>
+                  <div style="font-size:.86rem; color:var(--gray-700); line-height:1.55; white-space:pre-wrap;">${escapeHtml(instruction)}</div>
+                </div>
+                <div style="font-size:.74rem; color:var(--gray-400);">
+                  Requested by ${escapeHtml(requester)}${requestedAt ? ` on ${escapeHtml(requestedAt)}` : ""}
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderApplicantActionRequiredControls(submission) {
+  if (
+    normalizeRole(currentRole) !== "applicant" ||
+    !getActiveActionRequiredItems(submission).length ||
+    !isOwnSubmission(submission)
+  ) {
+    return "";
+  }
+  return `
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+      <button class="btn btn-primary btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'auto')">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Resolve Request
+      </button>
+      <button class="btn btn-outline-navy btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'advisory')">
+        <i class="fa-solid fa-file-signature"></i> Edit Advisory Sheet
+      </button>
+      <button class="btn btn-outline-navy btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'disclosure')">
+        <i class="fa-solid fa-file-pen"></i> ${getActionRequiredFormLabel(submission)}
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="openActionRequiredEditor('${submission.id}', 'documents')">
+        <i class="fa-solid fa-upload"></i> Replace Documents
+      </button>
+    </div>
+  `;
+}
+
+function renderDocumentUploadActionButton(submission) {
+  if (!canUploadDocuments(submission)) return "";
+  const applicantActionRequired =
+    normalizeRole(currentRole) === "applicant" &&
+    Boolean(getActiveActionRequiredItems(submission).length);
+  const action = applicantActionRequired
+    ? `openActionRequiredEditor('${submission.id}', 'documents')`
+    : `showToast('Document upload slot opened for ${submission.id}')`;
+  const label = applicantActionRequired
+    ? "Replace Requested Documents"
+    : "Upload Documents";
+  return `
+    <button class="btn btn-secondary btn-sm" onclick="${action}">
+      <i class="fa-solid fa-upload"></i> ${label}
+    </button>
+  `;
+}
+
+window.openActionRequiredEditor = function(id, target = "auto") {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission || normalizeRole(currentRole) !== "applicant" || !isOwnSubmission(submission)) {
+    showToast("Only the applicant can revise this case.");
+    return;
+  }
+  if (!getActiveActionRequiredItems(submission).length) {
+    showToast("There is no active action-required request for this case.");
+    return;
+  }
+
+  const formType = getFormTypeKeyFromSubmissionType(
+    submission.formType || submission.type || currentFormType,
+  );
+  currentFormType = formType;
+  submissionMethod = "online";
+  selectedSubmissionId = submission.id;
+  wizardData = {
+    ...createSubmissionWizardSeed(),
+    ...getSubmissionFormData(submission),
+    revisionForSubmissionId: submission.id,
+  };
+  delete wizardData.draftId;
+  const desiredWizardStep = getActionRequiredWizardStep(submission, target);
+  currentWizardStep = desiredWizardStep;
+
+  const formPage = getFormPageForFormType(formType);
+  navigateTo(formPage);
+  currentWizardStep = Math.min(desiredWizardStep, getMaxWizardSteps());
+  refreshWizard();
+  showToast(`Opened ${submission.id} for correction.`, "info");
+};
+
 function getDownloadAccess(submission, level, role = currentRole) {
   const normalizedRole = normalizeRole(role);
   if (level === "confidential") {
@@ -6686,27 +6916,7 @@ function requestDocs(id) {
     showToast(`${getRoleMeta().label} cannot edit this case.`);
     return;
   }
-
-  const missing = prompt(
-    "Please specify the missing documents for this submission (e.g., PSA-IPO-PAT-01 Signature, Invention Disclosure):",
-    "",
-  );
-
-  if (missing !== null) {
-    sub.status = "Under Review";
-    sub.statusNote = missing;
-    syncSubmissionWorkflowState(sub);
-    persistSubmissions();
-    addAuditLog({
-      accountName: getCurrentUser().name,
-      action: "Requested Documents",
-      record: sub.id,
-      details: `Requested additional documents: ${missing}.`,
-      module: sub.type,
-    });
-    showToast(`Request for "${missing}" sent to ${sub.applicant}`);
-    navigateTo(getDefaultDashboardPage());
-  }
+  showActionRequiredRequestModal(id, "documents");
 }
 
 function requestFormCorrection(id) {
@@ -6716,34 +6926,149 @@ function requestFormCorrection(id) {
     showToast(`${getRoleMeta().label} cannot edit this case.`);
     return;
   }
-
-  const correction = prompt(
-    "Please describe the form error the applicant must correct (e.g., wrong inventor name, missing signature name, incorrect Form 110 answer):",
-    "",
-  );
-
-  if (correction !== null) {
-    const note = correction.trim();
-    if (!note) {
-      showToast("No correction request was sent.");
-      return;
-    }
-
-    sub.status = "Under Review";
-    sub.statusNote = `Form correction needed: ${note}`;
-    syncSubmissionWorkflowState(sub);
-    persistSubmissions();
-    addAuditLog({
-      accountName: getCurrentUser().name,
-      action: "Requested Form Correction",
-      record: sub.id,
-      details: `Requested applicant form correction: ${note}.`,
-      module: sub.type,
-    });
-    showToast(`Form correction request sent to ${sub.applicant}`);
-    navigateTo(getDefaultDashboardPage());
-  }
+  showActionRequiredRequestModal(id, "disclosure");
 }
+
+function renderActionRequiredTargetOptions(submission, selectedTarget = "documents") {
+  const options = [
+    ["advisory", "Advisory Service Sheet"],
+    ["disclosure", getActionRequiredFormLabel(submission)],
+    ["documents", "Uploaded Requirement / Document"],
+    ["other", "Other"],
+  ];
+  return options
+    .map(
+      ([value, label]) =>
+        `<option value="${value}" ${value === selectedTarget ? "selected" : ""}>${escapeHtml(label)}</option>`,
+    )
+    .join("");
+}
+
+function getActionRequiredFieldPlaceholder(target) {
+  if (target === "advisory") return "e.g. Client Printed Name, Contact No., Service Availed";
+  if (target === "disclosure") return "e.g. Novel Features, Inventor(s), Prior Disclosure";
+  if (target === "documents") return "e.g. Signed applicant declaration, technical drawing PDF";
+  return "e.g. Specific section or requirement";
+}
+
+function getActionRequiredInstructionPlaceholder(target) {
+  if (target === "documents") {
+    return "Describe the file issue and what the applicant must upload or replace.";
+  }
+  return "Describe the exact correction needed so the applicant can update the right field.";
+}
+
+function showActionRequiredRequestModal(id, defaultTarget = "documents") {
+  const sub = submissions.find((s) => s.id === id);
+  if (!sub) return;
+  const overlay = document.getElementById("modalOverlay");
+  const modalBody = document.getElementById("modalBody");
+  const modalTitle = document.getElementById("modalTitle");
+  if (!overlay || !modalBody || !modalTitle) return;
+
+  const safeTarget = ["advisory", "disclosure", "documents", "other"].includes(defaultTarget)
+    ? defaultTarget
+    : "documents";
+  modalTitle.innerText = "Create Action Required Request";
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div style="display:grid; gap:18px;">
+      <div style="padding:14px 16px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.18); border-radius:10px;">
+        <div style="font-size:.76rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--red); margin-bottom:4px;">Applicant will see this as a checklist item</div>
+        <div style="font-size:.88rem; color:var(--gray-600); line-height:1.55;">Be specific about the form, field or file, and the exact change required.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Affected form or requirement *</label>
+        <select id="actionReqTarget" onchange="updateActionRequiredRequestPlaceholders()" style="width:100%;">
+          ${renderActionRequiredTargetOptions(sub, safeTarget)}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Exact field, section, or file *</label>
+        <input type="text" id="actionReqField" placeholder="${escapeHtml(getActionRequiredFieldPlaceholder(safeTarget))}" />
+      </div>
+
+      <div class="form-group">
+        <label>Required change *</label>
+        <textarea id="actionReqInstruction" rows="5" placeholder="${escapeHtml(getActionRequiredInstructionPlaceholder(safeTarget))}"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Due date <span style="color:var(--gray-400); font-weight:600;">(optional)</span></label>
+        <input type="date" id="actionReqDueDate" />
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:4px;">
+        <button type="button" class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="confirmActionRequiredRequest('${id}')">
+          <i class="fa-solid fa-paper-plane"></i> Send Request
+        </button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add("active");
+}
+
+window.updateActionRequiredRequestPlaceholders = function() {
+  const target = document.getElementById("actionReqTarget")?.value || "documents";
+  const field = document.getElementById("actionReqField");
+  const instruction = document.getElementById("actionReqInstruction");
+  if (field) field.placeholder = getActionRequiredFieldPlaceholder(target);
+  if (instruction) instruction.placeholder = getActionRequiredInstructionPlaceholder(target);
+};
+
+window.confirmActionRequiredRequest = function(id) {
+  const sub = submissions.find((s) => s.id === id);
+  if (!sub) return;
+  if (!canEditSubmission(sub)) {
+    showToast(`${getRoleMeta().label} cannot edit this case.`);
+    return;
+  }
+
+  const target = document.getElementById("actionReqTarget")?.value || "documents";
+  const field = String(document.getElementById("actionReqField")?.value || "").trim();
+  const instruction = String(document.getElementById("actionReqInstruction")?.value || "").trim();
+  const dueDate = document.getElementById("actionReqDueDate")?.value || "";
+
+  if (!field || !instruction) {
+    showToast("Please provide the exact field/file and required change.");
+    return;
+  }
+
+  const user = getCurrentUser();
+  const item = {
+    id: `AR-${Date.now()}`,
+    target,
+    field,
+    instruction,
+    dueDate,
+    requestedBy: user.name,
+    requestedById: user.id,
+    requestedAt: new Date().toISOString(),
+    resolved: false,
+  };
+
+  sub.actionRequiredItems = Array.isArray(sub.actionRequiredItems)
+    ? sub.actionRequiredItems
+    : [];
+  sub.actionRequiredItems.push(item);
+  sub.status = "Under Review";
+  sub.statusNote = buildActionRequiredStatusNote(sub);
+  syncSubmissionWorkflowState(sub);
+  persistSubmissions();
+  addAuditLog({
+    accountName: user.name,
+    action: target === "documents" ? "Requested Documents" : "Requested Form Correction",
+    record: sub.id,
+    details: `${getActionRequiredTargetLabel(target, sub)} - ${field}: ${instruction}${dueDate ? ` Due ${dueDate}.` : ""}`,
+    module: sub.type,
+  });
+  closeModal();
+  showToast(`Action-required request sent to ${sub.applicant}.`, "success");
+  navigateTo(getDefaultDashboardPage());
+};
 
 function archiveSubmission(id) {
   const submission = submissions.find((s) => s.id === id);
@@ -7483,12 +7808,14 @@ function renderSubmissionDetail() {
     </div>
 
     ${
-      s.statusNote
+      getActiveActionRequiredItems(s).length
         ? `<div style="padding:16px 18px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.22); border-radius:10px; margin-bottom:24px; display:flex; align-items:flex-start; gap:12px;">
       <i class="fa-solid fa-circle-exclamation" style="color:var(--red); font-size:1.15rem; margin-top:2px;"></i>
       <div>
         <strong style="color:var(--red);">Action Required</strong>
-        <p style="font-size:.86rem; color:var(--gray-700); margin:4px 0 0; line-height:1.55;">${escapeHtml(s.statusNote)}</p>
+        <p style="font-size:.86rem; color:var(--gray-700); margin:4px 0 0; line-height:1.55;">${escapeHtml(buildActionRequiredStatusNote(s))}</p>
+        ${renderActionRequiredItemChecklist(s)}
+        ${renderApplicantActionRequiredControls(s)}
       </div>
     </div>`
         : ""
@@ -7523,7 +7850,7 @@ function renderSubmissionDetail() {
             ${renderRequirementChecklistPanel(formTypeKey, { data: s, compact: true })}
           </div>
           <div class="detail-actions" style="margin-top:0; margin-bottom:12px;">
-            ${canUploadDocuments(s) ? `<button class="btn btn-secondary btn-sm" onclick="showToast('Document upload slot opened for ${s.id}')"><i class="fa-solid fa-upload"></i> Upload Documents</button>` : ""}
+            ${renderDocumentUploadActionButton(s)}
             ${confidentialAccess === "allow" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Downloading confidential packet for ${s.id}')"><i class="fa-solid fa-download"></i> Download Confidential</button>` : ""}
             ${topSecretAccess === "allow" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Downloading top secret annex for ${s.id}')"><i class="fa-solid fa-shield-halved"></i> Download Top Secret</button>` : ""}
             ${topSecretAccess === "approval" ? `<button class="btn btn-outline-navy btn-sm" onclick="showToast('Top secret download for ${s.id} requires super admin approval.')"><i class="fa-solid fa-key"></i> Top Secret Approval</button>` : ""}
@@ -7614,7 +7941,6 @@ function renderSubmissionDetail() {
               reviewerCanTake
                 ? `<button class="btn btn-primary btn-sm" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>`
                 : `
-            ${reviewerCanAdvance ? `<button class="btn btn-outline-danger btn-sm" onclick="requestFormCorrection('${s.id}')"><i class="fa-solid fa-pen-to-square"></i> Request Form Correction</button>` : ""}
             ${reviewerCanAdvance ? `<button class="btn btn-outline-danger btn-sm" onclick="requestDocs('${s.id}')"><i class="fa-solid fa-triangle-exclamation"></i> Request Requirements</button>` : ""}
             ${canArchiveSubmission(s) ? `<button class="btn btn-secondary btn-sm" onclick="archiveSubmission('${s.id}')"><i class="fa-solid fa-box-archive"></i> Archive</button>` : ""}
             ${canUnarchiveSubmission(s) ? `<button class="btn btn-primary btn-sm" onclick="unarchiveSubmission('${s.id}')"><i class="fa-solid fa-box-open"></i> Unarchive</button>` : ""}
@@ -9338,14 +9664,18 @@ function renderPatentGoogleForm(
   const typeLabel = getPatentIntakeTypeLabel();
   const isIndustrial = currentFormType === "industrial";
   const hasPatentSupplementalStep = currentFormType === "patent";
+  const revisionSubmission = getActionRequiredSubmission();
+  const isRevision = Boolean(revisionSubmission);
   const heroCopy = hasPatentSupplementalStep
     ? "Complete the Advisory Service Sheet and IP Disclosure Form first, answer the Form 110 supplemental sheet question, attach patent documents, then review the finished paper-style forms before submission."
     : `Complete the Advisory Service Sheet and IP Disclosure Form first, attach ${isIndustrial ? "industrial design" : typeLabel.toLowerCase()} documents, then review the finished paper-style forms before submission.`;
   const previewMeta = "Advisory and disclosure previews";
-  const finalButtonLabel = `Submit ${typeLabel} Intake`;
+  const finalButtonLabel = isRevision
+    ? "Resubmit Corrections"
+    : `Submit ${typeLabel} Intake`;
 
   return `
-    ${renderBackNav(backTarget, backLabel)}
+    ${renderBackNav(isRevision ? "user-submissions" : backTarget, isRevision ? "My Applications" : backLabel)}
     <div class="patent-gform-shell">
       <div class="patent-gform-header">
         <div class="patent-gform-header-bar"></div>
@@ -9387,7 +9717,7 @@ function renderPatentGoogleForm(
               }
             </div>
             <div class="patent-gform-actions__right">
-              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> ${isRevision ? "Save Revision" : "Save Draft"}</button>
               ${
                 currentWizardStep < steps.length
                   ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next Section <i class="fa-solid fa-arrow-right"></i></button>`
@@ -11224,9 +11554,11 @@ function renderCopyrightGoogleForm(
 ) {
   const steps = getCopyrightFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
+  const revisionSubmission = getActionRequiredSubmission();
+  const isRevision = Boolean(revisionSubmission);
 
   return `
-    ${renderBackNav(backTarget, backLabel)}
+    ${renderBackNav(isRevision ? "user-submissions" : backTarget, isRevision ? "My Applications" : backLabel)}
     <div class="patent-gform-shell">
       <div class="patent-gform-header">
         <div class="patent-gform-header-bar" style="background:linear-gradient(135deg, #10b981, #0f766e);"></div>
@@ -11269,11 +11601,11 @@ function renderCopyrightGoogleForm(
               }
             </div>
             <div class="patent-gform-actions__right">
-              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> ${isRevision ? "Save Revision" : "Save Draft"}</button>
               ${
                 currentWizardStep < steps.length
                   ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next Section <i class="fa-solid fa-arrow-right"></i></button>`
-                  : `<button class="btn btn-success" onclick="submitForm()">Submit Copyright Form <i class="fa-solid fa-paper-plane"></i></button>`
+                  : `<button class="btn btn-success" onclick="submitForm()">${isRevision ? "Resubmit Corrections" : "Submit Copyright Form"} <i class="fa-solid fa-paper-plane"></i></button>`
               }
             </div>
           </div>
@@ -13763,9 +14095,11 @@ function renderUtilityGoogleForm(
 ) {
   const steps = getUtilityFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
+  const revisionSubmission = getActionRequiredSubmission();
+  const isRevision = Boolean(revisionSubmission);
 
   return `
-    ${renderBackNav(backTarget, backLabel)}
+    ${renderBackNav(isRevision ? "user-submissions" : backTarget, isRevision ? "My Applications" : backLabel)}
     <div class="patent-gform-shell">
       <div class="patent-gform-header">
         <div class="patent-gform-header-bar" style="background:linear-gradient(135deg, #6366f1, #4338ca);"></div>
@@ -13807,11 +14141,11 @@ function renderUtilityGoogleForm(
               }
             </div>
             <div class="patent-gform-actions__right">
-              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> ${isRevision ? "Save Revision" : "Save Draft"}</button>
               ${
                 currentWizardStep < 4
                   ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next Section <i class="fa-solid fa-arrow-right"></i></button>`
-                  : `<button class="btn btn-success" onclick="submitForm()">Submit Utility Model Form <i class="fa-solid fa-paper-plane"></i></button>`
+                  : `<button class="btn btn-success" onclick="submitForm()">${isRevision ? "Resubmit Corrections" : "Submit Utility Model Form"} <i class="fa-solid fa-paper-plane"></i></button>`
               }
             </div>
           </div>
@@ -14848,9 +15182,11 @@ function renderIndustrialGoogleForm(
 ) {
   const steps = getIndustrialFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
+  const revisionSubmission = getActionRequiredSubmission();
+  const isRevision = Boolean(revisionSubmission);
 
   return `
-    ${renderBackNav(backTarget, backLabel)}
+    ${renderBackNav(isRevision ? "user-submissions" : backTarget, isRevision ? "My Applications" : backLabel)}
     <div class="patent-gform-shell">
       <div class="patent-gform-header">
         <div class="patent-gform-header-bar" style="background:linear-gradient(135deg, #ec4899, #be185d);"></div>
@@ -14892,11 +15228,11 @@ function renderIndustrialGoogleForm(
               }
             </div>
             <div class="patent-gform-actions__right">
-              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+              <button class="btn btn-outline-navy" onclick="saveFormDraft()"><i class="fa-solid fa-floppy-disk"></i> ${isRevision ? "Save Revision" : "Save Draft"}</button>
               ${
                 currentWizardStep < 4
                   ? `<button class="btn btn-primary" onclick="nextWizardStep()">Next Section <i class="fa-solid fa-arrow-right"></i></button>`
-                  : `<button class="btn btn-success" onclick="submitForm()">Submit Industrial Design Form <i class="fa-solid fa-paper-plane"></i></button>`
+                  : `<button class="btn btn-success" onclick="submitForm()">${isRevision ? "Resubmit Corrections" : "Submit Industrial Design Form"} <i class="fa-solid fa-paper-plane"></i></button>`
               }
             </div>
           </div>
@@ -15889,6 +16225,21 @@ function renderStep4Review() {
 
 function saveFormDraft() {
   captureWizardData();
+  const revisionSubmission = getActionRequiredSubmission();
+  if (revisionSubmission) {
+    const submittedSummary = buildSubmissionSummaryFromFormData(
+      currentFormType,
+      wizardData,
+      revisionSubmission,
+    );
+    applyWizardDataToSubmission(revisionSubmission, submittedSummary, {
+      markSubmitted: false,
+    });
+    persistSubmissions();
+    showToast("Revision saved on the existing case.", "success");
+    return;
+  }
+
   const typeMap = { patent: "Patent",   copyright: "Copyright", utility: "Utility Model", industrial: "Industrial Design" };
   const typeLabel = typeMap[currentFormType] || "Draft";
   
@@ -17211,6 +17562,97 @@ function renderSubmissionConfirmationScreen(typeLabel, refNum, { copyright = fal
     </div>`;
 }
 
+function applyWizardDataToSubmission(
+  submission,
+  submittedSummary,
+  { markSubmitted = false } = {},
+) {
+  if (!submission) return null;
+  const formTypeKey = getFormTypeKeyFromSubmissionType(
+    currentFormType || submission.formType || submission.type,
+  );
+  const timestamp = new Date().toISOString();
+  syncRequirementUploadsToFiles(formTypeKey, wizardData);
+
+  submission.formType = formTypeKey;
+  submission.formData = { ...wizardData };
+  submission.data = { ...wizardData };
+  submission.requirementUploads = { ...ensureRequirementUploads(wizardData) };
+  submission.files = [...(wizardData.files || [])];
+  submission.requiredDocuments = getRequiredDocumentsForType(formTypeKey);
+  submission.title = submittedSummary.title || submission.title;
+  submission.applicant = submittedSummary.applicant || submission.applicant;
+  submission.department = submittedSummary.department || submission.department;
+  submission.email = submittedSummary.email || submission.email;
+  submission.contact = submittedSummary.contact || submission.contact;
+  submission.description = submittedSummary.description || submission.description;
+  submission.registrationLane =
+    submittedSummary.registrationLane || submission.registrationLane || "";
+  submission.workType = submittedSummary.workType || submission.workType || "";
+  submission.lastApplicantRevisionSavedAt = timestamp;
+
+  if (markSubmitted) {
+    const requestedNote = submission.statusNote || "";
+    const requestedItems = getActiveActionRequiredItems(submission)
+      .filter((item) => !item.legacy)
+      .map((item) => ({ ...item }));
+    if (Array.isArray(submission.actionRequiredItems)) {
+      submission.actionRequiredItems = submission.actionRequiredItems.map((item) =>
+        item.resolved
+          ? item
+          : {
+              ...item,
+              resolved: true,
+              resolvedAt: timestamp,
+              resolvedBy: getCurrentUser().name,
+            },
+      );
+    }
+    submission.status = "Under Review";
+    submission.statusNote = "";
+    submission.lastApplicantRevisionAt = timestamp;
+    submission.revisionHistory = Array.isArray(submission.revisionHistory)
+      ? submission.revisionHistory
+      : [];
+    submission.revisionHistory.push({
+      requestedNote,
+      requestedItems,
+      submittedAt: timestamp,
+      submittedBy: getCurrentUser().name,
+    });
+    syncSubmissionWorkflowState(submission);
+    addAuditLog({
+      accountName: getCurrentUser().name,
+      action: "Applicant Resubmitted Corrections",
+      record: submission.id,
+      details: requestedNote
+        ? `Applicant resubmitted corrections for: ${requestedNote}`
+        : "Applicant resubmitted requested corrections.",
+      module: submission.type,
+    });
+  }
+
+  syncSubmissionDisplayFields(submission);
+  return submission;
+}
+
+function renderActionRequiredRevisionConfirmationScreen(submission, typeLabel) {
+  return `
+    <div class="patent-confirmation-shell">
+      <div class="confirmation-screen">
+        <div class="check-circle"><i class="fa-solid fa-check"></i></div>
+        <h2>Corrections resubmitted</h2>
+        <p style="color:var(--gray-500)">Your ${escapeHtml(typeLabel)} updates were attached to the existing case and returned to evaluator review.</p>
+        <div class="ref-number">${escapeHtml(submission.id)}</div>
+        <p style="font-size:.85rem;color:var(--gray-400);margin-bottom:24px">The action-required flag has been cleared for this case.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="navigateTo('user-submissions')"><i class="fa-solid fa-file-lines"></i> View My Applications</button>
+          <button class="btn btn-outline-navy" onclick="viewSubmission('${submission.id}')"><i class="fa-solid fa-circle-info"></i> Open Case Details</button>
+        </div>
+      </div>
+    </div>`;
+}
+
 function submitForm() {
   captureWizardData();
 
@@ -17240,6 +17682,28 @@ function submitForm() {
     contact: "",
     description: wizardData.desc || wizardData.description || wizardData.title || "Newly submitted application.",
   });
+
+  const revisionSubmission = getActionRequiredSubmission();
+  if (revisionSubmission) {
+    applyWizardDataToSubmission(revisionSubmission, submittedSummary, {
+      markSubmitted: true,
+    });
+    persistSubmissions();
+    selectedSubmissionId = revisionSubmission.id;
+
+    const confirmationTarget =
+      currentPage === "forms"
+        ? document.getElementById("formsPublicContent")
+        : document.getElementById("main-content");
+    if (confirmationTarget) {
+      confirmationTarget.innerHTML = renderActionRequiredRevisionConfirmationScreen(
+        revisionSubmission,
+        typeLabel,
+      );
+    }
+    showToast("Corrections resubmitted to the evaluator.", "success");
+    return;
+  }
 
   if (isPatentIntakeFlow()) {
     const formTypeKey =
@@ -18249,7 +18713,7 @@ function getStatusCounts() {
   };
   visible.forEach((s) => {
     if (counts[s.status] !== undefined) counts[s.status]++;
-    if (s.statusNote) counts.ActionRequired++;
+    if (getActiveActionRequiredItems(s).length) counts.ActionRequired++;
   });
   return counts;
 }
@@ -18374,7 +18838,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
     if (ft && ft !== "All") filtered = filtered.filter((s) => s.type === ft);
     
     if (fs === "ActionRequired") {
-      filtered = filtered.filter((s) => s.statusNote);
+      filtered = filtered.filter((s) => getActiveActionRequiredItems(s).length);
     } else if (fs && fs !== "All") {
       filtered = filtered.filter((s) => s.status === fs);
     }
@@ -18414,7 +18878,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
         const display = getSubmissionDisplayData(s);
         const isCR = s.type === "Copyright";
         const frozen = s.status === "Approved";
-        const needsAction = Boolean(s.statusNote);
+        const needsAction = Boolean(getActiveActionRequiredItems(s).length);
 
         return `
       <div class="case-card ${needsAction ? "needs-action" : ""}" style="margin-bottom:20px; background:white; border-radius:12px; border:1px solid var(--gray-200); overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -18480,7 +18944,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                   ${
                     needsAction
                       ? `
-                    <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="viewSubmission('${s.id}')">
+                    <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="openActionRequiredEditor('${s.id}', 'auto')">
                       <i class="fa-solid fa-circle-exclamation"></i> Resolve Action Required
                     </button>
                   `
