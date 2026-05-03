@@ -3936,35 +3936,27 @@ async function handleLogin(e) {
     return;
   }
 
-  try {
-    const response = await apiRequest("accounts/login/", {
-      method: "POST",
-      auth: false,
-      body: {
-        email: loginEmail,
-        password: loginPassword,
-      },
-    });
-    const user = applyAuthPayload(response);
-    await Promise.allSettled([loadBackendApplications(), loadBackendUsers()]);
-    showToast(`Logged in to the ${getRoleMeta(currentRole).label} portal`, "success");
+  const fallbackUser = findLoginUser(loginRole, loginEmail);
+  if (!fallbackUser) {
+    showError("loginPasswordError", "Invalid email or password.");
+    showToast("Login failed. User not found.", "error");
+    return;
+  }
 
-    if (pendingAction && pendingAction.type === 'registration') {
-      const action = pendingAction;
-      pendingAction = null;
-      startSubmissionFlow(action.typeId, action.method);
-    } else {
-      navigateTo(getDefaultDashboardPage(currentRole));
-    }
-  } catch (err) {
-    const fallbackUser = findLoginUser(loginRole, loginEmail);
-    if (fallbackUser && !getAccessToken()) {
-      showError("loginPasswordError", err.message);
-      showToast("Backend login failed. Check the account in Django admin.", "error");
-    } else {
-      showError("loginPasswordError", err.message);
-      showToast(err.message || "Login failed.", "error");
-    }
+  // PROTOTYPE LOGIN: Bypass backend and log in directly
+  isLoggedIn = true;
+  currentRole = loginRole;
+  ACTIVE_ROLE_USER_IDS[loginRole] = fallbackUser.id;
+  updateTopbarRole();
+
+  showToast(`Prototype Access: Logged in as ${fallbackUser.name}`, "success");
+
+  if (pendingAction && pendingAction.type === 'registration') {
+    const action = pendingAction;
+    pendingAction = null;
+    startSubmissionFlow(action.typeId, action.method);
+  } else {
+    navigateTo(getDefaultDashboardPage(currentRole));
   }
 }
 
