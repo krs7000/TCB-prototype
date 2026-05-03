@@ -522,8 +522,8 @@ const mockNotifications = {
       id: 4,
       icon: "fa-circle-info",
       color: "#3b82f6",
-      title: "System Maintenance",
-      body: "We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
+      title: "System Notice",
+      body: "System Notice: We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
       time: "3 days ago",
       read: true,
       announcementId: 3,
@@ -550,8 +550,8 @@ let announcements = [
   },
   {
     id: 3,
-    title: "System Maintenance Notice",
-    content: "We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
+    title: "System Notice",
+    content: "System Notice: We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
     date: "2026-04-13",
     category: "Alert",
     image: "images/IPTTO-logo.jpg"
