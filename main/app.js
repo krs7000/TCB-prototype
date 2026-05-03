@@ -23,6 +23,352 @@ let currentMpType = "All";
 let landingMpType = "All";
 let dismissedTopAlertId = null;
 
+// ===== BACKEND API CONNECTION =====
+const TCB_API_BASE_URL = (
+  window.TCB_API_BASE_URL ||
+  window.localStorage?.getItem("TCB_API_BASE_URL") ||
+  "http://127.0.0.1:8000/api"
+).replace(/\/+$/, "");
+const TCB_AUTH_STORAGE_KEY = "TCB_AUTH_SESSION";
+const TCB_RESET_EMAIL_STORAGE_KEY = "TCB_PENDING_RESET_EMAIL";
+const TCB_DEV_RESET_OTP_STORAGE_KEY = "TCB_DEV_RESET_OTP";
+
+function apiUrl(path) {
+  return `${TCB_API_BASE_URL}/${String(path || "").replace(/^\/+/, "")}`;
+}
+
+function getStoredAuthSession() {
+  try {
+    return JSON.parse(window.localStorage?.getItem(TCB_AUTH_STORAGE_KEY) || "null");
+  } catch (err) {
+    return null;
+  }
+}
+
+function setStoredAuthSession(session) {
+  if (!session) {
+    window.localStorage?.removeItem(TCB_AUTH_STORAGE_KEY);
+    return;
+  }
+  window.localStorage?.setItem(TCB_AUTH_STORAGE_KEY, JSON.stringify(session));
+}
+
+function getAccessToken() {
+  return getStoredAuthSession()?.tokens?.access || "";
+}
+
+function getRefreshToken() {
+  return getStoredAuthSession()?.tokens?.refresh || "";
+}
+
+function extractApiError(payload) {
+  if (!payload) return "";
+  if (typeof payload === "string") return payload;
+  if (payload.detail) return payload.detail;
+  if (payload.error) return payload.error;
+  if (payload.message && Object.keys(payload).length === 1) return payload.message;
+  const firstKey = Object.keys(payload)[0];
+  const value = payload[firstKey];
+  if (Array.isArray(value)) return `${firstKey}: ${value.join(" ")}`;
+  if (typeof value === "string") return `${firstKey}: ${value}`;
+  if (value && typeof value === "object") return extractApiError(value);
+  return "Request failed.";
+}
+
+async function apiRequest(path, options = {}) {
+  const {
+    method = "GET",
+    body = null,
+    auth = true,
+    headers = {},
+  } = options;
+  const requestHeaders = { ...headers };
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+
+  if (body && !isFormData && !requestHeaders["Content-Type"]) {
+    requestHeaders["Content-Type"] = "application/json";
+  }
+  if (auth) {
+    const token = getAccessToken();
+    if (token) requestHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(apiUrl(path), {
+    method,
+    headers: requestHeaders,
+    body: body ? (isFormData ? body : JSON.stringify(body)) : null,
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    throw new Error(extractApiError(payload) || `${response.status} ${response.statusText}`);
+  }
+  return payload;
+}
+
+function unwrapApiList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.results)) return payload.results;
+  return [];
+}
+
+function frontendRoleFromBackend(role) {
+  if (role === "admin") return "superadmin";
+  if (role === "evaluator") return "reviewer";
+  return "applicant";
+}
+
+function backendRoleFromFrontend(role) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === "superadmin" || normalizedRole === "admin") return "admin";
+  if (normalizedRole === "reviewer") return "evaluator";
+  return "applicant";
+}
+
+function jsArg(value) {
+  return `'${String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+}
+
+function ensureBackendUser(user) {
+  if (!user?.id) return null;
+  const role = frontendRoleFromBackend(user.role);
+  const existingIndex = systemUsers.findIndex(
+    (entry) =>
+      String(entry.id) === String(user.id) ||
+      String(entry.email || "").toLowerCase() === String(user.email || "").toLowerCase(),
+  );
+  const existing = existingIndex >= 0 ? systemUsers[existingIndex] : {};
+  const nextUser = {
+    ...existing,
+    id: user.id,
+    name: user.full_name || existing.name || user.email,
+    username: user.full_name || existing.username || user.email,
+    email: user.email || existing.email || "",
+    role,
+    backendRole: user.role,
+    dept: user.profile?.institution || existing.dept || "Backend Account",
+    contact: user.profile?.contact_number || existing.contact || "",
+    status: user.is_active === false ? "Inactive" : "Active",
+    dateCreated: user.created_at
+      ? String(user.created_at).slice(0, 10)
+      : existing.dateCreated || new Date().toISOString().split("T")[0],
+    backendUser: true,
+  };
+  if (existingIndex >= 0) {
+    systemUsers[existingIndex] = nextUser;
+  } else {
+    systemUsers.push(nextUser);
+  }
+  return nextUser;
+}
+
+function applyAuthPayload(payload) {
+  if (!payload?.user) return null;
+  if (payload.tokens) {
+    setStoredAuthSession({ tokens: payload.tokens, user: payload.user });
+  }
+  const user = ensureBackendUser(payload.user);
+  if (!user) return null;
+
+  isLoggedIn = true;
+  currentRole = normalizeRole(user.role);
+  selectedLoginRole = currentRole;
+  setActiveUserForRole(currentRole, user.id);
+  updateTopbarRole();
+  return user;
+}
+
+function mapBackendApplicationStatus(status) {
+  const statusMap = {
+    Submitted: "Pending",
+    "Under Evaluation": "Under Review",
+    "Under Review": "Under Review",
+    Deficient: "Action Required",
+    Certified: "Approved",
+    Registered: "Approved",
+    "Forwarded to IPOPHL": "Under Review",
+    "IPOPHL Under Review": "Under Review",
+    "IPOPHL Deficient": "Action Required",
+  };
+  return statusMap[status] || status || "Pending";
+}
+
+function mapBackendApplication(application) {
+  const createdBy = application.created_by_detail || {};
+  const evaluator = application.evaluator_detail || {};
+  return {
+    id: application.transaction_code || application.id,
+    backendId: application.id,
+    transactionCode: application.transaction_code || "",
+    type: application.ip_type,
+    title: application.title || "Untitled Application",
+    applicant: application.created_by_name || createdBy.full_name || "Applicant",
+    applicantUserId: application.created_by || createdBy.id || null,
+    department: createdBy.institution || createdBy.profile?.institution || "Backend Application",
+    email: createdBy.email || "",
+    contact: createdBy.contact_number || createdBy.profile?.contact_number || "",
+    status: mapBackendApplicationStatus(application.status),
+    backendStatus: application.status,
+    date: String(application.created_at || new Date().toISOString()).slice(0, 10),
+    description: application.description || "",
+    assignedReviewerId: application.assigned_evaluator || evaluator.id || null,
+    assignedEvaluatorId: application.assigned_evaluator || evaluator.id || null,
+    assignedReviewerName: application.evaluator_name || evaluator.full_name || "",
+    frozen: ["Certified", "Registered"].includes(application.status),
+    formType: getFormTypeKeyFromSubmissionType(application.ip_type),
+    requirementUploads: {},
+    files: [],
+    requiredDocuments: getRequiredDocumentsForType(
+      getFormTypeKeyFromSubmissionType(application.ip_type),
+    ),
+    marketplaceConsent: Boolean(application.marketplace_consent),
+    backendApplication: true,
+  };
+}
+
+function mergeBackendApplications(items) {
+  if (!items.length) return;
+  items.map(mapBackendApplication).forEach((backendSubmission) => {
+    const index = submissions.findIndex(
+      (item) =>
+        String(item.backendId || "") === String(backendSubmission.backendId) ||
+        String(item.id || "") === String(backendSubmission.id),
+    );
+    if (index >= 0) {
+      submissions[index] = { ...submissions[index], ...backendSubmission };
+    } else {
+      submissions.unshift(backendSubmission);
+    }
+  });
+  normalizeSubmissionWorkflowDefaults();
+  syncAllSubmissionDisplayFields();
+  persistSubmissions();
+}
+
+function mapBackendMarketplaceItem(item, index) {
+  const ownerName = item.owner_name || item.applicant_name || "PSU Inventor";
+  return {
+    id: item.id,
+    backendId: item.id,
+    title: item.title || "Untitled Innovation",
+    fullTitle: item.title || "Untitled Innovation",
+    type: item.ip_type || "Patent",
+    inventor: ownerName,
+    college: "Palawan State University",
+    description: item.abstract || "",
+    longDescription: item.abstract || "",
+    features: item.co_inventors?.length
+      ? item.co_inventors.map((name) => `Co-inventor: ${name}`)
+      : ["Published from the TCB backend marketplace."],
+    businessPotential: "Available for inquiry through the PSU IP office.",
+    contactPerson: ownerName,
+    contactEmail: item.contact_email || "techtransfer@psu.edu.ph",
+    year: item.created_at ? new Date(item.created_at).getFullYear() : new Date().getFullYear(),
+    icon: "fa-solid fa-lightbulb",
+    image: "",
+    archived: false,
+    backendMarketplaceItem: true,
+    sortOrder: index,
+  };
+}
+
+function mapBackendAnnouncement(item) {
+  return {
+    id: item.id,
+    title: item.title || "Announcement",
+    content: item.body || "",
+    date: String(item.created_at || item.updated_at || new Date().toISOString()).slice(0, 10),
+    category: item.category || "News",
+    image: "images/psu_logo_main.png",
+    backendAnnouncement: true,
+  };
+}
+
+async function loadBackendMarketplace() {
+  const payload = await apiRequest("marketplace/", { auth: false });
+  const items = unwrapApiList(payload);
+  if (!items.length) return;
+  marketplaceItems.splice(
+    0,
+    marketplaceItems.length,
+    ...items.map(mapBackendMarketplaceItem),
+  );
+}
+
+async function loadBackendAnnouncements() {
+  const payload = await apiRequest("workflow/announcements/", { auth: false });
+  const items = unwrapApiList(payload);
+  if (!items.length) return;
+  announcements.splice(0, announcements.length, ...items.map(mapBackendAnnouncement));
+}
+
+async function loadBackendApplications() {
+  if (!getAccessToken()) return;
+  const payload = await apiRequest("applications/");
+  mergeBackendApplications(unwrapApiList(payload));
+}
+
+async function loadBackendUsers() {
+  if (!getAccessToken()) return;
+  const payload = await apiRequest("accounts/users/");
+  unwrapApiList(payload).forEach((user) =>
+    ensureBackendUser({
+      ...user,
+      full_name: user.full_name,
+      role: user.role,
+      is_active: user.is_active,
+    }),
+  );
+}
+
+async function restoreBackendSession() {
+  const session = getStoredAuthSession();
+  if (!session?.tokens?.access) return;
+  try {
+    const user = await apiRequest("accounts/profile/");
+    applyAuthPayload({ user, tokens: session.tokens });
+  } catch (err) {
+    setStoredAuthSession(null);
+  }
+}
+
+async function initializeBackendConnection() {
+  await Promise.allSettled([loadBackendMarketplace(), loadBackendAnnouncements()]);
+  await restoreBackendSession();
+  if (isLoggedIn) {
+    await Promise.allSettled([loadBackendApplications(), loadBackendUsers()]);
+  }
+}
+
+async function createBackendApplication(submittedSummary, typeLabel) {
+  if (!isLoggedIn || normalizeRole(currentRole) !== "applicant" || !getAccessToken()) {
+    return null;
+  }
+  const payload = {
+    title: submittedSummary.title || `Untitled ${typeLabel} Application`,
+    description:
+      submittedSummary.description ||
+      wizardData.desc ||
+      wizardData.description ||
+      submittedSummary.title ||
+      "Submitted from the TCB frontend.",
+    ip_type: typeLabel,
+    marketplace_consent: Boolean(wizardData.marketplaceConsent),
+  };
+  if (typeLabel === "Copyright") {
+    payload.isbn = wizardData.isbn || "";
+    payload.issn = wizardData.issn || "";
+    payload.ismn = wizardData.ismn || "";
+  }
+
+  const application = await apiRequest("applications/", {
+    method: "POST",
+    body: payload,
+  });
+  await apiRequest(`applications/${application.id}/submit/`, { method: "POST" });
+  return { ...application, status: "Submitted" };
+}
+
 function updateMarketplaceTypeButtons(selector, type) {
   document.querySelectorAll(selector).forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.type === type);
@@ -1434,12 +1780,12 @@ function getDisplaySecurityKey(type) {
 
 function setActiveUserForRole(role, userId) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === "applicant") {
+  if (!userId && normalizedRole === "applicant") {
     ACTIVE_ROLE_USER_IDS.applicant = DEFAULT_APPLICANT_USER_ID;
     return;
   }
   const target = systemUsers.find(
-    (user) => user.id === Number(userId) && user.role === normalizedRole,
+    (user) => String(user.id) === String(userId) && user.role === normalizedRole,
   );
   if (target) {
     ACTIVE_ROLE_USER_IDS[normalizedRole] = target.id;
@@ -1704,14 +2050,14 @@ function canAccessDashboardPage(page, role = currentRole) {
 function isOwnSubmission(submission, role = currentRole) {
   const user = getCurrentUser(role);
   if (submission.applicantUserId && user?.id) {
-    return Number(submission.applicantUserId) === Number(user.id);
+    return String(submission.applicantUserId) === String(user.id);
   }
   return submission.applicant === user.name || submission.email === user.email;
 }
 
 function isAssignedReviewerSubmission(submission, role = currentRole) {
   const user = getCurrentUser(role);
-  return getAssignedReviewerId(submission) === user.id;
+  return String(getAssignedReviewerId(submission)) === String(user.id);
 }
 
 function getVisibleSubmissions(role = currentRole) {
@@ -2562,6 +2908,14 @@ function navigateTo(page, isBack = false, params = null) {
   } else if (page === "reset-password") {
     if (publicNav) publicNav.classList.add("active");
     document.getElementById("page-reset-password").classList.add("active");
+    const resetEmail = document.getElementById("resetEmail");
+    const resetOtp = document.getElementById("resetOtpCode");
+    if (resetEmail && !resetEmail.value) {
+      resetEmail.value = window.localStorage?.getItem(TCB_RESET_EMAIL_STORAGE_KEY) || "";
+    }
+    if (resetOtp && !resetOtp.value) {
+      resetOtp.value = window.localStorage?.getItem(TCB_DEV_RESET_OTP_STORAGE_KEY) || "";
+    }
   } else if (dashboardPages.includes(page)) {
     if (!isLoggedIn) {
       navigateTo(getProtectedPageLogin(page));
@@ -3050,7 +3404,7 @@ function renderInnovationList(items) {
   return items
     .map(
       (item) => `
-    <div class="innovation-list-item" onclick="showInnovationDetail(${item.id})">
+    <div class="innovation-list-item" onclick="showInnovationDetail(${jsArg(item.id)})">
       <div class="list-img-box">
         ${item.image ? `<img src="${item.image}" alt="${item.title}">` : `<i class="${item.icon}"></i>`}
       </div>
@@ -3325,10 +3679,12 @@ function filterLandingMarketplace() {
 // ===== LOGIN =====
 window.initSignupWizard = function() {
   const step2 = document.getElementById('signup-step-2');
+  const step3 = document.getElementById('signup-step-3');
   const title = document.getElementById('signup-title');
   const subtitle = document.getElementById('signup-subtitle');
   
   if (step2) step2.style.display = 'block';
+  if (step3) step3.style.display = 'none';
   if (title) title.innerText = 'Create Account';
   if (subtitle) subtitle.innerText = "Join The Creator's Bulwark Community";
   
@@ -3382,26 +3738,66 @@ window.updateRegEmailHint = function() {
   }
 };
 
-window.handleSignUp = function(e) {
+window.handleSignUp = async function(e) {
   if (e) e.preventDefault();
-  
-  // PROTOTYPE BYPASS: Go directly to dashboard
-  isLoggedIn = true;
-  currentRole = 'applicant';
-  updateTopbarRole();
-  
-  showToast("Prototype Access: Account created and logged in!");
 
-  if (pendingAction && pendingAction.type === 'registration') {
-    const action = pendingAction;
-    pendingAction = null;
-    startSubmissionFlow(action.typeId, action.method);
-  } else {
-    navigateTo(getDefaultDashboardPage(currentRole));
+  const fullName = document.getElementById("regUsername")?.value.trim();
+  const email = document.getElementById("regEmail")?.value.trim();
+  const password = document.getElementById("regPassword")?.value || "";
+  const passwordConfirm = document.getElementById("regPasswordConfirm")?.value || "";
+  const regType = document.getElementById("regType")?.value || "applicant";
+
+  document.getElementById("regEmailError").innerText = "";
+  document.getElementById("regPasswordError").innerText = "";
+
+  if (!fullName || !email || !password) {
+    showToast("Please complete all required signup fields.", "warning");
+    return;
+  }
+  if (password !== passwordConfirm) {
+    showError("regPasswordError", "Passwords do not match.");
+    return;
+  }
+
+  try {
+    const response = await apiRequest("accounts/register/", {
+      method: "POST",
+      auth: false,
+      body: {
+        full_name: fullName,
+        email,
+        password,
+        password_confirm: passwordConfirm,
+        institution: regType === "psu_member" ? "PSU Community" : "External",
+      },
+    });
+
+    pendingSignupData = {
+      username: fullName,
+      email,
+      type: regType,
+      devOtp: response.dev_otp || "",
+    };
+
+    const step2 = document.getElementById("signup-step-2");
+    const step3 = document.getElementById("signup-step-3");
+    const displayEmail = document.getElementById("displayRegEmail");
+    if (step2) step2.style.display = "none";
+    if (step3) step3.style.display = "block";
+    if (displayEmail) displayEmail.textContent = email;
+    showToast(
+      response.dev_otp
+        ? `Verification code sent. Dev OTP: ${response.dev_otp}`
+        : "Verification code sent to your email.",
+      "success",
+    );
+  } catch (err) {
+    showError("regEmailError", err.message);
+    showToast(err.message || "Signup failed.", "error");
   }
 };
 
-window.verifySignupOtp = function() {
+window.verifySignupOtp = async function() {
   const boxes = document.querySelectorAll("#signup-step-3 .otp-box");
   const code = Array.from(boxes).map(b => b.value).join("");
   
@@ -3409,39 +3805,37 @@ window.verifySignupOtp = function() {
     showToast("Please enter the full 6-digit verification code.", "warning");
     return;
   }
-  
-  // In a real app, we'd verify the 'code' here.
-  // For the prototype, any 6-digit code works.
-  
-  const newUser = {
-    id: systemUsers.length + 1,
-    name: pendingSignupData.username, // Using username as name for simplicity in this prototype
-    username: pendingSignupData.username,
-    email: pendingSignupData.email,
-    role: 'applicant',
-    dept: pendingSignupData.type === 'psu_member' ? 'PSU Community' : 'External',
-    status: 'Active',
-    dateCreated: new Date().toISOString().split('T')[0]
-  };
-  
-  systemUsers.push(newUser);
-  
-  // AUTOMATIC LOGIN
-  isLoggedIn = true;
-  currentRole = 'applicant'; // Standard applicant role
-  updateTopbarRole();
-  
-  showToast(`Account verified! Welcome, ${pendingSignupData.username}. Logging you in...`);
-  
-  // Reset and navigate to Dashboard
-  pendingSignupData = null;
-  
-  if (pendingAction && pendingAction.type === 'registration') {
-    const action = pendingAction;
-    pendingAction = null;
-    startSubmissionFlow(action.typeId, action.method);
-  } else {
-    navigateTo(getDefaultDashboardPage(currentRole));
+
+  if (!pendingSignupData?.email) {
+    showToast("Please start signup again before verifying.", "warning");
+    navigateTo("signup");
+    return;
+  }
+
+  try {
+    const response = await apiRequest("accounts/verify-email/", {
+      method: "POST",
+      auth: false,
+      body: {
+        email: pendingSignupData.email,
+        otp_code: code,
+      },
+    });
+    const user = applyAuthPayload(response);
+    await loadBackendApplications().catch(() => {});
+    showToast(`Account verified. Welcome, ${user?.name || pendingSignupData.username}!`, "success");
+
+    pendingSignupData = null;
+
+    if (pendingAction && pendingAction.type === 'registration') {
+      const action = pendingAction;
+      pendingAction = null;
+      startSubmissionFlow(action.typeId, action.method);
+    } else {
+      navigateTo(getDefaultDashboardPage(currentRole));
+    }
+  } catch (err) {
+    showToast(err.message || "OTP verification failed.", "error");
   }
 };
 
@@ -3457,8 +3851,31 @@ window.signupOtpBackspace = function(e, el) {
   }
 };
 
-window.resendSignupOtp = function() {
-  showToast("A new verification code has been sent to your email.");
+window.resendSignupOtp = async function() {
+  if (!pendingSignupData?.email) {
+    showToast("Please enter your signup email first.", "warning");
+    return false;
+  }
+  try {
+    const response = await apiRequest("accounts/resend-otp/", {
+      method: "POST",
+      auth: false,
+      body: {
+        email: pendingSignupData.email,
+        purpose: "registration",
+      },
+    });
+    pendingSignupData.devOtp = response.dev_otp || "";
+    showToast(
+      response.dev_otp
+        ? `A new verification code was sent. Dev OTP: ${response.dev_otp}`
+        : "A new verification code has been sent to your email.",
+      "success",
+    );
+  } catch (err) {
+    showToast(err.message || "Unable to resend OTP.", "error");
+  }
+  return false;
 };
 
 function findLoginUser(role, email) {
@@ -3487,27 +3904,55 @@ function findLoginUser(role, email) {
   return matchingRoleUsers[0] || null;
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   if (e) e.preventDefault();
 
   const loginRole = normalizeRole(selectedLoginRole || "applicant");
   const loginEmail = document.getElementById("loginEmail")?.value || "";
-  const user = findLoginUser(loginRole, loginEmail);
+  const loginPassword = document.getElementById("loginPassword")?.value || "";
 
-  isLoggedIn = true;
-  currentRole = loginRole;
-  selectedLoginRole = loginRole;
-  if (user) setActiveUserForRole(loginRole, user.id);
-  updateTopbarRole();
+  ["loginEmailError", "loginPasswordError"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = "";
+      el.style.display = "none";
+    }
+  });
 
-  showToast(`Prototype Access: Logged in to the ${getRoleMeta(currentRole).label} portal`);
+  if (!loginEmail || !loginPassword) {
+    showError("loginPasswordError", "Enter your email and password.");
+    return;
+  }
 
-  if (pendingAction && pendingAction.type === 'registration') {
-    const action = pendingAction;
-    pendingAction = null;
-    startSubmissionFlow(action.typeId, action.method);
-  } else {
-    navigateTo(getDefaultDashboardPage(currentRole));
+  try {
+    const response = await apiRequest("accounts/login/", {
+      method: "POST",
+      auth: false,
+      body: {
+        email: loginEmail,
+        password: loginPassword,
+      },
+    });
+    const user = applyAuthPayload(response);
+    await Promise.allSettled([loadBackendApplications(), loadBackendUsers()]);
+    showToast(`Logged in to the ${getRoleMeta(currentRole).label} portal`, "success");
+
+    if (pendingAction && pendingAction.type === 'registration') {
+      const action = pendingAction;
+      pendingAction = null;
+      startSubmissionFlow(action.typeId, action.method);
+    } else {
+      navigateTo(getDefaultDashboardPage(currentRole));
+    }
+  } catch (err) {
+    const fallbackUser = findLoginUser(loginRole, loginEmail);
+    if (fallbackUser && !getAccessToken()) {
+      showError("loginPasswordError", err.message);
+      showToast("Backend login failed. Check the account in Django admin.", "error");
+    } else {
+      showError("loginPasswordError", err.message);
+      showToast(err.message || "Login failed.", "error");
+    }
   }
 }
 
@@ -3552,6 +3997,14 @@ window.verifyOtp = function () {
 };
 
 function logout() {
+  const refresh = getRefreshToken();
+  if (refresh && getAccessToken()) {
+    apiRequest("accounts/logout/", {
+      method: "POST",
+      body: { refresh },
+    }).catch(() => {});
+  }
+  setStoredAuthSession(null);
   isLoggedIn = false;
   currentRole = "applicant";
   selectedLoginRole = "applicant";
@@ -3578,31 +4031,50 @@ function showError(id, msg) {
 
 // ====== PASSWORD RECOVERY LOGIC ======
 
-window.handleForgotPasswordSubmit = function(e) {
+window.handleForgotPasswordSubmit = async function(e) {
   if (e) e.preventDefault();
   const email = document.getElementById('forgotEmail').value;
   const container = document.getElementById('forgotPasswordFormContainer');
-  
-  // Security First: Generic success message
-  container.innerHTML = `
-    <div style="text-align:center; padding: 24px 0;">
-      <div style="width:64px; height:64px; background:rgba(34,197,94,0.1); color:#22c55e; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
-        <i class="fa-solid fa-circle-check" style="font-size:1.8rem;"></i>
+
+  try {
+    const response = await apiRequest("accounts/forgot-password/", {
+      method: "POST",
+      auth: false,
+      body: { email },
+    });
+    window.localStorage?.setItem(TCB_RESET_EMAIL_STORAGE_KEY, email);
+    if (response.dev_otp) {
+      window.localStorage?.setItem(TCB_DEV_RESET_OTP_STORAGE_KEY, response.dev_otp);
+    }
+
+    container.innerHTML = `
+      <div style="text-align:center; padding: 24px 0;">
+        <div style="width:64px; height:64px; background:rgba(34,197,94,0.1); color:#22c55e; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;">
+          <i class="fa-solid fa-circle-check" style="font-size:1.8rem;"></i>
+        </div>
+        <h3 style="color:var(--navy); margin-bottom:12px;">OTP Sent</h3>
+        <p style="color:var(--gray-600); font-size:0.9rem; line-height:1.6;">
+          If an account with <strong>${email}</strong> exists, we sent a password reset OTP to that address.
+        </p>
+        ${
+          response.dev_otp
+            ? `<p style="color:var(--gold-dark); font-size:0.85rem; margin-top:12px; font-weight:800;">Development OTP: ${response.dev_otp}</p>`
+            : ""
+        }
+        <button class="btn btn-primary btn-block" onclick="navigateTo('reset-password')" style="margin-top:20px;">
+          Enter OTP and New Password
+        </button>
       </div>
-      <h3 style="color:var(--navy); margin-bottom:12px;">Link Sent!</h3>
-      <p style="color:var(--gray-600); font-size:0.9rem; line-height:1.6;">
-        If an account with <strong>${email}</strong> exists, we’ve sent a password reset link to that address.
-      </p>
-      <p style="color:var(--gray-500); font-size:0.8rem; margin-top:16px;">
-        Please check your inbox (and spam folder) for further instructions.
-      </p>
-    </div>
-  `;
-  
-  showToast("Recovery link processed.");
-  
-  // Trigger Mock Email after 2 seconds
-  setTimeout(showMockEmail, 2000);
+    `;
+    showToast(
+      response.dev_otp
+        ? `Password reset OTP sent. Dev OTP: ${response.dev_otp}`
+        : "Password reset OTP sent.",
+      "success",
+    );
+  } catch (err) {
+    showToast(err.message || "Unable to start password reset.", "error");
+  }
 };
 
 window.showMockEmail = function() {
@@ -3636,14 +4108,45 @@ window.closeEmailModal = function() {
   document.getElementById('emailModalOverlay').classList.remove('active');
 };
 
-window.handleResetPasswordSubmit = function(e) {
+window.handleResetPasswordSubmit = async function(e) {
   if (e) e.preventDefault();
   
+  const email =
+    document.getElementById("resetEmail")?.value.trim() ||
+    window.localStorage?.getItem(TCB_RESET_EMAIL_STORAGE_KEY) ||
+    "";
+  const otpCode =
+    document.getElementById("resetOtpCode")?.value.trim() ||
+    window.localStorage?.getItem(TCB_DEV_RESET_OTP_STORAGE_KEY) ||
+    "";
   const newPass = document.getElementById('newPassword').value;
   const confirmPass = document.getElementById('confirmPassword').value;
   
+  if (!email || !otpCode) {
+    showToast("Enter the email and reset OTP.", "warning");
+    return;
+  }
+
   if (newPass !== confirmPass) {
     showError('confirmPasswordError', 'Passwords do not match.');
+    return;
+  }
+
+  try {
+    await apiRequest("accounts/reset-password/", {
+      method: "POST",
+      auth: false,
+      body: {
+        email,
+        otp_code: otpCode,
+        new_password: newPass,
+        new_password_confirm: confirmPass,
+      },
+    });
+    window.localStorage?.removeItem(TCB_RESET_EMAIL_STORAGE_KEY);
+    window.localStorage?.removeItem(TCB_DEV_RESET_OTP_STORAGE_KEY);
+  } catch (err) {
+    showToast(err.message || "Password reset failed.", "error");
     return;
   }
   
@@ -5708,6 +6211,32 @@ function renderTermsAndConditions(isModal = false) {
           ].map(item => `
             <div style="display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:rgba(217,119,6,0.04); border:1px solid rgba(217,119,6,0.12); border-radius:10px;">
               <i class="fa-solid ${item.icon}" style="color:#d97706; margin-top:2px; font-size:0.9rem; flex-shrink:0;"></i>
+              <span style="font-size:0.87rem; color:var(--gray-700); line-height:1.6;">${item.text}</span>
+            </div>
+          `).join("")}
+        </div>
+      `
+    },
+    {
+      id: "communication-monitoring",
+      icon: "fa-comments",
+      color: "#0284c7",
+      gradient: "linear-gradient(135deg, #0284c7, #0ea5e9)",
+      badge: "Transparency",
+      title: "Communication Monitoring",
+      content: `
+        <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
+          To ensure platform integrity and professional conduct, all communications within the system are subject to monitoring:
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${[
+            { icon: "fa-eye", text: "<strong>Administrator Access:</strong> All conversations between Applicants and Evaluators are accessible by System Administrators." },
+            { icon: "fa-magnifying-glass", text: "<strong>Quality Assurance:</strong> Monitoring is conducted to ensure the quality and accuracy of the evaluation process." },
+            { icon: "fa-shield-check", text: "<strong>Compliance & Safety:</strong> Conversations are reviewed to prevent harassment, fraud, or violations of these terms." },
+            { icon: "fa-scale-balanced", text: "<strong>Dispute Resolution:</strong> Monitored logs serve as an official record in case of disputes or appeals regarding an application." },
+          ].map(item => `
+            <div style="display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:rgba(2,132,199,0.04); border:1px solid rgba(2,132,199,0.12); border-radius:10px;">
+              <i class="fa-solid ${item.icon}" style="color:#0284c7; margin-top:2px; font-size:0.9rem; flex-shrink:0;"></i>
               <span style="font-size:0.87rem; color:var(--gray-700); line-height:1.6;">${item.text}</span>
             </div>
           `).join("")}
@@ -17844,7 +18373,7 @@ function renderActionRequiredRevisionConfirmationScreen(submission, typeLabel) {
     </div>`;
 }
 
-function submitForm() {
+async function submitForm() {
   captureWizardData();
 
   const typeMap = {
@@ -17861,8 +18390,8 @@ function submitForm() {
     utility: "UM",
     industrial: "ID",
   };
-  const refNum = `PSU-${prefix[currentFormType]}-2026-${String(submissions.length + 1).padStart(3, "0")}`;
   const typeLabel = typeMap[currentFormType] || "Application";
+  const generatedRefNum = `PSU-${prefix[currentFormType]}-2026-${String(submissions.length + 1).padStart(3, "0")}`;
   const filingUser =
     isLoggedIn && normalizeRole(currentRole) === "applicant" ? getCurrentUser() : null;
   const submittedSummary = buildSubmissionSummaryFromFormData(currentFormType, wizardData, {
@@ -17896,6 +18425,18 @@ function submitForm() {
     return;
   }
 
+  let backendApplication = null;
+  try {
+    backendApplication = await createBackendApplication(submittedSummary, typeLabel);
+    if (backendApplication) {
+      showToast("Application saved to the backend.", "success");
+    }
+  } catch (err) {
+    showToast(`Backend save failed: ${err.message}`, "error");
+  }
+
+  const refNum = backendApplication?.transaction_code || generatedRefNum;
+
   if (isPatentIntakeFlow()) {
     const formTypeKey =
       currentFormType === "industrial"
@@ -17906,6 +18447,7 @@ function submitForm() {
 
     const newPatentSubmission = {
       id: refNum,
+      backendId: backendApplication?.id || null,
       type: typeLabel,
       title: submittedSummary.title || `Untitled ${typeLabel} Application`,
       applicant: submittedSummary.applicant || "Unnamed Applicant",
@@ -17914,6 +18456,7 @@ function submitForm() {
       email: submittedSummary.email || "",
       contact: submittedSummary.contact || "",
       status: "Pending",
+      backendStatus: backendApplication?.status || null,
       date: new Date().toISOString().split("T")[0],
       description:
         submittedSummary.description ||
@@ -17926,6 +18469,7 @@ function submitForm() {
       files: [...(wizardData.files || [])],
       requiredDocuments: getRequiredDocumentsForType(formTypeKey),
       formData: { ...wizardData },
+      backendApplication: Boolean(backendApplication),
     };
 
     syncSubmissionDisplayFields(newPatentSubmission);
@@ -17947,6 +18491,7 @@ function submitForm() {
 
   const newSub = {
     id: refNum,
+    backendId: backendApplication?.id || null,
     type: typeMap[currentFormType],
     title: submittedSummary.title || `${typeMap[currentFormType]} Submission`,
     applicant: submittedSummary.applicant || "Unnamed Applicant",
@@ -17955,6 +18500,7 @@ function submitForm() {
     email: submittedSummary.email || "",
     contact: submittedSummary.contact || "",
     status: "Pending",
+    backendStatus: backendApplication?.status || null,
     date: new Date().toISOString().split("T")[0],
     description: submittedSummary.description || "Newly submitted application.",
     frozen: false,
@@ -17965,6 +18511,7 @@ function submitForm() {
     registrationLane: submittedSummary.registrationLane || wizardData.reglane || "",
     workType: submittedSummary.workType || wizardData.worktype || "",
     formData: { ...wizardData },
+    backendApplication: Boolean(backendApplication),
   };
   syncSubmissionDisplayFields(newSub);
   submissions.unshift(newSub);
@@ -18599,7 +19146,7 @@ function renderInnovationCards(items) {
   return items
     .map(
       (item) => `
-    <div class="innovation-card" onclick="showInnovationDetail(${item.id})">
+    <div class="innovation-card" onclick="showInnovationDetail(${jsArg(item.id)})">
       <div class="innovation-card-img" ${item.image ? `style="background:url('${item.image}') center/cover no-repeat"` : ""}>${!item.image ? `<i class="${item.icon}"></i>` : ""}</div>
       <div class="innovation-card-body">
         <h4>${item.title}</h4>
@@ -18641,10 +19188,10 @@ function filterMarketplace() {
 let userInterests = [];
 
 function showInnovationDetail(id) {
-  const item = marketplaceItems.find((i) => i.id === id);
+  const item = marketplaceItems.find((i) => String(i.id) === String(id));
   if (!item) return;
 
-  const isInterested = userInterests.includes(id);
+  const isInterested = userInterests.includes(String(id));
   const modalOverlay = document.getElementById("modalOverlay");
   const modalCard = document.querySelector("#modalOverlay .modal-card");
   if (modalOverlay) modalOverlay.classList.add("marketplace-detail-overlay");
@@ -18708,9 +19255,10 @@ function showInnovationDetail(id) {
 }
 
 window.toggleInterest = function(id) {
-  const idx = userInterests.indexOf(id);
+  const normalizedId = String(id);
+  const idx = userInterests.indexOf(normalizedId);
   if (idx === -1) {
-    userInterests.push(id);
+    userInterests.push(normalizedId);
     showToast("Commercial interest notification sent to inventor!");
   } else {
     userInterests.splice(idx, 1);
@@ -21360,7 +21908,8 @@ function getInitialPageFromUrl() {
 }
 
 // ===== INIT =====
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await initializeBackendConnection();
   if (currentRole === "applicant" && isLoggedIn) {
     navigateTo("user-dashboard");
   } else if (isLoggedIn) {

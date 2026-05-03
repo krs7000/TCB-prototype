@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting</title>
+  </head>
+  <body>
+    <script>
+      const path = window.location.pathname.toLowerCase();
+      const routes = [
+        [/\/admin(?:-login)?\/?$/, "index.html#admin-login"],
+        [/\/evaluator(?:-login)?\/?$/, "index.html#evaluator-login"],
+        [/\/applicant(?:-login)?\/?$/, "index.html#login"],
+      ];
+      const match = routes.find(([pattern]) => pattern.test(path));
+      window.location.replace(match ? match[1] : "index.html");
+    </script>
+  </body>
+</html>

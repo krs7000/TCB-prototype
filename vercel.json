@@ -22,6 +22,22 @@
     {
       "source": "/main/evaluator-login",
       "destination": "/main/index.html"
+    },
+    {
+      "source": "/main/index.html/admin",
+      "destination": "/main/index.html"
+    },
+    {
+      "source": "/main/index.html/admin-login",
+      "destination": "/main/index.html"
+    },
+    {
+      "source": "/main/index.html/evaluator",
+      "destination": "/main/index.html"
+    },
+    {
+      "source": "/main/index.html/evaluator-login",
+      "destination": "/main/index.html"
     }
   ]
 }
