@@ -3931,11 +3931,6 @@ async function handleLogin(e) {
     }
   });
 
-  if (!loginEmail || !loginPassword) {
-    showError("loginPasswordError", "Enter your email and password.");
-    return;
-  }
-
   const fallbackUser = findLoginUser(loginRole, loginEmail);
   if (!fallbackUser) {
     showError("loginPasswordError", "Invalid email or password.");
@@ -7769,22 +7764,51 @@ function viewSubmission(id) {
   navigateTo("submission-detail");
 }
 
-function resumeDraft(id) {
+function openDraftForResume(id) {
   const submission = submissions.find((s) => s.id === id);
-  if (!submission) return;
+  if (!submission) {
+    showToast("Draft not found.");
+    return;
+  }
+  if (submission.status !== "Draft") {
+    viewSubmission(id);
+    return;
+  }
+  if (!getVisibleSubmissions(currentRole).some((item) => item.id === id)) {
+    showToast(`${getRoleMeta().label} cannot open this draft.`);
+    return;
+  }
 
-  // Set global state for wizard
-  wizardData = { ...submission };
-  selectedSubmissionId = id;
-  currentWizardStep = 1;
+  const formType = getFormTypeKeyFromSubmissionType(
+    submission.formType || submission.type,
+  );
+  currentFormType = formType;
+  const savedData = getSubmissionFormData(submission);
+  const savedMethod =
+    savedData.submissionMethod || submission.submissionMethod || "online";
+  const savedStep = Number(savedData.step || submission.step || 1) || 1;
 
-  // Determine form type
-  let formPage = "patent-form";
-  if (submission.type === "Copyright") formPage = "copyright-form";
+  submissionMethod = savedMethod;
+  selectedSubmissionId = submission.id;
+  wizardData = {
+    ...createSubmissionWizardSeed(),
+    ...savedData,
+    draftId: submission.id,
+    formType,
+    submissionMethod,
+    step: savedStep,
+  };
 
-  currentFormType = submission.type.toLowerCase();
-  
+  const formPage = getFormPageForFormType(formType);
   navigateTo(formPage);
+  currentWizardStep = Math.min(Math.max(savedStep, 1), getMaxWizardSteps());
+  wizardData.step = currentWizardStep;
+  refreshWizard();
+  showToast(`Resumed draft ${submission.id}.`, "success");
+}
+
+function resumeDraft(id) {
+  openDraftForResume(id);
 }
 
 const COPYRIGHT_OPERATION_FLOW = [
@@ -17083,6 +17107,17 @@ function renderStep4Review() {
 
 function saveFormDraft() {
   captureWizardData();
+  wizardData.formType = currentFormType;
+  wizardData.submissionMethod = submissionMethod;
+  wizardData.step = currentWizardStep;
+  if (
+    !wizardData.draftId &&
+    selectedSubmissionId &&
+    submissions.some((s) => s.id === selectedSubmissionId && s.status === "Draft")
+  ) {
+    wizardData.draftId = selectedSubmissionId;
+  }
+
   const revisionSubmission = getActionRequiredSubmission();
   if (revisionSubmission) {
     const submittedSummary = buildSubmissionSummaryFromFormData(
@@ -17117,6 +17152,8 @@ function saveFormDraft() {
       formData: { ...wizardData },
       data: { ...wizardData },
       status: "Draft",
+      step: currentWizardStep,
+      submissionMethod,
       date: new Date().toISOString().split('T')[0],
       isDraft: true
     };
@@ -17130,6 +17167,9 @@ function saveFormDraft() {
       d.formType = currentFormType;
       d.formData = { ...wizardData };
       d.data = { ...wizardData };
+      d.step = currentWizardStep;
+      d.submissionMethod = submissionMethod;
+      d.status = "Draft";
       syncSubmissionDisplayFields(d);
     }
   }
@@ -17826,6 +17866,11 @@ function syncWizardData() {
 
 function saveDraft() {
   const draftId = selectedSubmissionId || `DRAFT-${Date.now()}`;
+  wizardData.draftId = draftId;
+  wizardData.formType = currentFormType;
+  wizardData.submissionMethod = submissionMethod;
+  wizardData.step = currentWizardStep;
+  selectedSubmissionId = draftId;
   const typeMap = {
     patent: "Patent",
     copyright: "Copyright",
@@ -17850,6 +17895,7 @@ function saveDraft() {
     formData: { ...wizardData },
     date: new Date().toISOString().split('T')[0],
     status: "Draft",
+    submissionMethod,
     title: draftSummary.title || "Untitled Application",
     applicant: draftSummary.applicant || "Current User",
     applicantUserId: filingUser?.id || null,
@@ -17875,15 +17921,7 @@ function saveDraft() {
 }
 
 window.resumeDraft = function(id) {
-  const s = submissions.find(sub => sub.id === id);
-  if (!s) return;
-  
-  currentFormType = s.type;
-  currentWizardStep = s.step || 1;
-  wizardData = { ...s.data };
-  selectedSubmissionId = s.id;
-  
-  navigateTo("filing-wizard");
+  openDraftForResume(id);
 };
 
 window.handleCancelSubmission = function (id) {
