@@ -8826,7 +8826,7 @@ function renderIpGuidelines(filterId = null) {
   const visibleTypes = selectedType ? [selectedType] : types;
   const pageTitle = selectedType
     ? `${selectedType.title} Guidelines`
-    : "IP Application Guidelines";
+    : "IP Guidelines";
 
   return `
 
