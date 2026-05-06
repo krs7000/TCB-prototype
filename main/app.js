@@ -264,7 +264,7 @@ function mapBackendMarketplaceItem(item, index) {
     contactPerson: ownerName,
     contactEmail: item.contact_email || "techtransfer@psu.edu.ph",
     year: item.created_at ? new Date(item.created_at).getFullYear() : new Date().getFullYear(),
-    icon: "fa-solid fa-lightbulb",
+    icon: getMarketplaceIconForType(item.ip_type || "Patent"),
     image: "",
     archived: false,
     backendMarketplaceItem: true,
@@ -584,6 +584,32 @@ let submissions = [
     description: "IoT-based system for detecting common pests in rice fields.",
     assignedReviewerId: 3,
     assignedEvaluatorId: 3
+  },
+  {
+    id: "PSU-TM-2026-001",
+    type: "Trademark",
+    title: "Palawan Green Seal",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Pending",
+    date: "2026-04-03",
+    department: "College of Business",
+    description: "Brand mark for PSU-supported sustainable products and services.",
+    formType: "trademark",
+  },
+  {
+    id: "PSU-TM-2026-002",
+    type: "Trademark",
+    title: "Baybay Roots Collective",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Under Review",
+    date: "2026-03-18",
+    department: "College of Arts",
+    description: "Community enterprise brand mark for heritage crafts and local produce.",
+    formType: "trademark",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3,
   },
   {
     id: "PSU-COP-2026-001",
@@ -1038,6 +1064,30 @@ const marketplaceItems = [
     icon: "fa-solid fa-box",
     image: "images/bamboo_filtration.png",
   },
+  {
+    id: 17,
+    title: "Palawan Green Seal",
+    fullTitle: "PALAWAN GREEN SEAL CERTIFICATION MARK",
+    type: "Trademark",
+    inventor: "PSU Innovation Office",
+    college: "IPTTO",
+    description:
+      "A certification mark for PSU-supported sustainable products, campus services, and community enterprise outputs.",
+    longDescription:
+      "The Palawan Green Seal identifies products and services endorsed by PSU innovation programs for sustainability, responsible sourcing, and community value.",
+    features: [
+      "Distinctive seal layout for product labels, digital badges, and service collateral.",
+      "Brand usage guidelines for PSU partner enterprises.",
+      "Built for licensing, quality assurance, and public recognition programs.",
+    ],
+    businessPotential:
+      "Strong fit for university-backed livelihood programs, sustainable tourism goods, and partner certification campaigns.",
+    contactPerson: "PSU Innovation Office",
+    contactEmail: "ipo@psu.palawan.edu.ph",
+    year: 2026,
+    icon: "fa-solid fa-stamp",
+    image: "images/partner_logo.png",
+  },
 
 
   {
@@ -1166,7 +1216,7 @@ let systemUsers = [
     dept: "Specialist Pool",
     status: "Active",
     dateCreated: "2025-08-01",
-    allowedCaseTypes: ["Patent", "Copyright", "Utility Model", "Industrial Design"],
+    allowedCaseTypes: ["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"],
   },
   {
     id: 4,
@@ -1421,6 +1471,7 @@ const DASHBOARD_ACCESS = {
     "user-profile",
     "user-settings",
     "patent-form",
+    "trademark-form",
     "copyright-form",
     "utility-form",
     "industrial-form",
@@ -1437,6 +1488,7 @@ const DASHBOARD_ACCESS = {
 
 const OPERATIONAL_AUDIT_MODULES = new Set([
   "Patent",
+  "Trademark",
   "Copyright",
   "Utility Model",
   "Industrial Design",
@@ -1448,6 +1500,7 @@ const OPERATIONAL_AUDIT_MODULES = new Set([
 ]);
 const REVIEWER_ASSIGNMENTS = {
   "PSU-PAT-2026-002": 3,
+  "PSU-TM-2026-002": 3,
   "PSU-COP-2026-002": 3,
   "PSU-UM-2026-002": 3,
   "PSU-ID-2026-002": 3,
@@ -1502,6 +1555,7 @@ const IPOPHL_CASE_OVERRIDES = {
 
 const IPOPHL_TYPES = new Set([
   "Patent",
+  "Trademark",
   "Utility Model",
   "Industrial Design",
 ]);
@@ -1669,6 +1723,20 @@ const DASHBOARD_SAMPLE_CASES = [
     assignedReviewerId: 3,
     assignedEvaluatorId: 3,
     formType: "patent",
+  },
+  {
+    id: "PSU-TM-2026-009",
+    type: "Trademark",
+    title: "Palawan AgriTech Collective",
+    applicant: "Juan dela Cruz",
+    applicantUserId: 9,
+    status: "Validated",
+    date: "2026-04-19",
+    department: "College of Agriculture",
+    description: "Validated brand mark package for a PSU agri-innovation partner collective.",
+    assignedReviewerId: 3,
+    assignedEvaluatorId: 3,
+    formType: "trademark",
   },
   {
     id: "PSU-ID-2026-003",
@@ -2152,6 +2220,7 @@ function getActionRequiredTargetLabel(target = "", submission = null) {
 function getFormPageForFormType(formType = "") {
   const map = {
     patent: "patent-form",
+    trademark: "trademark-form",
     copyright: "copyright-form",
     utility: "utility-form",
     industrial: "industrial-form",
@@ -2421,7 +2490,7 @@ const proposalBlueprint = {
   problemMatrix: [
     {
       manual:
-        "Applicants face a knowledge gap across Patent, Copyright, Utility Model, and Industrial Design requirements.",
+        "Applicants face a knowledge gap across Patent, Trademark, Copyright, Utility Model, and Industrial Design requirements.",
       system:
         "Requirement Intelligence groups the exact filing checklists and legal artifacts per IP type before a packet is submitted.",
     },
@@ -2529,7 +2598,7 @@ const proposalBlueprint = {
     },
   ],
   objectives: [
-    "Identify and categorize the registry-mandated requirements and legal checklists for Patent, Copyright, Utility Model, and Industrial Design filings.",
+    "Identify and categorize the registry-mandated requirements and legal checklists for Patent, Trademark, Copyright, Utility Model, and Industrial Design filings.",
     "Maintain a secure and organized database of submitted forms and records with access controls that support confidentiality and retrieval.",
     "Provide a secure web-based submission interface for creators and a centralized management dashboard for administrative staff.",
     "Develop an online marketplace where users can browse innovations, identify inventors, and learn how to avail or collaborate on products.",
@@ -2629,6 +2698,7 @@ const proposalBlueprint = {
 function typeBadge(type) {
   const m = {
     Patent: "badge-patent",
+    Trademark: "badge-trademark",
     Copyright: "badge-copyright",
     "Utility Model": "badge-utility",
     "Industrial Design": "badge-industrial",
@@ -2650,7 +2720,7 @@ function statusBadge(status) {
 
 // ===== NAVIGATION =====
 let navHistory = [];
-const DASHBOARD_BACK_ROLES = new Set(["superadmin", "admin", "reviewer"]);
+const DASHBOARD_BACK_ROLES = new Set(["superadmin", "admin", "reviewer", "applicant"]);
 const DASHBOARD_ROOT_PAGES = new Set(["user-dashboard", "admin-dashboard"]);
 const DASHBOARD_PAGE_LABELS = {
   "admin-dashboard": "Dashboard",
@@ -2672,6 +2742,40 @@ const DASHBOARD_PAGE_LABELS = {
   "project-blueprint": "Project Blueprint",
   "admin-announcements": "Announcements",
   "user-profile": "Profile",
+  "user-settings": "Settings",
+  "user-submissions": "My Cases",
+  "filing-hub": "Filing Hub",
+  "forms-dash": "Forms",
+  "marketplace-dash": "Marketplace",
+  "faq-dash": "FAQ",
+  "ip-guidelines": "IP Guidelines",
+  "contact-dash": "Contact Us",
+  "patent-form": "Patent Form",
+  "trademark-form": "Trademark Form",
+  "copyright-form": "Copyright Form",
+  "utility-form": "Utility Model Form",
+  "industrial-form": "Industrial Design Form",
+};
+const DASHBOARD_BACK_FALLBACKS = {
+  applicant: {
+    "user-submissions": "user-dashboard",
+    messages: "user-dashboard",
+    "submission-detail": "user-submissions",
+    "user-profile": "user-dashboard",
+    "user-settings": "user-profile",
+    "filing-hub": "user-dashboard",
+    "forms-dash": "user-dashboard",
+    "marketplace-dash": "user-dashboard",
+    "faq-dash": "user-dashboard",
+    "ip-guidelines": "user-dashboard",
+    "project-blueprint": "user-dashboard",
+    "contact-dash": "user-dashboard",
+    "patent-form": "filing-hub",
+    "trademark-form": "filing-hub",
+    "copyright-form": "filing-hub",
+    "utility-form": "filing-hub",
+    "industrial-form": "filing-hub",
+  },
 };
 
 window.goBack = function () {
@@ -2708,7 +2812,10 @@ function getDashboardBackConfig(page = currentPage, role = currentRole) {
     previousPage &&
     previousPage !== page &&
     canAccessDashboardPage(previousPage, normalizedRole);
-  const target = canReturnToHistory ? previousPage : getDefaultDashboardPage(normalizedRole);
+  const fallbackTarget =
+    DASHBOARD_BACK_FALLBACKS[normalizedRole]?.[page] ||
+    getDefaultDashboardPage(normalizedRole);
+  const target = canReturnToHistory ? previousPage : fallbackTarget;
 
   return {
     target,
@@ -2821,7 +2928,7 @@ function navigateTo(page, isBack = false, params = null) {
     "reviewer-my-cases",
     "messages",
     "patent-form",
-   
+    "trademark-form",
     "copyright-form",
     "utility-form",
     "industrial-form",
@@ -4421,6 +4528,11 @@ const REQUIRED_DOCUMENTS_BY_TYPE = {
     { key: "abstract", name: "Abstract", type: "Optional" },
     { key: "claims-statement", name: "Claims Statement", type: "Optional" },
   ],
+  trademark: [
+    { key: "mark-specimen", name: "Mark Specimen / Logo File", type: "Required", accept: ".pdf,.jpg,.jpeg,.png", acceptLabel: "PDF, JPG, or PNG" },
+    { key: "goods-services", name: "Goods / Services Description", type: "Required" },
+    { key: "ownership-proof", name: "Proof of Ownership or Authorization", type: "Optional" },
+  ],
   copyright: [
     { key: "valid-id", name: "Valid ID", type: "Required" },
     { key: "copy-of-work", name: "Copy of the work (soft copy)", type: "Required" },
@@ -4458,6 +4570,12 @@ const FORM_GUIDE_STEPS = {
   patent: [
     "Complete the applicant and invention details.",
     "Review the required patent documents before uploading.",
+    "Upload one file for each listed requirement.",
+    "Submit for evaluator review and track the validation status.",
+  ],
+  trademark: [
+    "Complete the applicant and mark details.",
+    "Prepare the brand specimen and goods or services description.",
     "Upload one file for each listed requirement.",
     "Submit for evaluator review and track the validation status.",
   ],
@@ -4577,7 +4695,7 @@ function getFormTypeKeyFromSubmissionType(type = "") {
     .toLowerCase();
   const map = {
     patent: "patent",
-    
+    trademark: "trademark",
     copyright: "copyright",
     "utility model": "utility",
     utility: "utility",
@@ -4737,6 +4855,7 @@ function renderApplicantStatusLegend(activeStatus = "Pending") {
 function renderFilingHub() {
   const options = [
     { id: 'patent-form', typeKey: 'patent', title: 'Patent', icon: 'fa-lightbulb', desc: 'Inventions and technical solutions that are new and useful.', time: '12-18 mos' },
+    { id: 'trademark-form', typeKey: 'trademark', title: 'Trademark', icon: 'fa-stamp', desc: 'Brand names, logos, seals, and identifiers tied to goods or services.', time: '6-12 mos' },
     { id: 'utility-form', typeKey: 'utility', title: 'Utility Model', icon: 'fa-gears', desc: 'Practical improvements or new technical solutions.', time: '6-10 mos' },
     { id: 'industrial-form', typeKey: 'industrial', title: 'Industrial Design', icon: 'fa-pen-nib', desc: 'The aesthetic and ornamental aspect of a product.', time: '6-10 mos' },
     { id: 'copyright-form', typeKey: 'copyright', title: 'Copyright', icon: 'fa-copyright', desc: 'Original literary, artistic, and creative works.', time: '1-3 mos' }
@@ -4829,6 +4948,11 @@ function renderDashboardContent(page) {
         submissionMethod = "online";
       }
       mc.innerHTML = renderFormWizard("Patent Application");
+      break;
+    case "trademark-form":
+      currentWizardStep = 1;
+      currentFormType = "trademark";
+      mc.innerHTML = renderFormWizard("Trademark Application");
       break;
     case "copyright-form":
       currentWizardStep = 1;
@@ -5916,7 +6040,7 @@ function renderUserDashboard() {
         <div class="action-card-icon"><i class="fa-solid fa-rocket"></i></div>
         <div class="action-card-content">
           <h3>Register New IP</h3>
-          <p>Begin a new submission for Patent, Utility Model, Industrial Design, or Copyright.</p>
+          <p>Begin a new submission for Patent, Trademark, Utility Model, Industrial Design, or Copyright.</p>
         </div>
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
@@ -6112,7 +6236,7 @@ function renderTermsAndConditions(isModal = false) {
           in accordance with Philippine laws, specifically <strong>Republic Act No. 8293</strong> — the Intellectual Property Code of the Philippines.
         </p>
         <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8; margin-bottom:14px;">
-          All submissions — including Patentss, Copyrights, Utility Models, and Industrial Designs — 
+          All submissions — including Patents, Trademarks, Copyrights, Utility Models, and Industrial Designs —
           are covered under a unified IP policy aligned with RA 8293.
         </p>
         <p style="font-size:0.9rem; color:var(--gray-600); line-height:1.8;">
@@ -6120,7 +6244,7 @@ function renderTermsAndConditions(isModal = false) {
           Users are solely responsible for ensuring that their submissions do not infringe on existing intellectual property rights.
         </p>
         <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
-          ${["Patent",  "Copyright", "Utility Model", "Industrial Design"].map(ip => `
+          ${["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"].map(ip => `
             <span style="padding:4px 12px; border-radius:999px; font-size:0.75rem; font-weight:700; background:rgba(30,64,175,0.08); color:#1e40af; border:1px solid rgba(30,64,175,0.15);">${ip}</span>
           `).join("")}
         </div>
@@ -6394,6 +6518,21 @@ function renderFaq() {
       },
     ],
 
+    trademark: [
+      {
+        q: "What is a Trademark?",
+        a: "A trademark is a sign, word, logo, or other mark used to distinguish goods or services from those of others.",
+      },
+      {
+        q: "What can be registered as a trademark?",
+        a: "Brand names, logos, slogans, labels, and certification marks may be registrable when they are distinctive and used for specific goods or services.",
+      },
+      {
+        q: "What are the required documents to file a trademark?",
+        a: "<strong>Current Filing Packet:</strong><ul style='margin-top:10px; padding-left:20px; line-height: 1.8;'><li>Mark specimen or logo file</li><li>Goods and services description</li><li>Ownership or authorization documents when applicable</li></ul>",
+      },
+    ],
+
     copyright: [
       {
         q: "What does Copyright protect?",
@@ -6487,6 +6626,7 @@ function renderFaq() {
     
     <div class="faq-container" style="max-width: 900px; margin: 0 auto; padding-bottom: 50px;">
       ${renderGroup("Patent Guidelines", faqData.patent, '<i class="fa-solid fa-lightbulb"></i>', "linear-gradient(135deg,#3b82f6,#1d4ed8)")}
+      ${renderGroup("Trademark Information", faqData.trademark, '<i class="fa-solid fa-stamp"></i>', "linear-gradient(135deg,#f59e0b,#d97706)")}
       ${renderGroup("Utility Model Protections", faqData.utilityModel, '<i class="fa-solid fa-gears"></i>', "linear-gradient(135deg,#6366f1,#4338ca)")}
       ${renderGroup("Industrial Design Rights", faqData.industrialDesign, '<i class="fa-solid fa-pen-nib"></i>', "linear-gradient(135deg,#ec4899,#be185d)")}
       ${renderGroup("Copyright Basics", faqData.copyright, '<i class="fa-solid fa-copyright"></i>', "linear-gradient(135deg,#10b981,#059669)")}
@@ -7092,7 +7232,7 @@ function initCharts() {
       data: {
         labels: [
           "Patent",
-          
+          "Trademark",
           "Copyright",
           "Utility Model",
           "Ind. Design",
@@ -7218,6 +7358,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
       <div style="padding:0 24px 14px;display:flex;gap:6px;flex-wrap:wrap;">
         <button class="filter-btn ${!filterType || filterType === "All" ? "active" : ""}" onclick="filterAdminTable('All')">All</button>
         <button class="filter-btn ${(filterType || "") === "Patent" ? "active" : ""}" onclick="filterAdminTable('Patent')">Patent</button>
+        <button class="filter-btn ${(filterType || "") === "Trademark" ? "active" : ""}" onclick="filterAdminTable('Trademark')">Trademark</button>
         <button class="filter-btn ${(filterType || "") === "Copyright" ? "active" : ""}" onclick="filterAdminTable('Copyright')">Copyright</button>
         <button class="filter-btn ${(filterType || "") === "Utility Model" ? "active" : ""}" onclick="filterAdminTable('Utility Model')">Utility Model</button>
         <button class="filter-btn ${(filterType || "") === "Industrial Design" ? "active" : ""}" onclick="filterAdminTable('Industrial Design')">Industrial Design</button>
@@ -7282,6 +7423,16 @@ let certifiedDemoRecords = [
     status: "Approved",
     date: "2026-02-18",
     description: "Autonomous buoy system for monitoring reef temperature, turbidity, and salinity.",
+  },
+  {
+    id: "PSU-TM-2026-014",
+    type: "Trademark",
+    title: "Baybay Roots Collective",
+    applicant: "PSU Innovation Office",
+    department: "IPTTO",
+    status: "Approved",
+    date: "2026-02-11",
+    description: "Certified trademark record for a community enterprise brand under PSU support.",
   },
   {
     id: "PSU-ID-2026-044",
@@ -7901,7 +8052,7 @@ const IPOPHL_OPERATION_FLOW = [
     owner: "Applicant",
     lane: "Inventor / Applicant",
     description:
-      "Submit a properly filled-out application for Patent, UM, ID, or together with other requirements of the IPOPHL, and a letter-request approved by the University President through the VP for R&D (if applicable).",
+      "Submit a properly filled-out application for Patent, Trademark, UM, or ID together with other requirements of the IPOPHL, and a letter-request approved by the University President through the VP for R&D (if applicable).",
   },
   {
     key: "technical-review",
@@ -7976,6 +8127,7 @@ const IPOPHL_TRACKING_GROUPS = [
 function isPatentSubmission(submission) {
   return (
     submission?.type === "Patent" ||
+    submission?.type === "Trademark" ||
     submission?.type === "Utility Model" ||
     submission?.type === "Industrial Design"
   );
@@ -8065,7 +8217,7 @@ function getCopyrightTrackingSteps(submission) {
   });
 }
 
-// ===== IPOPHL STAGE MANAGEMENT (Patent, Utility Model, Industrial Design) =====
+// ===== IPOPHL STAGE MANAGEMENT (Patent, Trademark, Utility Model, Industrial Design) =====
 function getIPOPHLStageKey(submission) {
   if (isPatentSubmission(submission)) {
     if (submission.ipophlStage) {
@@ -8229,7 +8381,7 @@ function showIPOPHLEmailStatusModal(submissionId) {
   const submission = submissions.find((s) => s.id === submissionId);
   if (!submission) return;
   if (!IPOPHL_TYPES.has(submission.type)) {
-    showToast("IPOPHL email tracking is only for Patent, Utility Model, and Industrial Design cases.");
+    showToast("IPOPHL email tracking is only for Patent, Trademark, Utility Model, and Industrial Design cases.");
     return;
   }
   if (!canAdvanceSubmission(submission)) {
@@ -8760,6 +8912,31 @@ function renderIpGuidelines(filterId = null) {
         "Generated IP Disclosure Form",
         "Form 110 Supplemental Sheet when there are multiple inventors/authors",
         "Optional: Technical Drawings / Diagrams, Abstract, and Claims Statement"
+      ]
+    },
+    {
+      id: "trademark",
+      icon: "fa-stamp",
+      color: "#f59e0b",
+      gradient: "linear-gradient(135deg,#f59e0b,#d97706)",
+      title: "Trademark",
+      subtitle: "Protect names, logos, labels, and brand identifiers",
+      term: "10 years, renewable",
+      requirements: [
+        "Distinctiveness - the mark must identify a source of goods or services.",
+        "Availability - the mark should not conflict with prior registered or pending marks.",
+        "Clear classification - goods or services must be described for the intended use."
+      ],
+      process: [
+        { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
+        { n: 2, t: "Mark Details", d: "Enter the exact mark, classification, date of first use, and distinctive visual elements." },
+        { n: 3, t: "Specimen", d: "Attach the logo, label, product packaging, or other proof of use for evaluator review." },
+        { n: 4, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
+      ],
+      docs: [
+        "Mark specimen / logo file",
+        "Goods and services description",
+        "Proof of ownership or authorization when applicable"
       ]
     },
     {
@@ -9394,6 +9571,19 @@ function buildSubmissionSummaryFromFormData(formType, data = {}, fallback = {}) 
     return summary;
   }
 
+  if (formType === "trademark") {
+    summary.title = data.title || fallback.title || summary.title;
+    summary.description =
+      data.goodsservices ||
+      data.colorclaim ||
+      data.description ||
+      fallback.description ||
+      summary.description;
+    summary.workType = data.marktype || fallback.workType || "";
+    summary.registrationLane = "Trademark";
+    return summary;
+  }
+
   if (formType === "utility" && (data.utilityApplicantFirstName || data.utilityApplicantOrganization)) {
     summary.applicant = getSubmittedPartyName(data, "utilityApplicant") || summary.applicant;
     summary.department = data.utilityApplicantOrganization || summary.department;
@@ -9498,6 +9688,7 @@ function renderSubmittedDocumentUploadsSection(formType, submission, data) {
 function getSubmittedFormTypeLabel(formType) {
   const labels = {
     patent: "Patent",
+    trademark: "Trademark",
     copyright: "Copyright",
     utility: "Utility Model",
     industrial: "Industrial Design",
@@ -9645,6 +9836,10 @@ window.downloadEvaluatorCaseDocument = function(submissionId, docKey) {
 };
 
 function getSubmittedFormStepLabels(formType) {
+  if (formType === "trademark") {
+    return ["Applicant Info", "Mark Details", "Upload Documents", "Review & Submit"];
+  }
+
   if (formType === "copyright") {
     return [
       "Advisory Sheet",
@@ -9881,6 +10076,16 @@ function renderSubmittedFormDataPanel(submission) {
         ["Signature Date", data.copyrightSignatureDate],
       ]),
     );
+  } else if (formType === "trademark") {
+    sections.push(
+      renderSubmittedSection("Trademark Details", [
+        ["Mark / Brand Name", data.title],
+        ["Mark Classification", data.marktype],
+        ["Date of First Use", data.date],
+        ["Color Claim / Distinctive Elements", data.colorclaim],
+        ["Goods / Services Covered", data.goodsservices],
+      ]),
+    );
   } else if (formType === "utility" && (data.utilityApplicantFirstName || data.utilityApplicantOrganization)) {
     sections.push(
       renderSubmittedSection("IP Disclosure", genericDisclosureFields),
@@ -9953,7 +10158,8 @@ function renderSubmittedFormDataPanel(submission) {
   sections.push(renderSubmittedDocumentUploadsSection(formType, submission, data));
 
   const packetPreview = renderSubmittedPaperPacketPreview(submission, formType, data);
-  if (!packetPreview.trim()) return renderSubmittedFormUnavailablePanel(submission, formType);
+  const formPreviewContent = packetPreview.trim() || sections.join("");
+  if (!formPreviewContent.trim()) return renderSubmittedFormUnavailablePanel(submission, formType);
 
   return `
     <div class="detail-panel submitted-form-panel" style="margin-top:20px">
@@ -9961,7 +10167,7 @@ function renderSubmittedFormDataPanel(submission) {
       <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px;">This is the generated form packet from the applicant's saved submission answers.</p>
       ${renderEvaluatorSubmittedFormDownloadActions(submission, formType, data)}
       ${showSubmittedStepStrip ? renderSubmittedFormStepStrip(formType) : ""}
-      ${packetPreview}
+      ${formPreviewContent}
     </div>
   `;
 }
@@ -10510,6 +10716,7 @@ function getPatentFormSteps() {
 }
 
 function getPatentIntakeTypeLabel() {
+  if (currentFormType === "trademark") return "Trademark";
   if (currentFormType === "copyright") return "Copyright";
   if (currentFormType === "utility") return "Utility Model";
   if (currentFormType === "industrial") return "Industrial Design";
@@ -10517,6 +10724,7 @@ function getPatentIntakeTypeLabel() {
 }
 
 function getPatentIntakeServiceDefault() {
+  if (currentFormType === "trademark") return "trademark";
   if (currentFormType === "copyright") return "copyright";
   if (currentFormType === "utility") return "utility";
   if (currentFormType === "industrial") return "industrial";
@@ -10538,8 +10746,8 @@ function getPatentProgressPercent() {
 }
 
 function renderPatentGoogleForm(
-  backTarget = "filing-hub",
-  backLabel = "Filing Hub",
+  backTarget = null,
+  backLabel = null,
 ) {
   const steps = getPatentFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
@@ -10773,6 +10981,7 @@ function renderPatentAdvisorySheetStep() {
           <div class="patent-paper__section-title">Service Availed</div>
           <div class="patent-choice-grid">
             ${renderLockedAdvisoryServiceChoice("copyright", "Copyright / Related Rights")}
+            ${renderLockedAdvisoryServiceChoice("trademark", "Trademark")}
             ${renderLockedAdvisoryServiceChoice("patent", "Patent")}
             ${renderLockedAdvisoryServiceChoice("utility", "Utility Model")}
             ${renderLockedAdvisoryServiceChoice("industrial", "Industrial Design")}
@@ -11779,6 +11988,7 @@ function renderPatentAdvisoryServiceSheetPaper() {
         <strong>Service Availed</strong>
         <div class="psu-advisory-service-grid">
           ${renderPsuCheck("Copyright/Related Rights", hasService("copyright"))}
+          ${renderPsuCheck("Trademark", hasService("trademark"))}
           ${renderPsuCheck("Patent", hasService("patent"))}
           ${renderPsuCheck("Utility Model", hasService("utility"))}
           ${renderPsuCheck("Industrial Design", hasService("industrial"))}
@@ -12431,8 +12641,8 @@ function renderCopyrightFirstTimeApplicantNote() {
 }
 
 function renderCopyrightGoogleForm(
-  backTarget = "filing-hub",
-  backLabel = "Filing Hub",
+  backTarget = null,
+  backLabel = null,
 ) {
   const steps = getCopyrightFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
@@ -14972,8 +15182,8 @@ function getUtilityProgressPercent() {
 }
 
 function renderUtilityGoogleForm(
-  backTarget = "filing-hub",
-  backLabel = "Filing Hub",
+  backTarget = null,
+  backLabel = null,
 ) {
   const steps = getUtilityFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
@@ -16059,8 +16269,8 @@ function getIndustrialProgressPercent() {
 }
 
 function renderIndustrialGoogleForm(
-  backTarget = "filing-hub",
-  backLabel = "Filing Hub",
+  backTarget = null,
+  backLabel = null,
 ) {
   const steps = getIndustrialFormSteps();
   const activeStepTitle = steps[currentWizardStep - 1] || steps[0];
@@ -16675,7 +16885,7 @@ function renderFormWizard(title) {
   else if (currentHour >= 17) greeting = "Good evening";
 
   return `
-    ${renderBackNav('filing-hub', 'Filing Hub')}
+    ${renderBackNav()}
     <div class="page-header" style="margin-bottom: 8px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px;">
         <div>
@@ -16752,6 +16962,7 @@ function renderFormWizard(title) {
 function getStep2Label() {
   if (currentFormType === "patent" || currentFormType === "utility")
     return "Invention Details";
+  if (currentFormType === "trademark") return "Mark Details";
   if (currentFormType === "industrial") return "Design Details";
   return "Work Details";
 }
@@ -16900,11 +17111,11 @@ function renderStep2() {
         <textarea id="wiz-claims" placeholder="What specific features make this invention unique? List them as clear, numbered points..." style="min-height:120px;" required></textarea>
       </div>
     `;
-  } else if (currentFormType === "") {
+  } else if (currentFormType === "trademark") {
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
         <h3 style="margin:0;">Mark Details</h3>
-        <span class="badge badge-">BRAND PROTECTION</span>
+        <span class="badge badge-trademark">BRAND PROTECTION</span>
       </div>
 
       <div class="form-group">
@@ -16933,6 +17144,11 @@ function renderStep2() {
       <div class="form-group">
         <label>Color Claim & Distinctive Elements</label>
         <textarea id="wiz-colorclaim" placeholder="Describe specific colors, fonts, or symbols that are essential to this mark's identity..." style="min-height:100px;">${wizardData.colorclaim || ''}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Goods / Services Covered *</label>
+        <textarea id="wiz-goodsservices" placeholder="List the goods or services where this mark will be used..." style="min-height:120px;" required>${wizardData.goodsservices || ''}</textarea>
       </div>
     `;
   } else if (currentFormType === "copyright") {
@@ -17081,6 +17297,7 @@ function renderStep4Review() {
         ${wizardData.date ? `<div class="review-item"><span class="label">Date</span>${val(wizardData.date)}</div>` : ""}
         ${wizardData.field ? `<div class="review-item"><span class="label">Field</span>${val(wizardData.field)}</div>` : ""}
         ${wizardData.marktype ? `<div class="review-item"><span class="label">Mark Type</span>${val(wizardData.marktype)}</div>` : ""}
+        ${wizardData.goodsservices ? `<div class="review-item"><span class="label">Goods / Services</span>${val(wizardData.goodsservices)}</div>` : ""}
         ${wizardData.worktype ? `<div class="review-item"><span class="label">Work Type</span>${val(wizardData.worktype)}</div>` : ""}
         ${wizardData.prodcat ? `<div class="review-item"><span class="label">Product Category</span>${val(wizardData.prodcat)}</div>` : ""}
         ${wizardData.designtype ? `<div class="review-item"><span class="label">Design Type</span>${val(wizardData.designtype)}</div>` : ""}
@@ -17133,7 +17350,7 @@ function saveFormDraft() {
     return;
   }
 
-  const typeMap = { patent: "Patent",   copyright: "Copyright", utility: "Utility Model", industrial: "Industrial Design" };
+  const typeMap = { patent: "Patent", trademark: "Trademark", copyright: "Copyright", utility: "Utility Model", industrial: "Industrial Design" };
   const typeLabel = typeMap[currentFormType] || "Draft";
   
   if (!wizardData.draftId) {
@@ -17732,6 +17949,10 @@ function captureWizardData() {
       document.getElementById("wiz-colorclaim")?.value ||
       wizardData.colorclaim ||
       "";
+    wizardData.goodsservices =
+      document.getElementById("wiz-goodsservices")?.value ||
+      wizardData.goodsservices ||
+      "";
     wizardData.worktype =
       document.getElementById("wiz-worktype")?.value ||
       wizardData.worktype ||
@@ -17873,6 +18094,7 @@ function saveDraft() {
   selectedSubmissionId = draftId;
   const typeMap = {
     patent: "Patent",
+    trademark: "Trademark",
     copyright: "Copyright",
     utility: "Utility Model",
     industrial: "Industrial Design",
@@ -18046,6 +18268,21 @@ function getCancellationDocumentConfig(submission, reason) {
       filingDate: submission.date,
       reason: safeReason,
     },
+    Trademark: {
+      mode: "cancellation",
+      title: "Petition for Trademark Cancellation / Voluntary Surrender",
+      formNo: "IPOPHL Trademark Request",
+      office: "The Director, Bureau of Trademarks",
+      matterLabel: "Trademark Registration",
+      pdfPath: "#",
+      recordLabel: "Trademark/Application No.",
+      recordValue: submission.id,
+      titleLabel: "Mark / Brand Name",
+      titleValue: submission.title,
+      applicantName,
+      filingDate: submission.date,
+      reason: safeReason,
+    },
     "Utility Model": {
       mode: "cancellation",
       title: "Petition for Cancellation / Voluntary Surrender",
@@ -18144,6 +18381,7 @@ window.showCancellationDocumentModal = function(id, finalReason) {
               : `
           <p style="margin:0 0 14px;">In the matter of:</p>
           ${renderCancellationChecklistItem("Letters Patent, in accordance with Sec. 56 of R.A. 8293, as amended", config.matterLabel === "Letters Patent")}
+          ${renderCancellationChecklistItem("Trademark Registration, in accordance with applicable trademark cancellation or surrender procedures", config.matterLabel === "Trademark Registration")}
           ${renderCancellationChecklistItem("Utility Model Registration in accordance with Sec. 109.4 of R.A. 8293, as amended", config.matterLabel === "Utility Model Registration")}
           ${renderCancellationChecklistItem("Industrial Design Registration in accordance with Sec. 120 of R.A. 8293, as amended", config.matterLabel === "Industrial Design Registration")}
           <div style="margin-top:14px; padding:14px; background:rgba(245,158,11,0.06); border-radius:12px; border:1px solid rgba(245,158,11,0.15);">
@@ -18306,6 +18544,21 @@ window.launchCopyrightOnlineForm = function() {
   navigateTo("forms", false, { formView: "copyright-online" });
 };
 
+window.launchTrademarkOnlineForm = function() {
+  wizardData = createSubmissionWizardSeed();
+  selectedSubmissionId = null;
+  currentWizardStep = 1;
+  currentFormType = "trademark";
+  submissionMethod = "online";
+
+  if (isLoggedIn) {
+    navigateTo("trademark-form");
+    return;
+  }
+
+  navigateTo("forms", false, { formView: "trademark-online" });
+};
+
 window.launchUtilityOnlineForm = function() {
   wizardData = createSubmissionWizardSeed();
   selectedSubmissionId = null;
@@ -18351,6 +18604,12 @@ function renderFormsPublicContent() {
     submissionMethod = "online";
     wizardData.applicantTypeGroup = "Individual";
     return renderCopyrightGoogleForm("forms", "Forms");
+  }
+
+  if (currentParams.formView === "trademark-online") {
+    currentFormType = "trademark";
+    submissionMethod = "online";
+    return renderFormWizard("Trademark Application");
   }
 
   if (currentParams.formView === "utility-online") {
@@ -18554,14 +18813,14 @@ async function submitForm() {
 
   const typeMap = {
     patent: "Patent",
-     
+    trademark: "Trademark",
     copyright: "Copyright",
     utility: "Utility Model",
     industrial: "Industrial Design",
   };
   const prefix = {
     patent: "PAT",
-    
+    trademark: "TM",
     copyright: "COP",
     utility: "UM",
     industrial: "ID",
@@ -18802,7 +19061,7 @@ function setAdminMarketplaceView(view) {
 function getMarketplaceIconForType(type) {
   const icons = {
     Patent: "fa-solid fa-lightbulb",
-    
+    Trademark: "fa-solid fa-stamp",
     Copyright: "fa-solid fa-copyright",
     "Utility Model": "fa-solid fa-gears",
     "Industrial Design": "fa-solid fa-pen-ruler",
@@ -18813,6 +19072,7 @@ function getMarketplaceIconForType(type) {
 function getMarketplaceImageForType(type) {
   const images = {
     Patent: "images/solar_rice_dryer.png",
+    Trademark: "images/partner_logo.png",
     Copyright: "images/ecolearn_app.png",
     "Utility Model": "images/bamboo_filtration.png",
     "Industrial Design": "images/palawan_honey.png",
@@ -18984,7 +19244,7 @@ window.showMarketListingModal = function(id = null) {
           <label>IP Type *</label>
           <select id="marketType" ${readOnly ? "disabled" : ""} required>
             <option value="Patent" ${item.type === "Patent" ? "selected" : ""}>Patent</option>
-            
+            <option value="Trademark" ${item.type === "Trademark" ? "selected" : ""}>Trademark</option>
             <option value="Copyright" ${item.type === "Copyright" ? "selected" : ""}>Copyright</option>
             <option value="Utility Model" ${item.type === "Utility Model" ? "selected" : ""}>Utility Model</option>
             <option value="Industrial Design" ${item.type === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
@@ -19284,6 +19544,9 @@ function renderMarketplace() {
       </button>
       <button class="mp-type-btn ${currentMpType === 'Patent' ? 'active' : ''}" data-type="Patent" onclick="setMpType('Patent')">
         <i class="fa-solid fa-lightbulb"></i> Patent
+      </button>
+      <button class="mp-type-btn ${currentMpType === 'Trademark' ? 'active' : ''}" data-type="Trademark" onclick="setMpType('Trademark')">
+        <i class="fa-solid fa-stamp"></i> Trademark
       </button>
       <button class="mp-type-btn ${currentMpType === 'Utility Model' ? 'active' : ''}" data-type="Utility Model" onclick="setMpType('Utility Model')">
         <i class="fa-solid fa-gears"></i> Utility Model
@@ -19673,7 +19936,7 @@ function renderUserSubmissions() {
                 style="height:42px; border-radius:10px; border:1.5px solid var(--gray-200); padding:0 12px; font-weight:600; color:var(--navy); outline:none;">
           <option value="All" ${userFilterType === "All" ? "selected" : ""}>All IP Types</option>
           <option value="Patent" ${userFilterType === "Patent" ? "selected" : ""}>Patent</option>
-          
+          <option value="Trademark" ${userFilterType === "Trademark" ? "selected" : ""}>Trademark</option>
           <option value="Copyright" ${userFilterType === "Copyright" ? "selected" : ""}>Copyright</option>
           <option value="Utility Model" ${userFilterType === "Utility Model" ? "selected" : ""}>Utility Model</option>
           <option value="Industrial Design" ${userFilterType === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
@@ -19780,6 +20043,12 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
       .map((s) => {
         const display = getSubmissionDisplayData(s);
         const isCR = s.type === "Copyright";
+        const typeIcon =
+          s.type === "Trademark"
+            ? "fa-stamp"
+            : isCR
+              ? "fa-copyright"
+              : "fa-lightbulb";
         const frozen = s.status === "Approved";
         const needsAction = Boolean(getActiveActionRequiredItems(s).length);
 
@@ -19788,7 +20057,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
         <div class="case-card-header" style="padding:20px 24px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:${needsAction ? "rgba(239, 68, 68, 0.02)" : "white"}" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron-icon').classList.toggle('fa-rotate-180')">
           <div style="display:flex; align-items:center; gap:16px;">
             <div class="case-type-icon" style="width:40px; height:40px; border-radius:10px; background:var(--gray-50); display:flex; align-items:center; justify-content:center; color:var(--navy);">
-              <i class="fa-solid ${isCR ? "fa-copyright" : "fa-lightbulb"}"></i>
+              <i class="fa-solid ${typeIcon}"></i>
             </div>
             <div>
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
@@ -20173,6 +20442,7 @@ function renderCertifiedRecordUnlockControls() {
       <select id="certifiedRecordUnlockType" aria-label="Select IP type to unlock">
         <option value="" ${!unlockedCertifiedRecordType ? "selected" : ""}>IP Type to unlock</option>
         <option value="Patent" ${unlockedCertifiedRecordType === "Patent" ? "selected" : ""}>Patent</option>
+        <option value="Trademark" ${unlockedCertifiedRecordType === "Trademark" ? "selected" : ""}>Trademark</option>
         <option value="Copyright" ${unlockedCertifiedRecordType === "Copyright" ? "selected" : ""}>Copyright</option>
         <option value="Industrial Design" ${unlockedCertifiedRecordType === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
         <option value="Utility Model" ${unlockedCertifiedRecordType === "Utility Model" ? "selected" : ""}>Utility Model</option>
@@ -20205,6 +20475,7 @@ function renderAdminRecordsTable() {
         <select class="filter-select" aria-label="Filter IP records by type" onchange="setAdminRecordsTypeFilter(this.value)">
           <option value="All" ${adminRecordsTypeFilter === "All" ? "selected" : ""}>All IP Types</option>
           <option value="Patent" ${adminRecordsTypeFilter === "Patent" ? "selected" : ""}>Patent</option>
+          <option value="Trademark" ${adminRecordsTypeFilter === "Trademark" ? "selected" : ""}>Trademark</option>
           <option value="Copyright" ${adminRecordsTypeFilter === "Copyright" ? "selected" : ""}>Copyright</option>
           <option value="Utility Model" ${adminRecordsTypeFilter === "Utility Model" ? "selected" : ""}>Utility Model</option>
           <option value="Industrial Design" ${adminRecordsTypeFilter === "Industrial Design" ? "selected" : ""}>Industrial Design</option>
@@ -20513,7 +20784,7 @@ function renderInterestsList() {
     return `
       <div style="display:flex; align-items:center; gap:16px; padding:16px; background:white; border-radius:12px; border:1px solid var(--gray-100); margin-bottom:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02); cursor:pointer;" onclick="showInnovationDetail(${item.id})">
         <div style="width:48px; height:48px; border-radius:10px; background:var(--gray-50); display:flex; align-items:center; justify-content:center; color:var(--navy); font-size:1.2rem; flex-shrink:0;">
-          <i class="fa-solid ${item.type === 'Patent' ? 'fa-lightbulb' : 'fa-copyright'}"></i>
+          <i class="fa-solid ${item.type === 'Patent' ? 'fa-lightbulb' : item.type === 'Trademark' ? 'fa-stamp' : 'fa-copyright'}"></i>
         </div>
         <div style="flex:1; min-width:0;">
           <div style="font-size:0.9rem; font-weight:700; color:var(--navy); margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</div>
@@ -20574,7 +20845,7 @@ function legacyEditUserRole(userId) {
   const currentTypes = u.ipTypes || [];
   const typesOptions = [
     "Patent",
-    
+    "Trademark",
     "Copyright",
     "Utility Model",
     "Industrial Design",
@@ -20922,7 +21193,7 @@ function editUserRole(userId) {
     )
     .join("");
 
-  const caseTypes = ["Patent",  "Copyright", "Utility Model", "Industrial Design"];
+  const caseTypes = ["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"];
   const currentAllowed = user.allowedCaseTypes || [];
   const checkboxes = caseTypes.map(type => `
     <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer;">
@@ -21025,7 +21296,7 @@ function renderCreateAccount() {
     .join("");
   
   const caseTypes = [
-    "Patent",  "Copyright", "Utility Model", "Industrial Design"
+    "Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"
   ];
   const caseCheckboxes = caseTypes.map(type => `
     <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer;">
@@ -21572,6 +21843,15 @@ function renderForms() {
       onlineAction: "launchPatentOnlineForm()",
     },
     {
+      title: "Trademark",
+      id: "trademark",
+      icon: "fa-stamp",
+      color: "#f59e0b",
+      gradient: "linear-gradient(135deg, #f59e0b, #d97706)",
+      forms: ["Application Form", "Mark Specimen", "Goods / Services Sheet"],
+      onlineAction: "launchTrademarkOnlineForm()",
+    },
+    {
       title: "Utility Model",
       id: "utility",
       icon: "fa-gears",
@@ -22014,6 +22294,7 @@ function getFormTypeKeyFromSubmissionType(type = "") {
     .toLowerCase();
   const map = {
     patent: "patent",
+    trademark: "trademark",
     copyright: "copyright",
     "utility model": "utility",
     utility: "utility",
