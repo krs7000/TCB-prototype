@@ -22,6 +22,7 @@ let pendingAction = null; // Stores action to perform after login/signup
 let currentMpType = "All";
 let landingMpType = "All";
 let dismissedTopAlertId = null;
+const IP_SERVICE_TYPES = ["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"];
 
 // ===== BACKEND API CONNECTION =====
 const TCB_API_BASE_URL = (
@@ -1377,9 +1378,11 @@ function getProtectedPageLogin(page) {
     page === "admin-submissions" ||
     page === "admin-records" ||
     page === "admin-marketplace" ||
+    page === "admin-emails" ||
     page === "admin-users" ||
     page === "admin-settings" ||
     page === "admin-announcements" ||
+    page === "admin-contact-submissions" ||
     page === "audit-log" ||
     page === "role-permissions" ||
     page === "create-account"
@@ -1446,6 +1449,8 @@ const DASHBOARD_ACCESS = {
     "user-profile",
     "admin-records",
     "admin-marketplace",
+    "admin-emails",
+    "admin-contact-submissions",
     "admin-users",
     "admin-settings",
     "role-permissions",
@@ -1481,7 +1486,6 @@ const DASHBOARD_ACCESS = {
     "project-blueprint",
     "marketplace-dash",
     "filing-hub",
-    "forms-dash",
     "contact-dash",
   ],
 };
@@ -1495,6 +1499,7 @@ const OPERATIONAL_AUDIT_MODULES = new Set([
   "Audit Log",
   "Accounts",
   "Market Listing",
+  "Emails",
   "Announcements",
   "Messages",
 ]);
@@ -1782,6 +1787,91 @@ systemUsers = systemUsers.map((user) => ({
   ...user,
   role: normalizeRole(user.role),
 }));
+
+function seedRevisionDemoData() {
+  const demoUsers = [
+    {
+      id: 11,
+      name: "Liza Manalo",
+      email: "liza.manalo@gmail.com",
+      contactNumber: "0916 441 2077",
+      role: "applicant",
+      dept: "College of Sciences",
+      status: "Active",
+      dateCreated: "2026-01-12",
+    },
+    {
+      id: 12,
+      name: "Paolo Reyes",
+      email: "paolo.reyes@outlook.com",
+      contactNumber: "0921 874 3301",
+      role: "applicant",
+      dept: "College of Engineering",
+      status: "Active",
+      dateCreated: "2026-01-18",
+    },
+    {
+      id: 13,
+      name: "Ana Villanueva",
+      email: "ana.villanueva@proton.me",
+      contactNumber: "0919 765 1180",
+      role: "applicant",
+      dept: "College of Arts",
+      status: "Active",
+      dateCreated: "2026-02-04",
+    },
+    {
+      id: 14,
+      name: "Ricardo Aquino",
+      email: "ricardo.aquino@researchmail.org",
+      contactNumber: "0915 803 4419",
+      role: "applicant",
+      dept: "College of Agriculture",
+      status: "Active",
+      dateCreated: "2026-02-14",
+    },
+  ];
+
+  demoUsers.forEach((user) => {
+    if (!systemUsers.some((entry) => Number(entry.id) === Number(user.id))) {
+      systemUsers.push(user);
+    }
+  });
+
+  const demoSubmissions = [
+    ["PSU-PAT-2026-031", "Patent", "Low-Cost Coconut Sap Evaporator", "Maria Santos", 8, "Under Review", 3, "2026-04-07", "College of Engineering"],
+    ["PSU-TM-2026-031", "Trademark", "Puerto Verde Research Mark", "Maria Santos", 8, "Pending", 3, "2026-04-08", "College of Engineering"],
+    ["PSU-UM-2026-031", "Utility Model", "Foldable Sea Cucumber Nursery Tray", "Maria Santos", 8, "Validated", 3, "2026-04-09", "College of Engineering"],
+    ["PSU-ID-2026-032", "Industrial Design", "Ergonomic Classroom Tablet Arm", "Liza Manalo", 11, "Under Review", 4, "2026-04-05", "College of Sciences"],
+    ["PSU-ID-2026-033", "Industrial Design", "Modular Tourism Souvenir Display", "Ana Villanueva", 13, "Pending", 4, "2026-04-10", "College of Arts"],
+    ["PSU-ID-2026-034", "Industrial Design", "Bamboo Desk Lamp Housing", "Paolo Reyes", 12, "Validated", 4, "2026-04-13", "College of Engineering"],
+    ["PSU-COP-2026-031", "Copyright", "Mangrove Learning Module Series", "Liza Manalo", 11, "Under Review", 5, "2026-03-30", "College of Sciences"],
+    ["PSU-COP-2026-032", "Copyright", "Palawan Folk Song Audio Collection", "Ana Villanueva", 13, "Pending", 5, "2026-04-11", "College of Arts"],
+    ["PSU-COP-2026-033", "Copyright", "AgriTech Field Manual", "Ricardo Aquino", 14, "Rejected", 5, "2026-04-15", "College of Agriculture"],
+    ["PSU-PAT-2026-035", "Patent", "Rainwater Microfilter Cartridge", "Paolo Reyes", 12, "Pending", null, "2026-04-17", "College of Engineering"],
+    ["PSU-TM-2026-036", "Trademark", "Bantay Dagat Analytics", "Ricardo Aquino", 14, "Under Review", 3, "2026-04-19", "College of Agriculture"],
+    ["PSU-UM-2026-037", "Utility Model", "Cassava Grater Safety Guard", "Ana Villanueva", 13, "Pending", null, "2026-04-21", "College of Arts"],
+  ].map(([id, type, title, applicant, applicantUserId, status, reviewerId, date, department]) => ({
+    id,
+    type,
+    title,
+    applicant,
+    applicantUserId,
+    status,
+    assignedReviewerId: reviewerId,
+    assignedEvaluatorId: reviewerId,
+    date,
+    department,
+    description: `${type} demo filing for ${title}.`,
+    formType: getFormTypeKeyFromSubmissionType(type),
+    requirementUploads: {},
+  }));
+
+  const existingIds = new Set(submissions.map((submission) => submission.id));
+  demoSubmissions.forEach((submission) => {
+    if (!existingIds.has(submission.id)) submissions.push(submission);
+  });
+}
 
 submissions.forEach((submission) => {
   normalizeSubmissionStatusLabel(submission);
@@ -2705,6 +2795,12 @@ function typeBadge(type) {
   };
   return `<span class="badge ${m[type] || "badge-pending"}">${type}</span>`;
 }
+function getDisplayStatusLabel(status) {
+  const normalizedRole = normalizeRole(currentRole);
+  if (status === "Validated") return "Evaluated";
+  if (normalizedRole === "applicant" && status === "Approved") return "Certified";
+  return status;
+}
 function statusBadge(status) {
   const m = {
     Approved: "badge-approved",
@@ -2715,7 +2811,25 @@ function statusBadge(status) {
     Cancelled: "badge-rejected",
     Draft: "badge-review",
   };
-  return `<span class="badge ${m[status] || "badge-pending"}">${status}</span>`;
+  return `<span class="badge ${m[status] || "badge-pending"}">${getDisplayStatusLabel(status)}</span>`;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows
+    .map((row) =>
+      row
+        .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+        .join(","),
+    )
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // ===== NAVIGATION =====
@@ -2731,9 +2845,11 @@ const DASHBOARD_PAGE_LABELS = {
   },
   "reviewer-my-cases": "My Cases",
   messages: "Messages",
+  "admin-contact-submissions": "Contact Submissions",
   "submission-detail": "Submission Details",
   "admin-records": "IP Records",
   "admin-marketplace": "Market Listing",
+  "admin-emails": "Emails",
   "audit-log": "Audit Log",
   "admin-users": "User Manager",
   "admin-settings": "System Config",
@@ -2745,7 +2861,6 @@ const DASHBOARD_PAGE_LABELS = {
   "user-settings": "Settings",
   "user-submissions": "My Cases",
   "filing-hub": "Filing Hub",
-  "forms-dash": "Forms",
   "marketplace-dash": "Marketplace",
   "faq-dash": "FAQ",
   "ip-guidelines": "IP Guidelines",
@@ -2927,6 +3042,7 @@ function navigateTo(page, isBack = false, params = null) {
     "admin-submissions",
     "reviewer-my-cases",
     "messages",
+    "admin-contact-submissions",
     "patent-form",
     "trademark-form",
     "copyright-form",
@@ -2935,6 +3051,7 @@ function navigateTo(page, isBack = false, params = null) {
     "submission-detail",
     "marketplace-dash",
     "admin-marketplace",
+    "admin-emails",
     "audit-log",
     "user-profile",
     "user-settings",
@@ -2951,7 +3068,6 @@ function navigateTo(page, isBack = false, params = null) {
     "admin-announcements",
     "filing-hub",
     "notifications",
-    "forms-dash",
     "contact-dash",
   ];
 
@@ -4390,6 +4506,8 @@ function updateProfileDropdownRoleVisibility() {
   document.querySelectorAll("[data-applicant-only='true']").forEach((item) => {
     item.style.display = isApplicant ? "" : "none";
   });
+  const profileHelpLink = document.getElementById("profileHelpLink");
+  if (profileHelpLink) profileHelpLink.style.display = "none";
 }
 
 // ===== SIDEBAR =====
@@ -4418,9 +4536,20 @@ function renderSidebar() {
     superadmin: [
       { page: "admin-dashboard", icon: "fa-chart-line", text: "Dashboard" },
       { page: "admin-submissions", icon: "fa-inbox", text: "All Submissions" },
-      { page: "messages", icon: "fa-comments", text: "Chat Monitor" },
+      {
+        type: "group",
+        key: "inquiry-management",
+        icon: "fa-headset",
+        text: "Inquiry Management",
+        badge: getNewContactSubmissionCount(),
+        children: [
+          { page: "messages", icon: "fa-comments", text: "Chat Monitoring" },
+          { page: "admin-contact-submissions", icon: "fa-ticket", text: "Contact Submissions", badge: getNewContactSubmissionCount() },
+        ],
+      },
       { page: "admin-records", icon: "fa-folder-open", text: "IP Records" },
       { page: "admin-marketplace", icon: "fa-store", text: "Market Listing" },
+      { page: "admin-emails", icon: "fa-envelope-open-text", text: "Emails" },
       { page: "admin-users", icon: "fa-users", text: "User Manager" },
       { page: "audit-log", icon: "fa-clipboard-list", text: "Audit Log" },
       { page: "admin-settings", icon: "fa-gear", text: "System Config" },
@@ -4437,7 +4566,7 @@ function renderSidebar() {
       { page: "user-dashboard", icon: "fa-house", text: "Home" },
       { page: "user-submissions", icon: "fa-file-lines", text: "My Cases" },
       { page: "messages", icon: "fa-comments", text: "Messages" },
-      { page: "forms-dash", icon: "fa-folder-open", text: "Forms" },
+      { page: "faq-dash", icon: "fa-circle-question", text: "Help & Support" },
       { page: "marketplace-dash", icon: "fa-shop", text: "Marketplace" },
       { page: "notifications", icon: "fa-bell", text: "Notification" },
     ],
@@ -4476,6 +4605,35 @@ function renderSidebar() {
     nav.innerHTML = menu
       .map(
         (m) => {
+          if (m.type === "group") {
+            const children = m.children || [];
+            const isOpen = children.some((child) => child.page === currentPage) || currentParams?.navGroup === m.key;
+            const isActive = children.some((child) => child.page === currentPage);
+            const groupBadge = m.badge ? `<span class="sidebar-nav-badge">${m.badge}</span>` : "";
+            return `
+      <div class="sidebar-nav-group ${isOpen ? "open" : ""} ${isActive ? "active" : ""}" data-nav-group="${m.key}">
+        <button type="button" class="sidebar-nav-parent" onclick="toggleInquiryNav('${m.key}')" aria-expanded="${isOpen}">
+          <i class="fa-solid ${m.icon}"></i>
+          <span class="nav-text">${m.text}</span>
+          ${groupBadge}
+          <i class="fa-solid fa-chevron-down nav-chevron"></i>
+        </button>
+        <div class="sidebar-subnav">
+          ${children
+            .map((child) => {
+              const badge = child.page === "messages" ? renderChatNavBadge() : child.badge ? `<span class="sidebar-nav-badge">${child.badge}</span>` : "";
+              return `
+          <a href="#" onclick="navigateTo('${child.page}')" data-page="${child.page}" class="sidebar-subnav-link">
+            <i class="fa-solid ${child.icon}"></i>
+            <span class="nav-text">${child.text}${badge}</span>
+          </a>
+        `;
+            })
+            .join("")}
+        </div>
+      </div>
+    `;
+          }
           const badge = m.page === "messages" ? renderChatNavBadge() : "";
           return `
       <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}">
@@ -4839,13 +4997,13 @@ function renderApplicantStatusLegend(activeStatus = "Pending") {
             <span style="width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:${completed ? "var(--green)" : current ? "var(--gold)" : "var(--gray-100)"}; color:${completed || current ? "white" : "var(--gray-500)"}; font-size:0.7rem; font-weight:800; flex-shrink:0;">
               ${completed ? '<i class="fa-solid fa-check"></i>' : index + 1}
             </span>
-            <span style="font-weight:${current ? "700" : "600"};">${status}</span>
+            <span style="font-weight:${current ? "700" : "600"};">${getDisplayStatusLabel(status)}</span>
           </div>
         `;
       }).join("")}
       ${
         activeStatus === "Approved"
-          ? `<div style="padding-top:6px; font-size:0.76rem; color:var(--green); font-weight:700;">Approved after validation and final review.</div>`
+          ? `<div style="padding-top:6px; font-size:0.76rem; color:var(--green); font-weight:700;">Certified after evaluation and final review.</div>`
           : ""
       }
     </div>
@@ -4897,6 +5055,13 @@ function updateActiveNavLinks(page) {
   document.querySelectorAll(".sidebar-nav a").forEach((a) => {
     a.classList.toggle("active", a.dataset.page === page);
   });
+  document.querySelectorAll(".sidebar-nav-group").forEach((group) => {
+    const hasActiveChild = !!group.querySelector(`[data-page="${page}"]`);
+    group.classList.toggle("active", hasActiveChild);
+    group.classList.toggle("open", hasActiveChild || group.classList.contains("open"));
+    const parent = group.querySelector(".sidebar-nav-parent");
+    if (parent) parent.setAttribute("aria-expanded", group.classList.contains("open") ? "true" : "false");
+  });
 
   // Update top nav links (Applicant Layout)
   document.querySelectorAll(".top-nav-link").forEach((a) => {
@@ -4908,6 +5073,14 @@ function updateActiveNavLinks(page) {
     a.classList.toggle("active", a.dataset.page === page);
   });
 }
+
+window.toggleInquiryNav = function(groupKey) {
+  const group = document.querySelector(`.sidebar-nav-group[data-nav-group="${groupKey}"]`);
+  if (!group) return;
+  const isOpen = group.classList.toggle("open");
+  const parent = group.querySelector(".sidebar-nav-parent");
+  if (parent) parent.setAttribute("aria-expanded", isOpen ? "true" : "false");
+};
 // ===== RENDER DASHBOARD CONTENT =====
 function renderDashboardContent(page) {
   const mc = document.getElementById("main-content");
@@ -4937,6 +5110,9 @@ function renderDashboardContent(page) {
       break;
     case "messages":
       mc.innerHTML = renderMessagesPage();
+      break;
+    case "admin-contact-submissions":
+      mc.innerHTML = renderContactSubmissionsPage();
       break;
     case "admin-search":
       mc.innerHTML = renderAdminSubmissionsPage();
@@ -4978,6 +5154,9 @@ function renderDashboardContent(page) {
     case "admin-marketplace":
       mc.innerHTML = renderAdminMarketplacePage();
       break;
+    case "admin-emails":
+      mc.innerHTML = renderAdminEmailsPage();
+      break;
     case "audit-log":
       mc.innerHTML = renderAuditLog();
       break;
@@ -5008,9 +5187,6 @@ function renderDashboardContent(page) {
     case "ip-guidelines":
       mc.innerHTML = renderIpGuidelines();
       break;
-    case "forms-dash":
-      mc.innerHTML = renderForms();
-      break;
     case "faq-dash":
       mc.innerHTML = renderFaq();
       break;
@@ -5035,6 +5211,9 @@ function renderDashboardContent(page) {
         `;
     }
     prependDashboardBackNav(page, mc);
+    if (["superadmin", "admin"].includes(normalizeRole(currentRole))) {
+      mc.insertAdjacentHTML("beforeend", renderFloatingAIAssistant());
+    }
   } catch (err) {
     console.error("Dashboard Render Error:", err);
     mc.innerHTML = `
@@ -5213,6 +5392,8 @@ function getAdminChatMonitorFilters() {
   return {
     specialistId: params.chatSpecialistId || "all",
     applicant: params.chatApplicant || "all",
+    status: params.chatStatus || "all",
+    search: params.chatSearch || "",
     sort: params.chatSort || "latest",
   };
 }
@@ -5234,6 +5415,29 @@ function applyAdminChatMonitorFilters(cases, filters) {
 
     if (filters.applicant !== "all" && getChatCaseApplicantName(submission) !== filters.applicant) {
       return false;
+    }
+
+    if (filters.status !== "all" && getConversationStatus(submission) !== filters.status) {
+      return false;
+    }
+
+    const query = String(filters.search || "").trim().toLowerCase();
+    if (query) {
+      const last = getLastChatMessage(submission.id);
+      const haystack = [
+        submission.id,
+        submission.title,
+        submission.type,
+        submission.status,
+        getChatCaseApplicantName(submission),
+        getChatCaseSpecialistName(submission),
+        last?.message_text,
+        last?.attachment_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(query)) return false;
     }
 
     return true;
@@ -5280,6 +5484,13 @@ function renderAdminChatMonitorControls(allCases, visibleCases, filters) {
 
   return `
     <div class="admin-chat-monitor-controls">
+      <div class="chat-filter-group chat-filter-search">
+        <label for="chatSearchFilter">Search</label>
+        <div class="chat-search-input">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="chatSearchFilter" type="search" value="${escapeHtml(filters.search)}" placeholder="Search case, applicant, evaluator..." onchange="setAdminChatMonitorFilter('chatSearch', this.value)" />
+        </div>
+      </div>
       <div class="chat-filter-group">
         <label for="chatSpecialistFilter">Specialist</label>
         <select id="chatSpecialistFilter" onchange="setAdminChatMonitorFilter('chatSpecialistId', this.value)">
@@ -5300,6 +5511,16 @@ function renderAdminChatMonitorControls(allCases, visibleCases, filters) {
               return `<option value="${escapeHtml(value)}" ${filters.applicant === value ? "selected" : ""}>${escapeHtml(applicant)}</option>`;
             })
             .join("")}
+        </select>
+      </div>
+      <div class="chat-filter-group">
+        <label for="chatStatusFilter">Conversation Status</label>
+        <select id="chatStatusFilter" onchange="setAdminChatMonitorFilter('chatStatus', this.value)">
+          <option value="all" ${filters.status === "all" ? "selected" : ""}>All statuses</option>
+          <option value="New" ${filters.status === "New" ? "selected" : ""}>New</option>
+          <option value="Active" ${filters.status === "Active" ? "selected" : ""}>Active</option>
+          <option value="Unread" ${filters.status === "Unread" ? "selected" : ""}>Unread</option>
+          <option value="Waiting" ${filters.status === "Waiting" ? "selected" : ""}>Waiting</option>
         </select>
       </div>
       <div class="chat-filter-group">
@@ -5513,6 +5734,8 @@ function renderChatConversationList(cases, activeCaseId) {
       const availability = getCaseChatAvailability(submission);
       const applicantName = getChatCaseApplicantName(submission);
       const specialistName = getAssignedReviewer(submission)?.name || "Evaluator pending";
+      const highPriority = isHighPriorityConversation(submission);
+      const lastActivity = last?.created_at || submission.date;
       const metaContent =
         role === "applicant"
           ? `${escapeHtml(specialistName)} - ${typeBadge(submission.type)}`
@@ -5520,13 +5743,17 @@ function renderChatConversationList(cases, activeCaseId) {
             ? `${escapeHtml(applicantName)} - ${typeBadge(submission.type)}`
             : `<span><i class="fa-solid fa-user"></i> ${escapeHtml(applicantName)}</span><span><i class="fa-solid fa-user-tie"></i> ${escapeHtml(specialistName)}</span>${typeBadge(submission.type)}`;
       return `
-        <button class="chat-thread-item ${activeCaseId === submission.id ? "active" : ""}" onclick="openCaseChat('${submission.id}')">
+        <button class="chat-thread-item ${activeCaseId === submission.id ? "active" : ""} ${highPriority ? "priority" : ""}" onclick="openCaseChat('${submission.id}')">
           <div class="chat-thread-top">
-            <strong>${escapeHtml(submission.id)}</strong>
-            ${unread ? `<span>${unread}</span>` : ""}
+            <strong>${highPriority ? '<i class="fa-solid fa-thumbtack"></i> ' : ""}${escapeHtml(submission.id)}</strong>
+            <div class="chat-thread-signals">
+              ${renderConversationStatusIndicator(submission)}
+              ${unread ? `<span class="chat-unread-badge">${unread}</span>` : ""}
+            </div>
           </div>
           <div class="chat-thread-title">${escapeHtml(submission.title)}</div>
           <div class="chat-thread-meta">${metaContent}</div>
+          <div class="chat-thread-activity"><i class="fa-regular fa-clock"></i> Last activity ${formatChatDateTime(lastActivity)}</div>
           <p>${last ? escapeHtml(last.message_text || last.attachment_name || "Attachment sent") : availability.available ? "No messages yet." : availability.message}</p>
         </button>
       `;
@@ -5587,7 +5814,7 @@ function renderChatThread(submission) {
                 .map((message) => {
                   const isMine = message.sender_id === getCurrentUser().id && role !== "superadmin";
                   return `
-                    <div class="chat-message ${isMine ? "mine" : "theirs"}">
+                    <div class="chat-message ${isMine ? "mine" : "theirs"} ${readOnly ? "audit-message" : ""}">
                       <div class="chat-bubble">
                         <div class="chat-message-head">
                           <strong>${escapeHtml(getChatUserName(message.sender_id))}</strong>
@@ -5596,7 +5823,7 @@ function renderChatThread(submission) {
                         ${message.message_text ? `<div class="chat-message-text">${escapeHtml(message.message_text)}</div>` : ""}
                         ${renderCopyrightPaymentMessageMeta(message, submission)}
                         ${renderChatAttachment(message)}
-                        <div class="chat-message-status">${isMine ? (message.is_read ? "Seen" : "Sent") : "Seen"}</div>
+                        <div class="chat-message-status">${readOnly ? "Logged for read-only audit" : isMine ? (message.is_read ? "Seen" : "Sent") : "Seen"}</div>
                       </div>
                     </div>
                   `;
@@ -5637,6 +5864,9 @@ function renderMessagesPage() {
   const allCases = getChatConversationCases(role);
   const adminFilters = adminMonitor ? getAdminChatMonitorFilters() : null;
   let cases = adminMonitor ? applyAdminChatMonitorFilters(allCases, adminFilters) : allCases;
+  if (messageIpFilter !== "All") {
+    cases = cases.filter((submission) => submission.type === messageIpFilter);
+  }
   let activeCase =
     cases.find((submission) => submission.id === requestedCaseId) ||
     (!adminMonitor && requestedCaseId
@@ -5659,7 +5889,7 @@ function renderMessagesPage() {
       ? "Messages"
       : role === "applicant"
         ? "Case Messages"
-        : "Chat Monitoring";
+        : "Applicant & Evaluator Conversations";
   const subtitle =
     role === "reviewer"
       ? "Reply to applicants for cases assigned to you."
@@ -5672,6 +5902,20 @@ function renderMessagesPage() {
     <div class="page-header">
       <h1><i class="fa-solid fa-comments"></i> ${title}</h1>
       <p>${subtitle}</p>
+    </div>
+    ${
+      adminMonitor
+        ? `<div class="admin-monitor-notice"><i class="fa-solid fa-shield-halved"></i><span>Admin Read-Only Monitoring Access</span><small>Conversation logs are visible for audit, quality assurance, and security review only.</small></div>`
+        : ""
+    }
+    <div class="admin-chat-monitor-controls">
+      <div class="chat-filter-group">
+        <label for="messageIpFilter">IP Service</label>
+        <select id="messageIpFilter" onchange="setMessageIpFilter(this.value)">
+          <option value="All" ${messageIpFilter === "All" ? "selected" : ""}>All IP Services</option>
+          ${IP_SERVICE_TYPES.map((type) => `<option value="${type}" ${messageIpFilter === type ? "selected" : ""}>${type}</option>`).join("")}
+        </select>
+      </div>
     </div>
     ${adminMonitor ? renderAdminChatMonitorControls(allCases, cases, adminFilters) : ""}
     <div class="chat-shell">
@@ -5712,6 +5956,148 @@ window.setAdminChatMonitorFilter = function(key, value) {
 window.resetAdminChatMonitorFilters = function() {
   currentParams = { caseId: "" };
   renderDashboardContent("messages");
+};
+
+const contactSubmissions = [
+  {
+    id: "INQ-2026-041",
+    sender: "Mariel Santos",
+    email: "mariel.santos@example.com",
+    subject: "Trademark filing consultation",
+    type: "Trademark",
+    timestamp: "2026-05-08T09:40:00+08:00",
+    status: "New",
+    priority: "High",
+    message: "I need guidance on registering a brand name for a student-led food product before public launch.",
+    suggestedReply: "Thank you for reaching out. Please prepare your preferred mark, product category, and ownership details so the IP office can help screen the trademark filing requirements.",
+  },
+  {
+    id: "INQ-2026-039",
+    sender: "Dr. Lino Cruz",
+    email: "lino.cruz@psu.edu.ph",
+    subject: "Patent disclosure schedule",
+    type: "Patent",
+    timestamp: "2026-05-07T14:18:00+08:00",
+    status: "Read",
+    priority: "Normal",
+    message: "Our research group would like to schedule a disclosure review for a post-harvest machine prototype.",
+    suggestedReply: "Thank you for your inquiry. The office can assist with a preliminary disclosure review. Please share the invention title, inventors, and available technical drawings.",
+  },
+  {
+    id: "INQ-2026-036",
+    sender: "Andrea Lim",
+    email: "andrea.lim@example.com",
+    subject: "Copyright protection for module",
+    type: "Copyright",
+    timestamp: "2026-05-06T11:05:00+08:00",
+    status: "Replied",
+    priority: "Normal",
+    message: "Can I register a training module developed for community extension work?",
+    suggestedReply: "Yes, the office can guide copyright registration for eligible learning materials. Please prepare a copy of the work and author details.",
+  },
+  {
+    id: "INQ-2026-032",
+    sender: "Kevin Ramos",
+    email: "kevin.ramos@example.com",
+    subject: "Marketplace licensing inquiry",
+    type: "Licensing",
+    timestamp: "2026-05-03T16:42:00+08:00",
+    status: "Archived",
+    priority: "Low",
+    message: "I am interested in learning whether listed technologies are available for commercial licensing.",
+    suggestedReply: "Thank you for your interest. The technology transfer office can provide availability and licensing steps for selected listings.",
+  },
+];
+
+function getNewContactSubmissionCount() {
+  return contactSubmissions.filter((item) => item.status === "New").length;
+}
+
+function renderContactSubmissionStatus(status) {
+  const className = String(status || "New").toLowerCase();
+  return `<span class="contact-ticket-status ${className}">${escapeHtml(status)}</span>`;
+}
+
+function renderContactSubmissionsPage() {
+  const statuses = ["All", "New", "Read", "Replied", "Archived"];
+  const visible = contactSubmissions.filter((item) => contactSubmissionStatusFilter === "All" || item.status === contactSubmissionStatusFilter);
+  return `
+    <div class="page-header comms-page-header">
+      <div>
+        <h1><i class="fa-solid fa-ticket"></i> Contact Submissions</h1>
+        <p>Manage website inquiry forms as service tickets for the IP office.</p>
+      </div>
+      <div class="contact-ticket-kpi">
+        <span>${getNewContactSubmissionCount()}</span>
+        <small>New inquiries</small>
+      </div>
+    </div>
+    <div class="contact-submissions-toolbar" role="tablist" aria-label="Contact submission status filters">
+      ${statuses
+        .map(
+          (status) => `
+        <button type="button" class="${contactSubmissionStatusFilter === status ? "active" : ""}" onclick="setContactSubmissionStatusFilter('${status}')" role="tab" aria-selected="${contactSubmissionStatusFilter === status}">
+          ${status}
+          ${status === "New" && getNewContactSubmissionCount() ? `<span>${getNewContactSubmissionCount()}</span>` : ""}
+        </button>
+      `,
+        )
+        .join("")}
+    </div>
+    <section class="contact-ticket-board">
+      <div class="contact-ticket-board-header">
+        <strong>${visible.length} tickets</strong>
+        <span><i class="fa-solid fa-shield-halved"></i> Admin communication queue</span>
+      </div>
+      <div class="contact-ticket-list">
+        ${visible.map(renderContactSubmissionTicket).join("") || `<div class="chat-empty-state"><i class="fa-solid fa-inbox"></i><h3>No submissions found</h3><p>Try another ticket status filter.</p></div>`}
+      </div>
+    </section>
+  `;
+}
+
+function renderContactSubmissionTicket(item) {
+  return `
+    <article class="contact-ticket-card ${item.priority === "High" ? "priority" : ""}">
+      <div class="contact-ticket-main">
+        <div class="contact-ticket-topline">
+          <span>${escapeHtml(item.id)}</span>
+          ${renderContactSubmissionStatus(item.status)}
+        </div>
+        <h3>${escapeHtml(item.subject)}</h3>
+        <p>${escapeHtml(item.message)}</p>
+        <div class="contact-ticket-meta">
+          <span><i class="fa-solid fa-user"></i> ${escapeHtml(item.sender)}</span>
+          <span><i class="fa-solid fa-envelope"></i> ${escapeHtml(item.email)}</span>
+          <span><i class="fa-solid fa-layer-group"></i> ${escapeHtml(item.type)}</span>
+          <span><i class="fa-regular fa-clock"></i> ${formatChatDateTime(item.timestamp)}</span>
+        </div>
+      </div>
+      <aside class="contact-ticket-actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="handleContactTicketAction('${item.id}', 'reply')"><i class="fa-solid fa-reply"></i> Reply</button>
+        <button type="button" class="btn btn-outline-navy btn-sm" onclick="handleContactTicketAction('${item.id}', 'archive')"><i class="fa-solid fa-box-archive"></i> Archive</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="handleContactTicketAction('${item.id}', 'suggest')"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Suggest</button>
+      </aside>
+      <div class="contact-ticket-ai">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>${escapeHtml(item.suggestedReply)}</span>
+      </div>
+    </article>
+  `;
+}
+
+window.setContactSubmissionStatusFilter = function(status) {
+  contactSubmissionStatusFilter = status;
+  renderDashboardContent("admin-contact-submissions");
+};
+
+window.handleContactTicketAction = function(id, action) {
+  const actionLabel = {
+    reply: "Reply workflow ready for",
+    archive: "Archive action queued for",
+    suggest: "AI response suggestion prepared for",
+  }[action] || "Action queued for";
+  showToast(`${actionLabel} ${id}.`);
 };
 
 window.selectChatAttachment = function(input, caseId) {
@@ -6014,11 +6400,9 @@ function renderUserDashboard() {
   const role = "applicant";
   const userSubmissions = getVisibleSubmissions(role);
   const total = userSubmissions.length;
-  const actionRequired = userSubmissions.filter((s) => s.statusNote).length;
   const drafts = userSubmissions.filter((s) => s.status === "Draft").length;
   const rejected = userSubmissions.filter((s) => s.status === "Rejected").length;
   const recent = userSubmissions.filter(s => s.status !== 'Draft').slice(0, 3);
-  const unreadMessages = getUnreadChatCount("applicant");
 
   // Stats clicking helper
   window.goToFilteredSubmissions = function(status) {
@@ -6045,15 +6429,6 @@ function renderUserDashboard() {
         <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
 
-      <div class="action-card" onclick="navigateTo('messages')">
-        <div class="action-card-icon"><i class="fa-solid fa-comments"></i></div>
-        <div class="action-card-content">
-          <h3>Messages ${unreadMessages ? `<span class="chat-button-badge">${unreadMessages}</span>` : ""}</h3>
-          <p>Chat with the assigned evaluator for your submitted cases.</p>
-        </div>
-        <div class="action-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>
-
     </div>
 
     <div class="page-header" style="margin-bottom: 24px;">
@@ -6073,14 +6448,14 @@ function renderUserDashboard() {
         </div>
       </div>
 
-      <!-- Action Needed Card -->
-      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 10px 20px -10px rgba(239,68,68,0.2); cursor:pointer; transition: transform 0.2s; --accent: #ef4444;" onclick="goToFilteredSubmissions('ActionRequired')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-        <div style="width:48px; height:48px; border-radius:12px; background:#ef444415; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
-          <i class="fa-solid fa-circle-exclamation"></i>
+      <!-- All Submissions Card -->
+      <div class="stat-card" style="background:white; padding:24px; border-radius:16px; border:1px solid var(--gray-100); display:flex; align-items:center; gap:20px; box-shadow:0 10px 20px -10px rgba(59,130,246,0.2); cursor:pointer; transition: transform 0.2s; --accent: #3b82f6;" onclick="goToFilteredSubmissions('All')" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="width:48px; height:48px; border-radius:12px; background:#3b82f615; color:#3b82f6; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+          <i class="fa-solid fa-folder-open"></i>
         </div>
         <div>
-          <div style="font-size:1.8rem; font-weight:800; color:#ef4444; line-height:1;">${actionRequired}</div>
-          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:600; margin-top:4px;">Action Needed</div>
+          <div style="font-size:1.8rem; font-weight:800; color:#3b82f6; line-height:1;">${total}</div>
+          <div style="font-size:0.85rem; color:var(--gray-500); font-weight:600; margin-top:4px;">All Submissions</div>
         </div>
       </div>
 
@@ -7084,11 +7459,30 @@ function getRoleSpecificPanels(role) {
   const submissionsList = getVisibleSubmissions(normalizedRole).slice(0, 3);
   const mainPanelTitle =
     normalizedRole === "reviewer" ? "Assigned Case Queue" : "Action Required";
+  const analyticsRows = getFilteredDashboardAnalyticsSubmissions(normalizedRole);
 
   const main = `
     <div style="display:flex; flex-direction:column; gap:24px;">
       <div class="dashboard-panel" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-radius:16px; padding:24px; border: 1px solid rgba(255,255,255,0.8); box-shadow:0 8px 30px rgba(0,0,0,0.03);">
-        <h3 style="font-size:1.15rem; color:var(--navy); font-weight:800; margin-bottom:16px;"><i class="fa-solid fa-chart-line" style="color:var(--gold); margin-right:6px;"></i> Portfolio Analytics</h3>
+        <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px;">
+          <div>
+            <h3 style="font-size:1.15rem; color:var(--navy); font-weight:800; margin-bottom:4px;"><i class="fa-solid fa-chart-line" style="color:var(--gold); margin-right:6px;"></i> Portfolio Analytics</h3>
+            <p style="font-size:.82rem;color:var(--gray-500);margin:0;">Showing ${analyticsRows.length} ${dashboardAnalyticsType === "All" ? "portfolio" : dashboardAnalyticsType} record${analyticsRows.length !== 1 ? "s" : ""}.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select class="filter-select" onchange="setDashboardAnalyticsFilter('type', this.value)">
+              <option value="All" ${dashboardAnalyticsType === "All" ? "selected" : ""}>All IP Services</option>
+              ${IP_SERVICE_TYPES.map((type) => `<option value="${type}" ${dashboardAnalyticsType === type ? "selected" : ""}>${type}</option>`).join("")}
+            </select>
+            <select class="filter-select" onchange="setDashboardAnalyticsFilter('period', this.value)">
+              <option value="ThisYear" ${dashboardAnalyticsPeriod === "ThisYear" ? "selected" : ""}>Current Year</option>
+              <option value="Last90" ${dashboardAnalyticsPeriod === "Last90" ? "selected" : ""}>Last 90 Days</option>
+              <option value="Custom" ${dashboardAnalyticsPeriod === "Custom" ? "selected" : ""}>Custom Range</option>
+              <option value="All" ${dashboardAnalyticsPeriod === "All" ? "selected" : ""}>All Time</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="exportDashboardAnalytics()"><i class="fa-solid fa-download"></i> Export</button>
+          </div>
+        </div>
         <div style="height:250px; width:100%; position:relative;">
           <canvas id="submissionsChart"></canvas>
         </div>
@@ -7126,11 +7520,172 @@ function getRoleSpecificPanels(role) {
 
   const side = `
     <div class="dashboard-panel" style="background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-radius:16px; padding:24px; border: 1px solid rgba(255,255,255,0.8); box-shadow:0 8px 30px rgba(0,0,0,0.03);">
-      <h3 style="font-size:1.15rem; color:var(--navy); margin-bottom: 16px; font-weight:800;"><i class="fa-solid fa-bolt" style="color:var(--yellow); margin-right:6px;"></i> Quick Launch</h3>
-      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="${normalizedRole === "reviewer" ? "generateEvaluatorReport()" : "showToast('Starting report generation...')"}"><i class="fa-solid fa-file-export" style="margin-right:8px; width:16px;"></i> ${normalizedRole === "reviewer" ? "Download Cases Report" : "Download Status"}</button>
+      <h3 style="font-size:1.15rem; color:var(--navy); margin-bottom: 16px; font-weight:800;"><i class="fa-solid fa-file-export" style="color:var(--gold); margin-right:6px;"></i> Reports</h3>
+      <button class="btn btn-outline-navy" style="width:100%; justify-content:flex-start; font-weight:600;" onclick="exportDashboardAnalytics()"><i class="fa-solid fa-chart-line" style="margin-right:8px; width:16px;"></i> Export Analytics CSV</button>
     </div>`;
   return { main, side };
 }
+
+function getFilteredDashboardAnalyticsSubmissions(role = currentRole) {
+  let rows = getVisibleSubmissions(role).filter((submission) => !isSubmissionArchived(submission));
+  if (dashboardAnalyticsType !== "All") {
+    rows = rows.filter((submission) => submission.type === dashboardAnalyticsType);
+  }
+  const now = new Date();
+  if (dashboardAnalyticsPeriod === "ThisYear") {
+    rows = rows.filter((submission) => new Date(submission.date).getFullYear() === now.getFullYear());
+  } else if (dashboardAnalyticsPeriod === "Last90") {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    rows = rows.filter((submission) => new Date(submission.date) >= cutoff);
+  } else if (dashboardAnalyticsPeriod === "Custom") {
+    if (dashboardAnalyticsFrom) {
+      rows = rows.filter((submission) => new Date(submission.date) >= new Date(dashboardAnalyticsFrom));
+    }
+    if (dashboardAnalyticsTo) {
+      rows = rows.filter((submission) => new Date(submission.date) <= new Date(dashboardAnalyticsTo));
+    }
+  }
+  return rows;
+}
+
+window.setDashboardAnalyticsFilter = function(kind, value) {
+  if (kind === "type") dashboardAnalyticsType = value;
+  if (kind === "period") dashboardAnalyticsPeriod = value;
+  renderDashboardContent("admin-dashboard");
+};
+
+window.setMessageIpFilter = function(type) {
+  messageIpFilter = type;
+  currentParams = { ...(currentParams || {}), caseId: "" };
+  renderDashboardContent("messages");
+};
+
+window.exportDashboardAnalytics = function() {
+  const rows = getFilteredDashboardAnalyticsSubmissions(currentRole);
+  const csvRows = [
+    ["Reference No.", "Type", "Title", "Applicant", "Date", "Status"],
+    ...rows.map((submission) => {
+      const display = getSubmissionDisplayData(submission);
+      return [submission.id, submission.type, display.title, display.applicant, submission.date, getDisplayStatusLabel(submission.status)];
+    }),
+  ];
+  downloadCsv(`portfolio_analytics_${dashboardAnalyticsType.toLowerCase().replace(/\s+/g, "_")}.csv`, csvRows);
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Exported Analytics",
+    record: dashboardAnalyticsType,
+    details: `Exported ${rows.length} dashboard analytics records for ${dashboardAnalyticsPeriod}.`,
+    module: "Dashboard",
+  });
+};
+
+function renderFloatingAIAssistant() {
+  return `
+    <button class="floating-ai-button" onclick="openAIAssistant()" title="AI report assistant">
+      <i class="fa-solid fa-wand-magic-sparkles"></i>
+    </button>
+  `;
+}
+
+window.openAIAssistant = function() {
+  const rows = getFilteredDashboardAnalyticsSubmissions(currentRole);
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  modalTitle.textContent = "AI Report Assistant";
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div class="ai-assistant-panel">
+      <div class="ai-assistant-summary">
+        <strong>${rows.length}</strong>
+        <span>${dashboardAnalyticsType === "All" ? "filtered records" : dashboardAnalyticsType + " records"} ready for report generation.</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>IP Service</label>
+          <select id="aiReportType">
+            <option value="All" ${dashboardAnalyticsType === "All" ? "selected" : ""}>All IP Services</option>
+            ${IP_SERVICE_TYPES.map((type) => `<option value="${type}" ${dashboardAnalyticsType === type ? "selected" : ""}>${type}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date Range</label>
+          <select id="aiReportPeriod">
+            <option value="ThisYear" ${dashboardAnalyticsPeriod === "ThisYear" ? "selected" : ""}>Current Year</option>
+            <option value="Last90" ${dashboardAnalyticsPeriod === "Last90" ? "selected" : ""}>Last 90 Days</option>
+            <option value="Custom" ${dashboardAnalyticsPeriod === "Custom" ? "selected" : ""}>Custom Range</option>
+            <option value="All" ${dashboardAnalyticsPeriod === "All" ? "selected" : ""}>All Time</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>From</label>
+          <input id="aiReportFrom" type="date" value="${escapeHtml(dashboardAnalyticsFrom)}" />
+        </div>
+        <div class="form-group">
+          <label>To</label>
+          <input id="aiReportTo" type="date" value="${escapeHtml(dashboardAnalyticsTo)}" />
+        </div>
+      </div>
+      <div id="aiReportPreview" class="ai-report-preview">${generateAIReportText(rows)}</div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:16px;">
+        <button class="btn btn-outline-navy" onclick="refreshAIReportPreview()"><i class="fa-solid fa-rotate"></i> Generate Report</button>
+        <button class="btn btn-primary" onclick="exportAIReport()"><i class="fa-solid fa-download"></i> Export Report</button>
+      </div>
+    </div>
+  `;
+  document.getElementById("modalOverlay").classList.add("active");
+};
+
+function generateAIReportText(rows) {
+  const byType = IP_SERVICE_TYPES.map((type) => `${type}: ${rows.filter((row) => row.type === type).length}`).join("\n");
+  const pending = rows.filter((row) => row.status === "Pending").length;
+  const reviewed = rows.filter((row) => ["Under Review", "Validated"].includes(row.status)).length;
+  const rejected = rows.filter((row) => row.status === "Rejected").length;
+  return `Portfolio Analytics Report
+Scope: ${dashboardAnalyticsType} | Period: ${dashboardAnalyticsPeriod}
+Total records: ${rows.length}
+
+IP service distribution:
+${byType}
+
+Workflow summary:
+Pending: ${pending}
+In evaluation: ${reviewed}
+Rejected: ${rejected}
+
+Generated insight: Current portfolio activity is concentrated in ${getDominantType(rows)}. Prioritize cases with evaluator assignments and recent viewer inquiries for faster technology transfer follow-through.`;
+}
+
+function getDominantType(rows) {
+  if (!rows.length) return "no active service category";
+  return IP_SERVICE_TYPES
+    .map((type) => ({ type, count: rows.filter((row) => row.type === type).length }))
+    .sort((a, b) => b.count - a.count)[0].type;
+}
+
+window.refreshAIReportPreview = function() {
+  dashboardAnalyticsType = document.getElementById("aiReportType")?.value || dashboardAnalyticsType;
+  dashboardAnalyticsPeriod = document.getElementById("aiReportPeriod")?.value || dashboardAnalyticsPeriod;
+  dashboardAnalyticsFrom = document.getElementById("aiReportFrom")?.value || "";
+  dashboardAnalyticsTo = document.getElementById("aiReportTo")?.value || "";
+  const preview = document.getElementById("aiReportPreview");
+  if (preview) preview.textContent = generateAIReportText(getFilteredDashboardAnalyticsSubmissions(currentRole));
+};
+
+window.exportAIReport = function() {
+  window.refreshAIReportPreview();
+  const text = document.getElementById("aiReportPreview")?.textContent || "";
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `ai_report_${dashboardAnalyticsType.toLowerCase().replace(/\s+/g, "_")}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("AI report exported.");
+};
 
 window.generateEvaluatorReport = function() {
   const role = "reviewer";
@@ -7188,15 +7743,20 @@ window.generateEvaluatorReport = function() {
 function initCharts() {
   const lineCtx = document.getElementById("submissionsChart");
   if (lineCtx) {
+    const analyticsRows = getFilteredDashboardAnalyticsSubmissions(currentRole);
+    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlyCounts = monthLabels.map((_, index) =>
+      analyticsRows.filter((submission) => new Date(submission.date).getMonth() === index).length,
+    );
     if (window.myLineChart) window.myLineChart.destroy();
     window.myLineChart = new Chart(lineCtx, {
       type: "line",
       data: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        labels: monthLabels,
         datasets: [
           {
-            label: "IP Submissions",
-            data: [12, 19, 15, 25, 22, 30],
+            label: dashboardAnalyticsType === "All" ? "IP Submissions" : `${dashboardAnalyticsType} Submissions`,
+            data: monthlyCounts,
             borderColor: "#E66B3F",
             backgroundColor: "rgba(230, 107, 63, 0.2)",
             borderWidth: 3,
@@ -7336,6 +7896,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
     filtered = filtered.filter((s) => s.status === filterStatus);
 
   const isMyCasesView = adminCaseScope === "mine";
+  const hideReviewerQueueStatus = normalizeRole(currentRole) === "reviewer" && adminCaseScope === "queue";
 
   return `
     <div class="table-container" id="adminSubmissionsTable">
@@ -7363,16 +7924,16 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
         <button class="filter-btn ${(filterType || "") === "Utility Model" ? "active" : ""}" onclick="filterAdminTable('Utility Model')">Utility Model</button>
         <button class="filter-btn ${(filterType || "") === "Industrial Design" ? "active" : ""}" onclick="filterAdminTable('Industrial Design')">Industrial Design</button>
       </div>
-      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th>${hideReviewerQueueStatus ? "" : "<th>Status</th>"}<th>Actions</th></tr></thead><tbody>
         ${
           filtered.length === 0
-            ? `<tr><td colspan="${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
+            ? `<tr><td colspan="${hideReviewerQueueStatus ? "6" : isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
             : filtered
                 .map(
                   (s) => {
                     const display = getSubmissionDisplayData(s);
                     return `<tr>
-          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td><td>${statusBadge(s.status)}</td>
+          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td>${hideReviewerQueueStatus ? "" : `<td>${statusBadge(s.status)}</td>`}
           <td><div class="action-btns">
             <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
             ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
@@ -7394,7 +7955,18 @@ let adminFilterType = "All",
 let adminCaseView = "active";
 let adminCaseScope = "all";
 let adminMarketplaceView = "active";
+let adminMarketplaceTypeFilter = "All";
+let adminMarketplaceSort = "newest";
 let adminRecordsTypeFilter = "All";
+let adminUserRoleFilter = "All";
+let messageIpFilter = "All";
+let contactSubmissionStatusFilter = "All";
+let adminEmailTypeFilter = "All";
+let dashboardAnalyticsType = "All";
+let dashboardAnalyticsPeriod = "ThisYear";
+let dashboardAnalyticsFrom = "";
+let dashboardAnalyticsTo = "";
+let marketplaceMineOnly = false;
 let announcementCategoryFilter = "All";
 let securityKeyVisibility = {
   primary: false,
@@ -7517,6 +8089,48 @@ let chatMessages = [
     attachment_name: "campus-map-preview.png",
     attachment_size: 428000,
     created_at: "2026-04-28T11:42:00+08:00",
+    is_read: false,
+  },
+  {
+    id: 4,
+    case_id: "PSU-TM-2026-031",
+    sender_id: 8,
+    receiver_id: 3,
+    sender_role: "applicant",
+    message_text: "Please confirm if the revised logo specimen is clear enough for the trademark packet.",
+    attachment_url: "",
+    attachment_type: "",
+    attachment_name: "",
+    attachment_size: 0,
+    created_at: "2026-04-29T08:20:00+08:00",
+    is_read: true,
+  },
+  {
+    id: 5,
+    case_id: "PSU-ID-2026-033",
+    sender_id: 4,
+    receiver_id: 13,
+    sender_role: "reviewer",
+    message_text: "Please upload side and rear views of the souvenir display before evaluation.",
+    attachment_url: "",
+    attachment_type: "",
+    attachment_name: "",
+    attachment_size: 0,
+    created_at: "2026-04-30T15:05:00+08:00",
+    is_read: false,
+  },
+  {
+    id: 6,
+    case_id: "PSU-UM-2026-031",
+    sender_id: 3,
+    receiver_id: 8,
+    sender_role: "reviewer",
+    message_text: "The utility model drawings are evaluated. I am preparing the next status update.",
+    attachment_url: "",
+    attachment_type: "",
+    attachment_name: "",
+    attachment_size: 0,
+    created_at: "2026-05-01T10:12:00+08:00",
     is_read: false,
   },
 ];
@@ -18146,6 +18760,26 @@ window.resumeDraft = function(id) {
   openDraftForResume(id);
 };
 
+window.reapplyRejectedSubmission = function(id) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission || submission.status !== "Rejected") {
+    showToast("Only rejected applications can be edited for re-application.");
+    return;
+  }
+  if (!isOwnSubmission(submission, "applicant")) {
+    showToast("You can only re-apply your own rejected submissions.");
+    return;
+  }
+  submission.status = "Draft";
+  submission.reapplicationOf = id;
+  submission.statusNote = "";
+  submission.step = 1;
+  submission.data = { ...(submission.data || submission.formData || {}), step: 1 };
+  submission.formData = { ...(submission.formData || submission.data || {}), step: 1 };
+  persistSubmissions();
+  openDraftForResume(id);
+};
+
 window.handleCancelSubmission = function (id) {
   const s = submissions.find((sub) => sub.id === id);
   if (!s) return;
@@ -18981,6 +19615,19 @@ function renderAdminMarketplacePage() {
   const archivedListings = marketplaceItems.filter((item) => item.archived);
   const visibleListings =
     adminMarketplaceView === "archived" ? archivedListings : activeListings;
+  const filteredListings = visibleListings
+    .filter((item) => adminMarketplaceTypeFilter === "All" || item.type === adminMarketplaceTypeFilter)
+    .slice()
+    .sort((a, b) => {
+      if (adminMarketplaceSort === "title") return compareText(a.title, b.title);
+      if (adminMarketplaceSort === "type") return compareText(a.type, b.type) || compareText(a.title, b.title);
+      if (adminMarketplaceSort === "oldest") return Number(a.id) - Number(b.id);
+      return Number(b.id) - Number(a.id);
+    });
+  const typeCounts = IP_SERVICE_TYPES.map((type) => ({
+    type,
+    count: activeListings.filter((item) => item.type === type).length,
+  }));
   return `
     <div class="page-header">
       <h1>Market Listing</h1>
@@ -18988,18 +19635,12 @@ function renderAdminMarketplacePage() {
     </div>
 
     <div class="stats-cards" style="margin-bottom:24px;">
-      <div class="stat-card">
-        <div class="stat-card-icon blue"><i class="fa-solid fa-store"></i></div>
-        <div class="stat-card-info"><h3>${activeListings.length}</h3><p>Active Listings</p></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-icon green"><i class="fa-solid fa-certificate"></i></div>
-        <div class="stat-card-info"><h3>${activeListings.filter((item) => item.type === "Patent").length}</h3><p>Patent Listings</p></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-icon yellow"><i class="fa-solid fa-bullhorn"></i></div>
-        <div class="stat-card-info"><h3>${archivedListings.length}</h3><p>Archived Listings</p></div>
-      </div>
+      ${typeCounts.map((entry) => `
+        <div class="stat-card">
+          <div class="stat-card-icon blue"><i class="${getMarketplaceIconForType(entry.type)}"></i></div>
+          <div class="stat-card-info"><h3>${entry.count}</h3><p>${entry.type}</p></div>
+        </div>
+      `).join("")}
     </div>
 
     <div class="table-container">
@@ -19007,9 +19648,19 @@ function renderAdminMarketplacePage() {
         <h3>${adminMarketplaceView === "archived" ? "Archived Product Listings" : "Active Product Listings"}</h3>
         <button class="btn btn-primary" onclick="showMarketListingModal()"><i class="fa-solid fa-plus"></i> Add Listing</button>
       </div>
-      <div style="padding:0 24px 14px;display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="padding:0 24px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <button class="filter-btn ${adminMarketplaceView === "active" ? "active" : ""}" onclick="setAdminMarketplaceView('active')">Listings (${activeListings.length})</button>
         <button class="filter-btn ${adminMarketplaceView === "archived" ? "active" : ""}" onclick="setAdminMarketplaceView('archived')">Archived (${archivedListings.length})</button>
+        <select class="filter-select" onchange="setAdminMarketplaceTypeFilter(this.value)">
+          <option value="All" ${adminMarketplaceTypeFilter === "All" ? "selected" : ""}>All IP Types</option>
+          ${IP_SERVICE_TYPES.map((type) => `<option value="${type}" ${adminMarketplaceTypeFilter === type ? "selected" : ""}>${type}</option>`).join("")}
+        </select>
+        <select class="filter-select" onchange="setAdminMarketplaceSort(this.value)">
+          <option value="newest" ${adminMarketplaceSort === "newest" ? "selected" : ""}>Newest first</option>
+          <option value="oldest" ${adminMarketplaceSort === "oldest" ? "selected" : ""}>Oldest first</option>
+          <option value="title" ${adminMarketplaceSort === "title" ? "selected" : ""}>Title A-Z</option>
+          <option value="type" ${adminMarketplaceSort === "type" ? "selected" : ""}>IP type A-Z</option>
+        </select>
       </div>
       <div class="table-responsive">
         <table class="data-table">
@@ -19024,10 +19675,8 @@ function renderAdminMarketplacePage() {
           </thead>
             <tbody>
             ${
-              visibleListings.length
-                ? visibleListings
-                    .slice()
-                    .sort((a, b) => a.id - b.id)
+              filteredListings.length
+                ? filteredListings
                     .map(
                       (item) => `
                 <tr>
@@ -19044,7 +19693,7 @@ function renderAdminMarketplacePage() {
                 </tr>`,
                     )
                     .join("")
-                : `<tr><td colspan="5" style="text-align:center;padding:48px;color:var(--gray-400);">No ${adminMarketplaceView === "archived" ? "archived" : "active"} market listings available.</td></tr>`
+                : `<tr><td colspan="5" style="text-align:center;padding:48px;color:var(--gray-400);">No matching ${adminMarketplaceView === "archived" ? "archived" : "active"} market listings available.</td></tr>`
             }
           </tbody>
         </table>
@@ -19057,6 +19706,16 @@ function setAdminMarketplaceView(view) {
   adminMarketplaceView = view;
   renderDashboardContent("admin-marketplace");
 }
+
+window.setAdminMarketplaceTypeFilter = function(type) {
+  adminMarketplaceTypeFilter = type;
+  renderDashboardContent("admin-marketplace");
+};
+
+window.setAdminMarketplaceSort = function(sort) {
+  adminMarketplaceSort = sort;
+  renderDashboardContent("admin-marketplace");
+};
 
 function getMarketplaceIconForType(type) {
   const icons = {
@@ -19530,7 +20189,7 @@ window.archiveMarketListing = function(id) {
 };
 
 function renderMarketplace() {
-  const activeMarketplaceItems = marketplaceItems.filter((item) => !item.archived);
+  const activeMarketplaceItems = getFilteredMarketplaceItems();
   return `
     <div class="page-header">
 
@@ -19557,6 +20216,13 @@ function renderMarketplace() {
       <button class="mp-type-btn ${currentMpType === 'Copyright' ? 'active' : ''}" data-type="Copyright" onclick="setMpType('Copyright')">
         <i class="fa-solid fa-copyright"></i> Copyright
       </button>
+      ${
+        normalizeRole(currentRole) === "applicant"
+          ? `<button class="mp-type-btn ${marketplaceMineOnly ? "active" : ""}" onclick="toggleMarketplaceMineOnly()">
+              <i class="fa-solid fa-user-check"></i> My Listing
+            </button>`
+          : ""
+      }
     </div>
 
     <div class="marketplace-layout no-sidebar">
@@ -19588,21 +20254,55 @@ function renderInnovationCards(items) {
     .join("");
 }
 
-function filterMarketplace() {
+function getFilteredMarketplaceItems(searchValue = "") {
   const type = currentMpType;
-
-  const search = document.getElementById("mpSearch")?.value.toLowerCase() || "";
-  let filtered = marketplaceItems.filter((item) => {
+  const search = String(searchValue || "").toLowerCase();
+  return marketplaceItems.filter((item) => {
     if (item.archived) return false;
+    if (marketplaceMineOnly) {
+      const user = getCurrentUser();
+      const mine =
+        normalizePersonLookup(item.inventor) === normalizePersonLookup(user.name) ||
+        normalizePersonLookup(item.contactPerson) === normalizePersonLookup(user.name) ||
+        String(item.contactEmail || "").toLowerCase() === String(user.email || "").toLowerCase();
+      if (!mine) return false;
+    }
     if (type !== "All" && item.type !== type) return false;
     if (
       search &&
       !item.title.toLowerCase().includes(search) &&
-      !item.description.toLowerCase().includes(search)
+      !item.description.toLowerCase().includes(search) &&
+      !String(item.inventor || "").toLowerCase().includes(search)
     )
       return false;
     return true;
   });
+}
+
+function getConversationStatus(submission) {
+  const unread = getUnreadChatCountForCase(submission.id);
+  const messages = getCaseChatMessages(submission.id);
+  if (unread) return "Unread";
+  if (!messages.length) return "New";
+  const last = getLastChatMessage(submission.id);
+  const currentUserId = getCurrentUser().id;
+  if (last?.sender_id === currentUserId) return "Waiting";
+  return "Active";
+}
+
+function isHighPriorityConversation(submission) {
+  return ["Rejected", "Cancelled"].includes(submission.status) || getUnreadChatCountForCase(submission.id) > 1;
+}
+
+function renderConversationStatusIndicator(submission) {
+  const status = getConversationStatus(submission);
+  const className = status.toLowerCase();
+  return `<span class="conversation-status-pill ${className}"><span class="conversation-status-dot"></span>${status}</span>`;
+}
+
+function filterMarketplace() {
+  const search = document.getElementById("mpSearch")?.value.toLowerCase() || "";
+  let filtered = getFilteredMarketplaceItems(search);
   const grid = document.getElementById("innovationGrid");
   if (!grid) return;
 
@@ -19611,8 +20311,48 @@ function filterMarketplace() {
     : '<p style="grid-column:1/-1;text-align:center;color:var(--gray-400);padding:60px 0">No innovations found matching your criteria.</p>';
 }
 
+window.toggleMarketplaceMineOnly = function() {
+  marketplaceMineOnly = !marketplaceMineOnly;
+  renderDashboardContent("marketplace-dash");
+};
+
 // In-memory store for expressed interests (prototype only)
 let userInterests = [];
+let marketplaceInquiries = [
+  {
+    id: "INQ-2026-001",
+    listingId: 16,
+    listingTitle: "Palawan Green Seal",
+    ipType: "Trademark",
+    senderName: "Karla Mendoza",
+    senderEmail: "karla.mendoza@greenventures.ph",
+    message: "We are interested in licensing the sustainability seal for a community product line.",
+    receivedAt: "2026-04-28 09:25",
+    read: false,
+  },
+  {
+    id: "INQ-2026-002",
+    listingId: 19,
+    listingTitle: "Marine Biodiversity Field Guide",
+    ipType: "Copyright",
+    senderName: "Nico Tan",
+    senderEmail: "nico.tan@edu-media.co",
+    message: "Can we discuss educational distribution rights for the illustrated field guide?",
+    receivedAt: "2026-04-29 14:10",
+    read: true,
+  },
+  {
+    id: "INQ-2026-003",
+    listingId: 21,
+    listingTitle: "Zero-Emission Seaweed Processor",
+    ipType: "Patent",
+    senderName: "Maya Torres",
+    senderEmail: "maya@blueharvest.io",
+    message: "Our cooperative would like technical and commercialization details for this processor.",
+    receivedAt: "2026-05-02 11:40",
+    read: false,
+  },
+];
 
 function showInnovationDetail(id) {
   const item = marketplaceItems.find((i) => String(i.id) === String(id));
@@ -19659,6 +20399,9 @@ function showInnovationDetail(id) {
           <footer class="detail-footer-contact">
             Interested in this technology? Connect with the inventors to discuss licensing, partnerships, or acquisition.
           </footer>
+          <button class="btn btn-primary" style="margin-top:16px;" onclick="sendMarketplaceInquiry(${jsArg(item.id)})">
+            <i class="fa-solid fa-paper-plane"></i> Send Inquiry
+          </button>
         </div>
 
         <!-- Sidebar / Visuals -->
@@ -19692,6 +20435,85 @@ window.toggleInterest = function(id) {
     showToast("Interest notification withdrawn.");
   }
   showInnovationDetail(id);
+};
+
+window.sendMarketplaceInquiry = function(id) {
+  const item = marketplaceItems.find((entry) => String(entry.id) === String(id));
+  if (!item) return;
+  const inquiry = {
+    id: `INQ-${new Date().getFullYear()}-${String(marketplaceInquiries.length + 1).padStart(3, "0")}`,
+    listingId: item.id,
+    listingTitle: item.title,
+    ipType: item.type,
+    senderName: "Marketplace Viewer",
+    senderEmail: "viewer@example.com",
+    message: `I am interested in ${item.title}. Please send available licensing or partnership details.`,
+    receivedAt: formatAuditTimestamp(),
+    read: false,
+  };
+  marketplaceInquiries.unshift(inquiry);
+  pushRoleNotification("superadmin", {
+    icon: "fa-envelope-open-text",
+    color: "#3b82f6",
+    title: "New Marketplace Inquiry",
+    body: `${inquiry.senderName} asked about ${item.title}.`,
+  });
+  showToast("Inquiry sent to the IP office.");
+};
+
+function renderAdminEmailsPage() {
+  const filtered = marketplaceInquiries.filter(
+    (inquiry) => adminEmailTypeFilter === "All" || inquiry.ipType === adminEmailTypeFilter,
+  );
+  const unreadCount = marketplaceInquiries.filter((inquiry) => !inquiry.read).length;
+  return `
+    <div class="page-header">
+      <h1>Emails</h1>
+      <p>Marketplace inquiries from viewers interested in listed IP assets.</p>
+    </div>
+    <div class="email-module-toolbar">
+      <div class="email-module-stat"><i class="fa-solid fa-bell"></i><strong>${unreadCount}</strong><span>new inquiries</span></div>
+      <select class="filter-select" onchange="setAdminEmailTypeFilter(this.value)">
+        <option value="All" ${adminEmailTypeFilter === "All" ? "selected" : ""}>All IP Services</option>
+        ${IP_SERVICE_TYPES.map((type) => `<option value="${type}" ${adminEmailTypeFilter === type ? "selected" : ""}>${type}</option>`).join("")}
+      </select>
+      <button class="btn btn-sm btn-outline-navy" onclick="showToast('Push notifications enabled for new inquiries.')"><i class="fa-solid fa-bell"></i> Push Notifications</button>
+    </div>
+    <div class="email-inquiry-list">
+      ${
+        filtered.length
+          ? filtered.map((inquiry) => `
+            <article class="email-inquiry-card ${inquiry.read ? "" : "unread"}">
+              <div class="email-inquiry-top">
+                <div>
+                  <strong>${escapeHtml(inquiry.senderName)}</strong>
+                  <span>${escapeHtml(inquiry.senderEmail)}</span>
+                </div>
+                ${typeBadge(inquiry.ipType)}
+              </div>
+              <h3>${escapeHtml(inquiry.listingTitle)}</h3>
+              <p>${escapeHtml(inquiry.message)}</p>
+              <div class="email-inquiry-footer">
+                <span><i class="fa-solid fa-clock"></i> ${escapeHtml(inquiry.receivedAt)}</span>
+                <button class="btn btn-sm btn-outline-navy" onclick="markInquiryRead('${inquiry.id}')"><i class="fa-solid fa-envelope-open"></i> Mark Read</button>
+              </div>
+            </article>
+          `).join("")
+          : `<div class="chat-empty-state"><i class="fa-solid fa-envelope"></i><h3>No inquiries found</h3><p>Try another IP service filter.</p></div>`
+      }
+    </div>
+  `;
+}
+
+window.setAdminEmailTypeFilter = function(type) {
+  adminEmailTypeFilter = type;
+  renderDashboardContent("admin-emails");
+};
+
+window.markInquiryRead = function(id) {
+  const inquiry = marketplaceInquiries.find((entry) => entry.id === id);
+  if (inquiry) inquiry.read = true;
+  renderDashboardContent("admin-emails");
 };
 
 
@@ -19891,9 +20713,7 @@ function renderUserSubmissions() {
     { id: "Draft", label: "Draft" },
     { id: "Pending", label: "Pending" },
     { id: "Under Review", label: "Under Review" },
-    { id: "Validated", label: "Validated" },
-    { id: "ActionRequired", label: "Action Required" },
-    { id: "Approved", label: "Approved" },
+    { id: "Validated", label: "Evaluated" },
     { id: "Rejected", label: "Rejected" },
   ];
 
@@ -20063,7 +20883,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                 <h3 style="font-size:1.05rem; font-weight:800; color:var(--navy); margin:0">${escapeHtml(display.title)}</h3>
                 ${typeBadge(s.type)}
-                ${needsAction ? '<span class="badge badge-rejected" style="font-size:0.7rem;"><i class="fa-solid fa-triangle-exclamation"></i> ACTION REQUIRED</span>' : ""}
+                ${needsAction ? '<span class="badge badge-rejected" style="font-size:0.7rem;"><i class="fa-solid fa-triangle-exclamation"></i> NEEDS UPDATE</span>' : ""}
               </div>
               <div style="font-size:0.85rem; color:var(--gray-500); display:flex; align-items:center; gap:12px;">
                 <span><i class="fa-solid fa-hashtag" style="font-size:0.75rem; margin-right:4px;"></i>${s.id}</span>
@@ -20109,6 +20929,15 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
                       ? `
                     <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="resumeDraft('${s.id}')">
                       <i class="fa-solid fa-play"></i> Resume Application
+                    </button>
+                  `
+                      : ""
+                  }
+                  ${
+                    s.status === "Rejected"
+                      ? `
+                    <button class="btn btn-sm btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="reapplyRejectedSubmission('${s.id}')">
+                      <i class="fa-solid fa-rotate-right"></i> Edit & Re-apply
                     </button>
                   `
                       : ""
@@ -21159,25 +21988,49 @@ function renderAdminUsers() {
     reviewer: "badge-pending",
     applicant: "badge-approved",
   };
+  const visibleUsers = systemUsers.filter((user) => adminUserRoleFilter === "All" || normalizeRole(user.role) === adminUserRoleFilter);
   return `<div class="page-header"><h1>User Management</h1><p>Manage registered system users according to the RBAC matrix.</p></div>
-    ${canManageUsers() ? `<button class="btn btn-primary" style="margin-bottom:20px" onclick="navigateTo('create-account')"><i class="fa-solid fa-user-plus"></i> Create Account</button>` : ""}
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
+      ${canManageUsers() ? `<button class="btn btn-primary" onclick="navigateTo('create-account')"><i class="fa-solid fa-user-plus"></i> Create Account</button>` : "<span></span>"}
+      <select class="filter-select" onchange="setAdminUserRoleFilter(this.value)">
+        <option value="All" ${adminUserRoleFilter === "All" ? "selected" : ""}>All Roles</option>
+        <option value="superadmin" ${adminUserRoleFilter === "superadmin" ? "selected" : ""}>Admin</option>
+        <option value="reviewer" ${adminUserRoleFilter === "reviewer" ? "selected" : ""}>Evaluator</option>
+        <option value="applicant" ${adminUserRoleFilter === "applicant" ? "selected" : ""}>Applicant</option>
+      </select>
+    </div>
     <div class="table-container"><div class="table-responsive"><table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Date Created</th>${canManageUsers() ? "<th>Actions</th>" : ""}</tr></thead><tbody>
-      ${systemUsers
+      ${visibleUsers
         .map(
-          (user) => `
+          (user) => {
+            const isApplicant = normalizeRole(user.role) === "applicant";
+            const actionHtml =
+              canManageUsers()
+                ? `<td>${
+                    canManageTargetUser(user) && !isApplicant
+                      ? `<div class="action-btns"><button class="btn btn-sm btn-outline-navy" onclick="editUserRole(${user.id})"><i class="fa-solid fa-user-gear"></i> Manage</button></div>`
+                      : '<span style="font-size:.8rem;color:var(--gray-400)">No actions</span>'
+                  }</td>`
+                : "";
+            return `
         <tr>
           <td><strong>${user.name}</strong></td>
           <td>${user.email}</td>
           <td><span class="badge ${roleBadgeClass[normalizeRole(user.role)] || "badge-pending"}">${formatRoleLabel(user.role)}</span></td>
           <td><span class="badge ${user.status === "Active" ? "badge-approved" : "badge-rejected"}">${user.status}</span></td>
           <td>${user.dateCreated}</td>
-          ${canManageUsers() ? `<td>${canManageTargetUser(user) ? `<div class="action-btns"><button class="btn btn-sm btn-outline-navy" onclick="editUserRole(${user.id})"><i class="fa-solid fa-user-gear"></i> Manage</button><button class="btn btn-sm ${user.status === "Active" ? "btn-danger" : "btn-success"}" onclick="toggleUserStatus(${user.id})"><i class="fa-solid fa-${user.status === "Active" ? "ban" : "check"}"></i></button></div>` : '<span style="font-size:.8rem;color:var(--gray-400)">Protected</span>'}</td>` : ""}
+          ${actionHtml}
         </tr>
-      `,
+      `; },
         )
         .join("")}
     </tbody></table></div></div>`;
 }
+
+window.setAdminUserRoleFilter = function(role) {
+  adminUserRoleFilter = role;
+  renderDashboardContent("admin-users");
+};
 
 function editUserRole(userId) {
   const user = systemUsers.find((entry) => entry.id === userId);
@@ -22321,6 +23174,7 @@ function normalizeSubmissionWorkflowDefaults() {
 const loadedStoredSubmissions = loadStoredSubmissions();
 rebalanceDemoActiveCases({ force: !loadedStoredSubmissions });
 seedDashboardSampleCases({ force: !loadedStoredSubmissions });
+seedRevisionDemoData();
 normalizeSubmissionWorkflowDefaults();
 syncAllSubmissionDisplayFields();
 persistSubmissions();
