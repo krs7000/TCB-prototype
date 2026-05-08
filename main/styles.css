@@ -7564,6 +7564,78 @@ body.compact-layout .sidebar-toggle {
   background: rgba(230, 107, 63, 0.05);
 }
 
+.modal-card.marketplace-inquiry-modal {
+  max-width: 760px;
+  border-top: 6px solid var(--gold);
+}
+.marketplace-inquiry-form {
+  display: grid;
+  gap: 18px;
+}
+.marketplace-inquiry-context {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 127, 80, 0.16);
+  background: linear-gradient(135deg, #fff8f4, #ffffff);
+}
+.marketplace-inquiry-context span {
+  color: #a04713;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.marketplace-inquiry-context strong {
+  color: var(--navy);
+  font-size: 1rem;
+}
+.marketplace-inquiry-context small {
+  color: var(--gray-500);
+  font-weight: 700;
+}
+.marketplace-inquiry-form .form-group {
+  margin-bottom: 0;
+}
+.marketplace-inquiry-form label {
+  color: #1d4ed8;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.marketplace-inquiry-form input,
+.marketplace-inquiry-form textarea {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: #e8eefc;
+  color: #1d4ed8;
+  padding: 16px 18px;
+  font: inherit;
+  font-size: 0.96rem;
+  outline: none;
+  transition: var(--transition);
+}
+.marketplace-inquiry-form input {
+  min-height: 58px;
+}
+.marketplace-inquiry-form textarea {
+  min-height: 132px;
+  resize: vertical;
+}
+.marketplace-inquiry-form input:focus,
+.marketplace-inquiry-form textarea:focus {
+  background: white;
+  border-color: #f1bda5;
+  box-shadow: 0 0 0 4px rgba(255, 127, 80, 0.12);
+  color: var(--navy);
+}
+.marketplace-inquiry-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .detail-footer-contact {
   margin-top: 40px;
   font-size: 0.85rem;

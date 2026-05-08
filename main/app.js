@@ -5958,7 +5958,8 @@ window.resetAdminChatMonitorFilters = function() {
   renderDashboardContent("messages");
 };
 
-const contactSubmissions = [
+const CONTACT_SUBMISSIONS_STORAGE_KEY = "tcbPrototype.contactSubmissions.v1";
+const DEFAULT_CONTACT_SUBMISSIONS = [
   {
     id: "INQ-2026-041",
     sender: "Mariel Santos",
@@ -6008,6 +6009,28 @@ const contactSubmissions = [
     suggestedReply: "Thank you for your interest. The technology transfer office can provide availability and licensing steps for selected listings.",
   },
 ];
+
+function loadContactSubmissions() {
+  try {
+    const raw = window.localStorage?.getItem(CONTACT_SUBMISSIONS_STORAGE_KEY);
+    if (!raw) return [...DEFAULT_CONTACT_SUBMISSIONS];
+    const stored = JSON.parse(raw);
+    return Array.isArray(stored) ? stored : [...DEFAULT_CONTACT_SUBMISSIONS];
+  } catch (err) {
+    console.warn("Unable to load contact submissions", err);
+    return [...DEFAULT_CONTACT_SUBMISSIONS];
+  }
+}
+
+function persistContactSubmissions() {
+  try {
+    window.localStorage?.setItem(CONTACT_SUBMISSIONS_STORAGE_KEY, JSON.stringify(contactSubmissions));
+  } catch (err) {
+    console.warn("Unable to save contact submissions", err);
+  }
+}
+
+let contactSubmissions = loadContactSubmissions();
 
 function getNewContactSubmissionCount() {
   return contactSubmissions.filter((item) => item.status === "New").length;
@@ -6066,12 +6089,13 @@ function renderContactSubmissionTicket(item) {
         </div>
         <h3>${escapeHtml(item.subject)}</h3>
         <p>${escapeHtml(item.message)}</p>
-        <div class="contact-ticket-meta">
-          <span><i class="fa-solid fa-user"></i> ${escapeHtml(item.sender)}</span>
-          <span><i class="fa-solid fa-envelope"></i> ${escapeHtml(item.email)}</span>
-          <span><i class="fa-solid fa-layer-group"></i> ${escapeHtml(item.type)}</span>
-          <span><i class="fa-regular fa-clock"></i> ${formatChatDateTime(item.timestamp)}</span>
-        </div>
+      <div class="contact-ticket-meta">
+        <span><i class="fa-solid fa-user"></i> ${escapeHtml(item.sender)}</span>
+        <span><i class="fa-solid fa-envelope"></i> ${escapeHtml(item.email)}</span>
+        <span><i class="fa-solid fa-layer-group"></i> ${escapeHtml(item.type)}</span>
+        <span><i class="fa-regular fa-clock"></i> ${formatChatDateTime(item.timestamp)}</span>
+        ${item.sourceListingTitle ? `<span><i class="fa-solid fa-store"></i> ${escapeHtml(item.sourceListingTitle)}</span>` : ""}
+      </div>
       </div>
       <aside class="contact-ticket-actions">
         <button type="button" class="btn btn-primary btn-sm" onclick="handleContactTicketAction('${item.id}', 'reply')"><i class="fa-solid fa-reply"></i> Reply</button>
@@ -20440,14 +20464,107 @@ window.toggleInterest = function(id) {
 window.sendMarketplaceInquiry = function(id) {
   const item = marketplaceItems.find((entry) => String(entry.id) === String(id));
   if (!item) return;
+  showMarketplaceInquiryForm(item);
+};
+
+function showMarketplaceInquiryForm(item) {
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalCard = document.querySelector("#modalOverlay .modal-card");
+  if (modalOverlay) modalOverlay.classList.remove("marketplace-detail-overlay");
+  if (modalCard) modalCard.classList.remove("xl", "marketplace-detail-modal");
+  if (modalCard) modalCard.classList.add("marketplace-inquiry-modal");
+
+  const titleEl = document.getElementById("modalTitle");
+  if (titleEl) {
+    titleEl.style.display = "";
+    titleEl.textContent = "Send Inquiry";
+  }
+
+  document.getElementById("modalBody").innerHTML = `
+    <form class="marketplace-inquiry-form" onsubmit="submitMarketplaceInquiry(event, ${jsArg(item.id)})">
+      <div class="marketplace-inquiry-context">
+        <span><i class="fa-solid fa-store"></i> Marketplace Inquiry</span>
+        <strong>${escapeHtml(item.title)}</strong>
+        <small>${escapeHtml(item.type)} inquiry routed to Inquiry Management</small>
+      </div>
+      <div class="form-group">
+        <label for="marketplaceInquiryName">First Name</label>
+        <input id="marketplaceInquiryName" type="text" placeholder="First Name" autocomplete="given-name" required />
+      </div>
+      <div class="form-group">
+        <label for="marketplaceInquiryEmail">Email *</label>
+        <input id="marketplaceInquiryEmail" type="email" placeholder="e.g., email@example.com" autocomplete="email" required />
+      </div>
+      <div class="form-group">
+        <label for="marketplaceInquirySubject">Subject</label>
+        <input id="marketplaceInquirySubject" type="text" placeholder="e.g., Need help with..." value="Inquiry about ${escapeHtml(item.title)}" required />
+      </div>
+      <div class="form-group">
+        <label for="marketplaceInquiryMessage">Your message</label>
+        <textarea id="marketplaceInquiryMessage" rows="5" placeholder="Enter text here" required>I am interested in ${escapeHtml(item.title)}. Please send available licensing, collaboration, or partnership details.</textarea>
+      </div>
+      <div class="marketplace-inquiry-actions">
+        <button type="button" class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send Inquiry</button>
+      </div>
+    </form>
+  `;
+
+  modalOverlay?.classList.add("active");
+}
+
+window.submitMarketplaceInquiry = function(event, id) {
+  event.preventDefault();
+  const item = marketplaceItems.find((entry) => String(entry.id) === String(id));
+  if (!item) return;
+
+  const senderName = document.getElementById("marketplaceInquiryName")?.value.trim() || "";
+  const senderEmail = document.getElementById("marketplaceInquiryEmail")?.value.trim() || "";
+  const subject = document.getElementById("marketplaceInquirySubject")?.value.trim() || "";
+  const message = document.getElementById("marketplaceInquiryMessage")?.value.trim() || "";
+
+  if (!senderName || !senderEmail || !subject || !message) {
+    showToast("Please complete all inquiry fields.");
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail)) {
+    showToast("Please enter a valid email address.");
+    return;
+  }
+
+  const nextNumber =
+    contactSubmissions.reduce((max, inquiry) => {
+      const match = String(inquiry.id || "").match(/INQ-\d{4}-(\d+)/);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+  const timestamp = new Date().toISOString();
+  const ticket = {
+    id: `INQ-${new Date().getFullYear()}-${String(nextNumber).padStart(3, "0")}`,
+    sender: senderName,
+    email: senderEmail,
+    subject,
+    type: item.type || "Marketplace",
+    timestamp,
+    status: "New",
+    priority: "Normal",
+    message,
+    source: "Marketplace",
+    sourceListingId: item.id,
+    sourceListingTitle: item.title,
+    suggestedReply: `Thank you for your inquiry about ${item.title}. The IP office can review availability and provide next steps for licensing, collaboration, or technology transfer.`,
+  };
+
+  contactSubmissions.unshift(ticket);
+  persistContactSubmissions();
+
   const inquiry = {
-    id: `INQ-${new Date().getFullYear()}-${String(marketplaceInquiries.length + 1).padStart(3, "0")}`,
+    id: ticket.id,
     listingId: item.id,
     listingTitle: item.title,
     ipType: item.type,
-    senderName: "Marketplace Viewer",
-    senderEmail: "viewer@example.com",
-    message: `I am interested in ${item.title}. Please send available licensing or partnership details.`,
+    senderName,
+    senderEmail,
+    message,
     receivedAt: formatAuditTimestamp(),
     read: false,
   };
@@ -20458,7 +20575,9 @@ window.sendMarketplaceInquiry = function(id) {
     title: "New Marketplace Inquiry",
     body: `${inquiry.senderName} asked about ${item.title}.`,
   });
+  closeModal();
   showToast("Inquiry sent to the IP office.");
+  if (currentPage === "admin-contact-submissions") renderDashboardContent("admin-contact-submissions");
 };
 
 function renderAdminEmailsPage() {
@@ -20534,6 +20653,7 @@ function closeModal() {
   document.getElementById("modalOverlay").classList.remove("active", "marketplace-detail-overlay");
   const modalCard = document.querySelector("#modalOverlay .modal-card");
   if (modalCard) modalCard.classList.remove("xl", "marketplace-detail-modal", "form-document-modal");
+  if (modalCard) modalCard.classList.remove("marketplace-inquiry-modal");
   // Reset title display for regular modals
   document.getElementById("modalTitle").style.display = "block";
 }
