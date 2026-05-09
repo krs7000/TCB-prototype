@@ -23,6 +23,59 @@ let currentMpType = "All";
 let landingMpType = "All";
 let dismissedTopAlertId = null;
 const IP_SERVICE_TYPES = ["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"];
+const CORE_CASE_STATUSES = ["Under Review", "Validated", "On Going"];
+const IP_TYPE_GUIDES = {
+  "patent-form": {
+    key: "patent",
+    title: "Patent",
+    icon: "fa-lightbulb",
+    meaning: "For inventions that provide a new technical solution to a problem.",
+    choose: "Choose this when your work has a technical process, machine, device, composition, or system with inventive features.",
+    info: "You will describe the technical field, problem solved, components, how the invention works, abstract, and claims.",
+    required: ["Applicant information", "Title and technical field", "Technical abstract", "Detailed description", "Claims statement"],
+    skippable: ["Optional drawings or diagrams", "Supplemental notes when not applicable"],
+  },
+  "utility-form": {
+    key: "utility",
+    title: "Utility Model",
+    icon: "fa-gears",
+    meaning: "For practical innovations or improvements that are useful and technically applicable.",
+    choose: "Choose this for small devices, tools, product improvements, or practical technical changes that may be close to patent subject matter.",
+    info: "You will describe the improvement, how it works, its novelty, claims, and industrial use.",
+    required: ["Applicant information", "Title and technical field", "Technical description", "Claims", "Industrial applicability", "Novelty statement"],
+    skippable: ["Optional drawings", "Extra supporting files when not available yet"],
+  },
+  "industrial-form": {
+    key: "industrial",
+    title: "Industrial Design",
+    icon: "fa-pen-nib",
+    meaning: "For the visual appearance, shape, pattern, lines, or ornamentation of a product.",
+    choose: "Choose this when the protection is about how a product looks, not how it technically works.",
+    info: "You will provide the design title, product category, design type, design statement, and visual views.",
+    required: ["Applicant information", "Design title", "Product category", "Design type", "Design statement", "Required views"],
+    skippable: ["Extra photos beyond required views", "Supplemental notes"],
+  },
+  "trademark-form": {
+    key: "trademark",
+    title: "Trademark",
+    icon: "fa-stamp",
+    meaning: "For brand names, logos, symbols, slogans, or signs used for goods or services.",
+    choose: "Choose this when you want to protect a name, logo, or mark that identifies your product, service, or organization.",
+    info: "You will provide the exact mark, mark type, color claim, and goods or services covered.",
+    required: ["Applicant information", "Mark or brand name", "Mark classification", "Goods and services description", "Mark specimen"],
+    skippable: ["Date of first commercial use when not yet used", "Color claim if the mark has no color claim"],
+  },
+  "copyright-form": {
+    key: "copyright",
+    title: "Copyright",
+    icon: "fa-copyright",
+    meaning: "For original creative works such as books, modules, software, music, art, videos, or presentations.",
+    choose: "Choose this when your work is an original expression rather than a technical invention or brand identifier.",
+    info: "You will provide the work title, category, completion date, author details, copy of the work, and ownership declaration.",
+    required: ["Applicant information", "Title of work", "Category of work", "Date of completion", "Copy of work", "Ownership declaration"],
+    skippable: ["Optional institutional notes", "Extra supporting documents when not required"],
+  },
+};
 
 // ===== BACKEND API CONNECTION =====
 const TCB_API_BASE_URL = (
@@ -538,7 +591,7 @@ let announcements = [
     title: "New IP Filing Guidelines for 2026",
     content: "The PSU Intellectual Property Office has released updated guidelines for patent and copyright filings. Please review the new templates before submission.",
     date: "2026-04-10",
-    category: "News",
+    category: "Application Guidelines",
     image: "images/psu_logo_main.png"
   },
   {
@@ -546,15 +599,71 @@ let announcements = [
     title: "Innovation Workshop: From Research to Patent",
     content: "Join our upcoming workshop on April 25th to learn how to transform your research findings into protectable intellectual property.",
     date: "2026-04-12",
-    category: "Event",
+    category: "General Announcements",
     image: "images/partner_logo.png"
   },
   {
     id: 3,
-    title: "System Notice",
-    content: "System Notice: We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
+    title: "Scheduled Portal Maintenance",
+    content: "The portal will be unavailable on April 20 from 2:00 AM to 4:00 AM for server maintenance and security updates.",
     date: "2026-04-13",
-    category: "Alert",
+    category: "Maintenance Notices",
+    image: "images/IPTTO-logo.jpg"
+  },
+  {
+    id: 4,
+    title: "IPOPHL Formality Response Reminder",
+    content: "Applicants with Patent and Utility Model formality reports should coordinate with their evaluator before the response deadline.",
+    date: "2026-04-18",
+    category: "IPOPHL Reminders",
+    image: "images/ipophl_logo.png"
+  },
+  {
+    id: 5,
+    title: "Two-Factor Login Pilot",
+    content: "The admin and evaluator portals will begin a two-factor login pilot for selected accounts this month.",
+    date: "2026-04-22",
+    category: "System Updates",
+    image: "images/IPTTO-logo.jpg"
+  },
+  {
+    id: 6,
+    title: "Required Documents Checklist Updated",
+    content: "Applicants should review the latest required documents checklist before submitting Patent, Utility Model, Trademark, Copyright, or Industrial Design applications.",
+    date: "2026-04-25",
+    category: "Application Guidelines",
+    image: "images/psu_logo_main.png"
+  },
+  {
+    id: 7,
+    title: "Substantive Examination Tracking",
+    content: "Patent cases with Substantive Examination Reports now include deadline monitoring in the evaluator email module.",
+    date: "2026-04-28",
+    category: "IPOPHL Reminders",
+    image: "images/ipophl_logo.png"
+  },
+  {
+    id: 8,
+    title: "Marketplace Inquiry Routing",
+    content: "Public marketplace inquiries are now routed to Inquiry Management under Contact Submissions.",
+    date: "2026-05-01",
+    category: "System Updates",
+    image: "images/partner_logo.png"
+  },
+  {
+    id: 9,
+    title: "Holiday Advisory",
+    content: "The IP office will operate on limited staffing during the university holiday. Online submissions remain available.",
+    date: "2026-05-03",
+    category: "General Announcements",
+    image: "images/psu_logo_main.png"
+  },
+  {
+    id: 10,
+    title: "Emergency Patch Window",
+    content: "A short patch window may occur between 11:00 PM and 11:30 PM to improve file upload stability.",
+    date: "2026-05-05",
+    category: "Maintenance Notices",
     image: "images/IPTTO-logo.jpg"
   }
 ];
@@ -1848,7 +1957,7 @@ function seedRevisionDemoData() {
     ["PSU-COP-2026-031", "Copyright", "Mangrove Learning Module Series", "Liza Manalo", 11, "Under Review", 5, "2026-03-30", "College of Sciences"],
     ["PSU-COP-2026-032", "Copyright", "Palawan Folk Song Audio Collection", "Ana Villanueva", 13, "Pending", 5, "2026-04-11", "College of Arts"],
     ["PSU-COP-2026-033", "Copyright", "AgriTech Field Manual", "Ricardo Aquino", 14, "Rejected", 5, "2026-04-15", "College of Agriculture"],
-    ["PSU-PAT-2026-035", "Patent", "Rainwater Microfilter Cartridge", "Paolo Reyes", 12, "Pending", null, "2026-04-17", "College of Engineering"],
+    ["PSU-PAT-2026-035", "Patent", "Rainwater Microfilter Cartridge", "Paolo Reyes", 12, "On Going", 3, "2026-04-17", "College of Engineering"],
     ["PSU-TM-2026-036", "Trademark", "Bantay Dagat Analytics", "Ricardo Aquino", 14, "Under Review", 3, "2026-04-19", "College of Agriculture"],
     ["PSU-UM-2026-037", "Utility Model", "Cassava Grater Safety Guard", "Ana Villanueva", 13, "Pending", null, "2026-04-21", "College of Arts"],
   ].map(([id, type, title, applicant, applicantUserId, status, reviewerId, date, department]) => ({
@@ -2073,6 +2182,39 @@ function getApplicantNotificationUserId(submission) {
 
 function isClosedSubmissionStatus(status) {
   return ["Approved", "Rejected", "Archived", "Cancelled"].includes(status);
+}
+
+function getSubmissionEvaluation(submission) {
+  if (!submission) return null;
+  if (!submission.evaluationContent) {
+    const recommendedService =
+      submission.type === "Utility Model" ? "Utility Model" : "Patent";
+    submission.evaluationContent = {
+      result: submission.status === "Rejected" ? "Revise" : "Proceed",
+      recommendedService,
+      note:
+        submission.type === "Utility Model"
+          ? "The submission appears suitable for a Utility Model route because it focuses on a practical technical improvement."
+          : submission.type === "Patent"
+            ? "The submission may proceed as a Patent if the technical solution is novel, inventive, and industrially applicable. Utility Model may be considered if the inventive step is limited."
+            : "The evaluator recommends confirming whether the subject matter is better handled as Patent or Utility Model before IPOPHL preparation.",
+      nextSteps: "Applicant should confirm the preferred service and upload the required documents for the selected filing route.",
+      submittedAt: "2026-05-08 10:30",
+    };
+  }
+  return submission.evaluationContent;
+}
+
+function getRequiredDocsForEvaluationChoice(choice) {
+  const map = {
+    Patent: ["Technical description", "Abstract", "Claims statement", "Technical drawings or diagrams", "Inventor/applicant details"],
+    "Utility Model": ["Technical description", "Claims statement", "Novelty statement", "Industrial applicability note", "Technical drawings if available"],
+  };
+  return map[choice] || map.Patent;
+}
+
+function renderPanelInfo(text) {
+  return `<button type="button" class="panel-info-btn" title="${escapeHtml(text)}" aria-label="${escapeHtml(text)}" onclick="showToast('${escapeHtml(text).replace(/'/g, "\\'")}')"><i class="fa-solid fa-info"></i></button>`;
 }
 
 const IPOPHL_EMAIL_STATUS_OPTIONS = [
@@ -2807,6 +2949,7 @@ function statusBadge(status) {
     Pending: "badge-pending",
     "Under Review": "badge-review",
     Validated: "badge-approved",
+    "On Going": "badge-pending",
     Rejected: "badge-rejected",
     Cancelled: "badge-rejected",
     Draft: "badge-review",
@@ -4549,7 +4692,6 @@ function renderSidebar() {
       },
       { page: "admin-records", icon: "fa-folder-open", text: "IP Records" },
       { page: "admin-marketplace", icon: "fa-store", text: "Market Listing" },
-      { page: "admin-emails", icon: "fa-envelope-open-text", text: "Emails" },
       { page: "admin-users", icon: "fa-users", text: "User Manager" },
       { page: "audit-log", icon: "fa-clipboard-list", text: "Audit Log" },
       { page: "admin-settings", icon: "fa-gear", text: "System Config" },
@@ -5011,13 +5153,7 @@ function renderApplicantStatusLegend(activeStatus = "Pending") {
 }
 
 function renderFilingHub() {
-  const options = [
-    { id: 'patent-form', typeKey: 'patent', title: 'Patent', icon: 'fa-lightbulb', desc: 'Inventions and technical solutions that are new and useful.', time: '12-18 mos' },
-    { id: 'trademark-form', typeKey: 'trademark', title: 'Trademark', icon: 'fa-stamp', desc: 'Brand names, logos, seals, and identifiers tied to goods or services.', time: '6-12 mos' },
-    { id: 'utility-form', typeKey: 'utility', title: 'Utility Model', icon: 'fa-gears', desc: 'Practical improvements or new technical solutions.', time: '6-10 mos' },
-    { id: 'industrial-form', typeKey: 'industrial', title: 'Industrial Design', icon: 'fa-pen-nib', desc: 'The aesthetic and ornamental aspect of a product.', time: '6-10 mos' },
-    { id: 'copyright-form', typeKey: 'copyright', title: 'Copyright', icon: 'fa-copyright', desc: 'Original literary, artistic, and creative works.', time: '1-3 mos' }
-  ];
+  const options = Object.entries(IP_TYPE_GUIDES).map(([id, guide]) => ({ id, ...guide }));
 
   return `
     ${renderBackNav()}
@@ -5031,8 +5167,8 @@ function renderFilingHub() {
         <div class="filing-card" onclick="showSubmissionMethodModal('${opt.id}')">
           <div class="filing-card-icon"><i class="fa-solid ${opt.icon}"></i></div>
           <h3 style="color:var(--navy); font-weight:800; margin-bottom:8px;">${opt.title}</h3>
-          <p style="color:var(--gray-500); font-size:0.88rem; line-height:1.5; margin-bottom:16px;">${opt.desc}</p>
-          
+          <p style="color:var(--gray-500); font-size:0.88rem; line-height:1.5; margin-bottom:12px;">${opt.meaning}</p>
+          <small style="color:#8a3b0f;font-weight:800;">${opt.choose}</small>
 
         </div>
       `).join('')}
@@ -5747,7 +5883,6 @@ function renderChatConversationList(cases, activeCaseId) {
           <div class="chat-thread-top">
             <strong>${highPriority ? '<i class="fa-solid fa-thumbtack"></i> ' : ""}${escapeHtml(submission.id)}</strong>
             <div class="chat-thread-signals">
-              ${renderConversationStatusIndicator(submission)}
               ${unread ? `<span class="chat-unread-badge">${unread}</span>` : ""}
             </div>
           </div>
@@ -6033,7 +6168,29 @@ function persistContactSubmissions() {
 let contactSubmissions = loadContactSubmissions();
 
 function getNewContactSubmissionCount() {
-  return contactSubmissions.filter((item) => item.status === "New").length;
+  return getAllContactSubmissionTickets().filter((item) => item.status === "New").length;
+}
+
+function getAllContactSubmissionTickets() {
+  const emailTickets =
+    typeof marketplaceInquiries === "undefined"
+      ? []
+      : marketplaceInquiries.map((inquiry) => ({
+          id: inquiry.id,
+          sender: inquiry.senderName,
+          email: inquiry.senderEmail,
+          subject: `Marketplace inquiry: ${inquiry.listingTitle}`,
+          type: inquiry.ipType || "Marketplace",
+          timestamp: inquiry.receivedAt,
+          status: inquiry.read ? "Read" : "New",
+          priority: "Normal",
+          message: inquiry.message,
+          source: "Inquiry Email",
+          sourceListingTitle: inquiry.listingTitle,
+          suggestedReply: `Thank you for your inquiry about ${inquiry.listingTitle}. The IP office can provide availability, licensing, or collaboration details after review.`,
+        }));
+  const existingIds = new Set(contactSubmissions.map((item) => item.id));
+  return [...contactSubmissions, ...emailTickets.filter((item) => !existingIds.has(item.id))];
 }
 
 function renderContactSubmissionStatus(status) {
@@ -6043,7 +6200,8 @@ function renderContactSubmissionStatus(status) {
 
 function renderContactSubmissionsPage() {
   const statuses = ["All", "New", "Read", "Replied", "Archived"];
-  const visible = contactSubmissions.filter((item) => contactSubmissionStatusFilter === "All" || item.status === contactSubmissionStatusFilter);
+  const allTickets = getAllContactSubmissionTickets();
+  const visible = allTickets.filter((item) => contactSubmissionStatusFilter === "All" || item.status === contactSubmissionStatusFilter);
   return `
     <div class="page-header comms-page-header">
       <div>
@@ -7020,7 +7178,8 @@ function renderFaq() {
 
   return `
     <div class="page-header" style="max-width: 900px; margin: 0 auto 40px auto; padding: 0 16px;">
-      <h1 style="font-size: 2.5rem; margin-bottom: 0;">Frequently Asked Questions</h1>
+      <h1 style="font-size: 2.5rem; margin-bottom: 6px;">Help & Support</h1>
+      <p style="color:var(--gray-500);">Use this page for FAQs, filing guidance, required documents, and contact support. The profile menu now only contains account options.</p>
     </div>
     
     <div class="faq-container" style="max-width: 900px; margin: 0 auto; padding-bottom: 50px;">
@@ -7504,6 +7663,25 @@ function getRoleSpecificPanels(role) {
               <option value="Custom" ${dashboardAnalyticsPeriod === "Custom" ? "selected" : ""}>Custom Range</option>
               <option value="All" ${dashboardAnalyticsPeriod === "All" ? "selected" : ""}>All Time</option>
             </select>
+            <select class="filter-select" onchange="setDashboardAnalyticsFilter('status', this.value)">
+              <option value="All" ${dashboardAnalyticsStatus === "All" ? "selected" : ""}>All Statuses</option>
+              <option value="Pending" ${dashboardAnalyticsStatus === "Pending" ? "selected" : ""}>Pending</option>
+              <option value="Under Review" ${dashboardAnalyticsStatus === "Under Review" ? "selected" : ""}>Under Review</option>
+              <option value="Validated" ${dashboardAnalyticsStatus === "Validated" ? "selected" : ""}>Evaluated</option>
+              <option value="On Going" ${dashboardAnalyticsStatus === "On Going" ? "selected" : ""}>On Going</option>
+            </select>
+            <select class="filter-select" onchange="setDashboardAnalyticsFilter('applicantType', this.value)">
+              <option value="All" ${dashboardAnalyticsApplicantType === "All" ? "selected" : ""}>All Applicants</option>
+              <option value="Student" ${dashboardAnalyticsApplicantType === "Student" ? "selected" : ""}>Student</option>
+              <option value="Faculty" ${dashboardAnalyticsApplicantType === "Faculty" ? "selected" : ""}>Faculty</option>
+              <option value="External" ${dashboardAnalyticsApplicantType === "External" ? "selected" : ""}>External</option>
+            </select>
+            <select class="filter-select" onchange="setDashboardAnalyticsFilter('result', this.value)">
+              <option value="All" ${dashboardAnalyticsResult === "All" ? "selected" : ""}>All Results</option>
+              <option value="Patent" ${dashboardAnalyticsResult === "Patent" ? "selected" : ""}>Patent</option>
+              <option value="Utility Model" ${dashboardAnalyticsResult === "Utility Model" ? "selected" : ""}>Utility Model</option>
+            </select>
+            ${dashboardAnalyticsPeriod === "Custom" ? `<input class="filter-select" type="date" value="${escapeHtml(dashboardAnalyticsFrom)}" onchange="setDashboardAnalyticsFilter('from', this.value)" /><input class="filter-select" type="date" value="${escapeHtml(dashboardAnalyticsTo)}" onchange="setDashboardAnalyticsFilter('to', this.value)" />` : ""}
             <button class="btn btn-sm btn-primary" onclick="exportDashboardAnalytics()"><i class="fa-solid fa-download"></i> Export</button>
           </div>
         </div>
@@ -7555,6 +7733,18 @@ function getFilteredDashboardAnalyticsSubmissions(role = currentRole) {
   if (dashboardAnalyticsType !== "All") {
     rows = rows.filter((submission) => submission.type === dashboardAnalyticsType);
   }
+  if (dashboardAnalyticsStatus !== "All") {
+    rows = rows.filter((submission) => submission.status === dashboardAnalyticsStatus);
+  }
+  if (dashboardAnalyticsApplicantType !== "All") {
+    rows = rows.filter((submission) => {
+      const label = submission.applicantType || (String(submission.email || "").includes("@psu") ? "Faculty" : "Student");
+      return label === dashboardAnalyticsApplicantType;
+    });
+  }
+  if (dashboardAnalyticsResult !== "All") {
+    rows = rows.filter((submission) => getSubmissionEvaluation(submission)?.recommendedService === dashboardAnalyticsResult);
+  }
   const now = new Date();
   if (dashboardAnalyticsPeriod === "ThisYear") {
     rows = rows.filter((submission) => new Date(submission.date).getFullYear() === now.getFullYear());
@@ -7576,6 +7766,11 @@ function getFilteredDashboardAnalyticsSubmissions(role = currentRole) {
 window.setDashboardAnalyticsFilter = function(kind, value) {
   if (kind === "type") dashboardAnalyticsType = value;
   if (kind === "period") dashboardAnalyticsPeriod = value;
+  if (kind === "status") dashboardAnalyticsStatus = value;
+  if (kind === "applicantType") dashboardAnalyticsApplicantType = value;
+  if (kind === "result") dashboardAnalyticsResult = value;
+  if (kind === "from") dashboardAnalyticsFrom = value;
+  if (kind === "to") dashboardAnalyticsTo = value;
   renderDashboardContent("admin-dashboard");
 };
 
@@ -7606,55 +7801,33 @@ window.exportDashboardAnalytics = function() {
 
 function renderFloatingAIAssistant() {
   return `
-    <button class="floating-ai-button" onclick="openAIAssistant()" title="AI report assistant">
+    <button class="floating-ai-button" onclick="openAIAssistant()" title="NQL assistant">
       <i class="fa-solid fa-wand-magic-sparkles"></i>
     </button>
   `;
 }
 
 window.openAIAssistant = function() {
-  const rows = getFilteredDashboardAnalyticsSubmissions(currentRole);
   const modalTitle = document.getElementById("modalTitle");
   const modalBody = document.getElementById("modalBody");
-  modalTitle.textContent = "AI Report Assistant";
+  modalTitle.textContent = "NQL Assistant";
   modalTitle.style.display = "block";
   modalBody.innerHTML = `
     <div class="ai-assistant-panel">
       <div class="ai-assistant-summary">
-        <strong>${rows.length}</strong>
-        <span>${dashboardAnalyticsType === "All" ? "filtered records" : dashboardAnalyticsType + " records"} ready for report generation.</span>
+        <strong>NQL</strong>
+        <span>Ask a normal English question about applications, statuses, IP types, applicants, or this month's activity.</span>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>IP Service</label>
-          <select id="aiReportType">
-            <option value="All" ${dashboardAnalyticsType === "All" ? "selected" : ""}>All IP Services</option>
-            ${IP_SERVICE_TYPES.map((type) => `<option value="${type}" ${dashboardAnalyticsType === type ? "selected" : ""}>${type}</option>`).join("")}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Date Range</label>
-          <select id="aiReportPeriod">
-            <option value="ThisYear" ${dashboardAnalyticsPeriod === "ThisYear" ? "selected" : ""}>Current Year</option>
-            <option value="Last90" ${dashboardAnalyticsPeriod === "Last90" ? "selected" : ""}>Last 90 Days</option>
-            <option value="Custom" ${dashboardAnalyticsPeriod === "Custom" ? "selected" : ""}>Custom Range</option>
-            <option value="All" ${dashboardAnalyticsPeriod === "All" ? "selected" : ""}>All Time</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label>Natural language query</label>
+        <textarea id="nqlInput" style="min-height:90px;" placeholder="Example: Show me all pending Patent applications this month."></textarea>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>From</label>
-          <input id="aiReportFrom" type="date" value="${escapeHtml(dashboardAnalyticsFrom)}" />
-        </div>
-        <div class="form-group">
-          <label>To</label>
-          <input id="aiReportTo" type="date" value="${escapeHtml(dashboardAnalyticsTo)}" />
-        </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="runNQLAssistant()"><i class="fa-solid fa-magnifying-glass-chart"></i> Analyze Query</button>
+        <button class="btn btn-outline-navy" onclick="document.getElementById('nqlInput').value='Show me all pending Patent applications this month'; runNQLAssistant()">Use Example</button>
       </div>
-      <div id="aiReportPreview" class="ai-report-preview">${generateAIReportText(rows)}</div>
+      <div id="aiReportPreview" class="ai-report-preview">Enter a query to display matching records and analytics.</div>
       <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:16px;">
-        <button class="btn btn-outline-navy" onclick="refreshAIReportPreview()"><i class="fa-solid fa-rotate"></i> Generate Report</button>
         <button class="btn btn-primary" onclick="exportAIReport()"><i class="fa-solid fa-download"></i> Export Report</button>
       </div>
     </div>
@@ -7665,7 +7838,7 @@ window.openAIAssistant = function() {
 function generateAIReportText(rows) {
   const byType = IP_SERVICE_TYPES.map((type) => `${type}: ${rows.filter((row) => row.type === type).length}`).join("\n");
   const pending = rows.filter((row) => row.status === "Pending").length;
-  const reviewed = rows.filter((row) => ["Under Review", "Validated"].includes(row.status)).length;
+  const reviewed = rows.filter((row) => ["Under Review", "Validated", "On Going"].includes(row.status)).length;
   const rejected = rows.filter((row) => row.status === "Rejected").length;
   return `Portfolio Analytics Report
 Scope: ${dashboardAnalyticsType} | Period: ${dashboardAnalyticsPeriod}
@@ -7699,12 +7872,11 @@ window.refreshAIReportPreview = function() {
 };
 
 window.exportAIReport = function() {
-  window.refreshAIReportPreview();
-  const text = document.getElementById("aiReportPreview")?.textContent || "";
+  const text = document.getElementById("aiReportPreview")?.textContent || "No NQL result generated.";
   const blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `ai_report_${dashboardAnalyticsType.toLowerCase().replace(/\s+/g, "_")}.txt`;
+  link.download = `nql_result_${new Date().toISOString().slice(0, 10)}.txt`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -7907,6 +8079,10 @@ function renderReviewerMyCasesPage() {
 
 function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
   let filtered = [...getScopedReviewerSubmissions(adminCaseScope, currentRole)];
+  const reviewerMode = normalizeRole(currentRole) === "reviewer";
+  if (reviewerMode && adminCaseScope === "mine") {
+    filtered = filtered.filter((s) => CORE_CASE_STATUSES.includes(s.status));
+  }
   const activeCount = filtered.filter((s) => !isSubmissionArchived(s)).length;
   const archivedCount = filtered.filter((s) => isSubmissionArchived(s)).length;
   if (adminCaseView === "archived") {
@@ -7928,12 +8104,19 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
         ${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<h3>Visible Cases <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>`}
         <select class="filter-select" onchange="filterAdminStatus(this.value)">
           <option value="All">All Status</option>
-          <option value="Pending" ${(filterStatus || "") === "Pending" ? "selected" : ""}>Pending</option>
-          <option value="Under Review" ${(filterStatus || "") === "Under Review" ? "selected" : ""}>Under Review</option>
-          <option value="Validated" ${(filterStatus || "") === "Validated" ? "selected" : ""}>Validated</option>
-          <option value="Approved" ${(filterStatus || "") === "Approved" ? "selected" : ""}>Approved</option>
-          <option value="Rejected" ${(filterStatus || "") === "Rejected" ? "selected" : ""}>Rejected</option>
-          <option value="Archived" ${(filterStatus || "") === "Archived" ? "selected" : ""}>Archived</option>
+          ${
+            reviewerMode && adminCaseScope === "mine"
+              ? `<option value="Under Review" ${(filterStatus || "") === "Under Review" ? "selected" : ""}>Under Review</option>
+                 <option value="Validated" ${(filterStatus || "") === "Validated" ? "selected" : ""}>Evaluated</option>
+                 <option value="On Going" ${(filterStatus || "") === "On Going" ? "selected" : ""}>On Going</option>`
+              : `<option value="Pending" ${(filterStatus || "") === "Pending" ? "selected" : ""}>Pending</option>
+                 <option value="Under Review" ${(filterStatus || "") === "Under Review" ? "selected" : ""}>Under Review</option>
+                 <option value="Validated" ${(filterStatus || "") === "Validated" ? "selected" : ""}>Evaluated</option>
+                 <option value="On Going" ${(filterStatus || "") === "On Going" ? "selected" : ""}>On Going</option>
+                 <option value="Approved" ${(filterStatus || "") === "Approved" ? "selected" : ""}>Approved</option>
+                 <option value="Rejected" ${(filterStatus || "") === "Rejected" ? "selected" : ""}>Rejected</option>
+                 <option value="Archived" ${(filterStatus || "") === "Archived" ? "selected" : ""}>Archived</option>`
+          }
         </select>
       </div>
       <div style="padding:0 24px 10px;display:flex;gap:10px;flex-wrap:wrap;">
@@ -7948,7 +8131,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
         <button class="filter-btn ${(filterType || "") === "Utility Model" ? "active" : ""}" onclick="filterAdminTable('Utility Model')">Utility Model</button>
         <button class="filter-btn ${(filterType || "") === "Industrial Design" ? "active" : ""}" onclick="filterAdminTable('Industrial Design')">Industrial Design</button>
       </div>
-      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th>${hideReviewerQueueStatus ? "" : "<th>Status</th>"}<th>Actions</th></tr></thead><tbody>
+      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th>${reviewerMode && isMyCasesView ? "<th>Deadline</th>" : ""}${hideReviewerQueueStatus ? "" : "<th>Status</th>"}<th>Actions</th></tr></thead><tbody>
         ${
           filtered.length === 0
             ? `<tr><td colspan="${hideReviewerQueueStatus ? "6" : isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
@@ -7957,7 +8140,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
                   (s) => {
                     const display = getSubmissionDisplayData(s);
                     return `<tr>
-          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td>${hideReviewerQueueStatus ? "" : `<td>${statusBadge(s.status)}</td>`}
+          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td>${reviewerMode && isMyCasesView ? `<td>${renderReviewerDeadline(s)}</td>` : ""}${hideReviewerQueueStatus ? "" : `<td>${statusBadge(s.status)}</td>`}
           <td><div class="action-btns">
             <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
             ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
@@ -7990,6 +8173,9 @@ let dashboardAnalyticsType = "All";
 let dashboardAnalyticsPeriod = "ThisYear";
 let dashboardAnalyticsFrom = "";
 let dashboardAnalyticsTo = "";
+let dashboardAnalyticsStatus = "All";
+let dashboardAnalyticsApplicantType = "All";
+let dashboardAnalyticsResult = "All";
 let marketplaceMineOnly = false;
 let announcementCategoryFilter = "All";
 let securityKeyVisibility = {
@@ -8862,13 +9048,13 @@ function getIPOPHLStageKey(submission) {
       return normalizePatentStageKey(submission.ipophlStage);
     }
     if (submission.status === "Approved") return "certificate-released";
-    if (submission.status === "Validated") return "ip-director-action";
+    if (submission.status === "Validated" || submission.status === "On Going") return "ip-director-action";
     if (submission.status === "Under Review") return "technical-review";
     return "inventor-submission";
   }
   if (submission.ipophlStage) return submission.ipophlStage;
   if (submission.status === "Approved") return "certificate-released";
-  if (submission.status === "Validated") return "ip-director-action";
+  if (submission.status === "Validated" || submission.status === "On Going") return "ip-director-action";
   if (submission.status === "Under Review") return "technical-review";
   return "inventor-submission";
 }
@@ -9454,21 +9640,16 @@ function renderSubmissionDetail() {
           </div>`
               : ""
           }
-          ${renderIPOPHLVerificationEmailPanel(s, reviewerCanAdvance)}
+          ${
+            normalizedRole === "reviewer"
+              ? renderEvaluationContentPanel(s, "submit")
+              : normalizedRole === "applicant"
+                ? renderEvaluationContentPanel(s, "read")
+                : ""
+          }
           ${
             reviewerCanAdvance && !frozen
-              ? `
-          <label class="form-group" style="margin-bottom:12px">
-            <span style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Update Status</span>
-            <select onchange="changeStatus('${s.id}', this.value)" style="width:100%">
-              <option ${s.status === "Pending" ? "selected" : ""}>Pending</option>
-              <option ${s.status === "Under Review" ? "selected" : ""}>Under Review</option>
-              <option ${s.status === "Validated" ? "selected" : ""}>Validated</option>
-              <option ${s.status === "Approved" ? "selected" : ""}>Approved</option>
-              <option ${s.status === "Rejected" ? "selected" : ""}>Rejected</option>
-              ${canArchiveSubmission(s) ? `<option ${s.status === "Archived" ? "selected" : ""}>Archived</option>` : ""}
-            </select>
-          </label>`
+              ? ""
               : reviewerCanTake
                 ? '<p style="font-size:.8rem;color:#1d4ed8;background:rgba(59,130,246,0.06);padding:10px;border-radius:6px;"><i class="fa-solid fa-hand-holding-hand"></i> Take this case to enable status updates.</p>'
               : frozen
@@ -17665,7 +17846,7 @@ function renderStep1() {
   const selectedCollege = wizardData.college || "";
   return `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="margin:0;">Applicant Information</h3>
+      <h3 class="panel-heading-with-info" style="margin:0;">Applicant Information ${renderPanelInfo("Enter the applicant's official name, email, college or unit, ID number, and active contact number. These details are used for case ownership and official notices.")}</h3>
       <span style="font-size:0.8rem; color:var(--gray-400); font-weight:600;"><i class="fa-solid fa-lock" style="margin-right:4px;"></i> Secure & Encrypted</span>
     </div>
     
@@ -17713,7 +17894,7 @@ function renderStep2() {
   if (currentFormType === "patent") {
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0;">Invention Details</h3>
+        <h3 class="panel-heading-with-info" style="margin:0;">Invention Details ${renderPanelInfo("Provide a clear technical explanation of your invention. If it has electrical, mechanical, software, or process components, describe each part and how they work together.")}</h3>
         <span class="badge badge-patent">TECHNICAL DISCLOSURE</span>
       </div>
 
@@ -17752,7 +17933,7 @@ function renderStep2() {
   } else if (currentFormType === "trademark") {
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0;">Mark Details</h3>
+        <h3 class="panel-heading-with-info" style="margin:0;">Mark Details ${renderPanelInfo("Enter the exact brand name, logo type, color claim, and the goods or services where the mark will be used.")}</h3>
         <span class="badge badge-trademark">BRAND PROTECTION</span>
       </div>
 
@@ -17792,7 +17973,7 @@ function renderStep2() {
   } else if (currentFormType === "copyright") {
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0;">Work Details</h3>
+        <h3 class="panel-heading-with-info" style="margin:0;">Work Details ${renderPanelInfo("Describe the original creative work, its category, date of completion, and the registration lane you want to pursue.")}</h3>
         <span class="badge badge-copyright">CREATIVE WORK</span>
       </div>
 
@@ -17835,7 +18016,7 @@ function renderStep2() {
   } else if (currentFormType === "utility") {
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0;">Utility Model Details</h3>
+        <h3 class="panel-heading-with-info" style="margin:0;">Utility Model Details ${renderPanelInfo("Describe the practical improvement, its technical features, novelty, claims, and how it can be used or produced.")}</h3>
         <span class="badge" style="background:var(--gray-100); color:var(--navy);">PRACTICAL IMPROVEMENT</span>
       </div>
 
@@ -17853,7 +18034,7 @@ function renderStep2() {
       <div class="form-group"><label>Industrial Applicability *</label><textarea id="wiz-industrial" placeholder="Explain how this model can be industrially produced or used...">${wizardData.industrial || ''}</textarea></div>
       <div class="form-group"><label>Novelty Statement *</label><textarea id="wiz-novelty" placeholder="Describe what makes this model new compared to existing solutions...">${wizardData.novelty || ''}</textarea></div>`;
   } else if (currentFormType === "industrial") {
-    return `<h3 style="margin-bottom:24px">Industrial Design Details</h3>
+    return `<h3 class="panel-heading-with-info" style="margin-bottom:24px">Industrial Design Details ${renderPanelInfo("Describe the product's visual appearance, shape, pattern, lines, or ornamentation. Focus on how the design looks, not how it works.")}</h3>
       <div class="form-group"><label>Design Title *</label><input type="text" id="wiz-title" value="${wizardData.title || ''}" placeholder="Enter design title" /></div>
       <div class="form-row">
         <div class="form-group"><label>Product Category *</label>
@@ -17865,7 +18046,7 @@ function renderStep2() {
       <div class="form-group"><label>Design Statement *</label><textarea id="wiz-desc" placeholder="Describe the ornamental or aesthetic aspects of your design that give it a special appearance...">${wizardData.desc || ''}</textarea></div>
       `;
   } else {
-    return `<h3 style="margin-bottom:24px">Work Details</h3>
+    return `<h3 class="panel-heading-with-info" style="margin-bottom:24px">Work Details ${renderPanelInfo("Provide the title, type, creation date, description, and originality declaration for the creative work.")}</h3>
       <div class="form-group"><label>Title of Work *</label><input type="text" id="wiz-title" value="${wizardData.title || ''}" placeholder="Enter title of work" /></div>
       <div class="form-row">
         <div class="form-group"><label>Type of Work *</label>
@@ -17883,7 +18064,7 @@ function renderStep3() {
   const currentStatus = "Pending";
   return `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="margin:0;">Required Documents and Steps</h3>
+      <h3 class="panel-heading-with-info" style="margin:0;">Required Documents and Steps ${renderPanelInfo("Upload one file for each required document. Optional documents can be skipped when not applicable, but required files must be provided before final submission.")}</h3>
       <div style="background:var(--gray-50); padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; color:var(--gray-500); border:1px solid var(--gray-200);">
         ${uploadedCount} of ${totalRequired} REQUIRED UPLOADED
       </div>
@@ -19109,7 +19290,84 @@ window.confirmCancellation = function(id) {
 
 // ===== SUBMISSION METHOD SELECTION =====
 window.showSubmissionMethodModal = function(typeId) {
-  startSubmissionFlow(typeId, "online");
+  const guide = IP_TYPE_GUIDES[typeId];
+  if (!guide) {
+    startSubmissionFlow(typeId, "online");
+    return;
+  }
+  const modalTitle = document.getElementById("modalTitle");
+  const modalBody = document.getElementById("modalBody");
+  modalTitle.textContent = `${guide.title} Filing Guide`;
+  modalTitle.style.display = "block";
+  modalBody.innerHTML = `
+    <div class="ip-guide-modal">
+      <div class="ip-guide-hero">
+        <div class="filing-card-icon"><i class="fa-solid ${guide.icon}"></i></div>
+        <div>
+          <h3>${guide.title}</h3>
+          <p>${guide.meaning}</p>
+        </div>
+      </div>
+      <div class="ip-guide-note"><strong>When to choose this:</strong> ${guide.choose}</div>
+      <div class="ip-guide-note"><strong>What you will fill out:</strong> ${guide.info}</div>
+      <div class="ip-guide-columns">
+        <div>
+          <h4><i class="fa-solid fa-circle-check"></i> Required steps</h4>
+          <ul>${guide.required.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+        </div>
+        <div>
+          <h4><i class="fa-solid fa-forward"></i> Skippable when not applicable</h4>
+          <ul>${guide.skippable.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+        </div>
+      </div>
+      <div class="detail-actions" style="justify-content:flex-end;margin-top:20px;">
+        <button class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="startSubmissionFlow('${typeId}', 'online')">Proceed to Form <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </div>
+  `;
+  document.getElementById("modalOverlay").classList.add("active");
+};
+
+function getNQLRows(query) {
+  const q = String(query || "").toLowerCase();
+  let rows = submissions.filter((submission) => !isSubmissionArchived(submission));
+  IP_SERVICE_TYPES.forEach((type) => {
+    if (q.includes(type.toLowerCase())) rows = rows.filter((submission) => submission.type === type);
+  });
+  const statusMap = [
+    ["pending", "Pending"],
+    ["under review", "Under Review"],
+    ["evaluated", "Validated"],
+    ["validated", "Validated"],
+    ["on going", "On Going"],
+    ["ongoing", "On Going"],
+    ["rejected", "Rejected"],
+    ["approved", "Approved"],
+  ];
+  statusMap.forEach(([phrase, status]) => {
+    if (q.includes(phrase)) rows = rows.filter((submission) => submission.status === status);
+  });
+  if (q.includes("this month")) {
+    const now = new Date();
+    rows = rows.filter((submission) => {
+      const date = new Date(submission.date);
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    });
+  }
+  return rows;
+}
+
+window.runNQLAssistant = function() {
+  const query = document.getElementById("nqlInput")?.value || "";
+  const rows = getNQLRows(query);
+  const preview = document.getElementById("aiReportPreview");
+  if (!preview) return;
+  preview.innerHTML = `
+    <strong>Query:</strong> ${escapeHtml(query || "All active applications")}<br>
+    <strong>Matches:</strong> ${rows.length}<br><br>
+    ${rows.slice(0, 12).map((row) => `${escapeHtml(row.id)} | ${escapeHtml(row.type)} | ${escapeHtml(row.title)} | ${getDisplayStatusLabel(row.status)} | ${escapeHtml(row.applicant)}`).join("<br>") || "No matching records found."}
+  `;
 };
 
 window.showApplicantTypeModal = function(typeId, method) {
@@ -20581,14 +20839,15 @@ window.submitMarketplaceInquiry = function(event, id) {
 };
 
 function renderAdminEmailsPage() {
-  const filtered = marketplaceInquiries.filter(
-    (inquiry) => adminEmailTypeFilter === "All" || inquiry.ipType === adminEmailTypeFilter,
+  const ipophlEmails = getIPOPHLEmailReports();
+  const filtered = ipophlEmails.filter(
+    (email) => adminEmailTypeFilter === "All" || email.ipType === adminEmailTypeFilter,
   );
-  const unreadCount = marketplaceInquiries.filter((inquiry) => !inquiry.read).length;
+  const unreadCount = ipophlEmails.filter((email) => !email.read).length;
   return `
     <div class="page-header">
-      <h1>Emails</h1>
-      <p>Marketplace inquiries from viewers interested in listed IP assets.</p>
+      <h1>IPOPHL Email Reports</h1>
+      <p>Official IPOPHL emails only. Marketplace and contact inquiries are shown under Inquiry Management.</p>
     </div>
     <div class="email-module-toolbar">
       <div class="email-module-stat"><i class="fa-solid fa-bell"></i><strong>${unreadCount}</strong><span>new inquiries</span></div>
@@ -20601,27 +20860,43 @@ function renderAdminEmailsPage() {
     <div class="email-inquiry-list">
       ${
         filtered.length
-          ? filtered.map((inquiry) => `
-            <article class="email-inquiry-card ${inquiry.read ? "" : "unread"}">
+          ? filtered.map((email) => `
+            <article class="email-inquiry-card ${email.read ? "" : "unread"}">
               <div class="email-inquiry-top">
                 <div>
-                  <strong>${escapeHtml(inquiry.senderName)}</strong>
-                  <span>${escapeHtml(inquiry.senderEmail)}</span>
+                  <strong>${escapeHtml(email.reportType)}</strong>
+                  <span>${escapeHtml(email.senderEmail)}</span>
                 </div>
-                ${typeBadge(inquiry.ipType)}
+                ${typeBadge(email.ipType)}
               </div>
-              <h3>${escapeHtml(inquiry.listingTitle)}</h3>
-              <p>${escapeHtml(inquiry.message)}</p>
+              <h3>${escapeHtml(email.caseId)} - ${escapeHtml(email.subject)}</h3>
+              <p>${escapeHtml(email.message)}</p>
               <div class="email-inquiry-footer">
-                <span><i class="fa-solid fa-clock"></i> ${escapeHtml(inquiry.receivedAt)}</span>
-                <button class="btn btn-sm btn-outline-navy" onclick="markInquiryRead('${inquiry.id}')"><i class="fa-solid fa-envelope-open"></i> Mark Read</button>
+                <span><i class="fa-solid fa-clock"></i> Received ${escapeHtml(email.receivedAt)}</span>
+                <span class="badge ${email.daysLeft < 0 ? "badge-rejected" : email.daysLeft <= 15 ? "badge-pending" : "badge-approved"}">${email.daysLeft < 0 ? `${Math.abs(email.daysLeft)} days overdue` : `${email.daysLeft} days left`}</span>
+                <button class="btn btn-sm btn-outline-navy" onclick="markIPOPHLEmailRead('${email.id}')"><i class="fa-solid fa-envelope-open"></i> Mark Read</button>
               </div>
             </article>
           `).join("")
-          : `<div class="chat-empty-state"><i class="fa-solid fa-envelope"></i><h3>No inquiries found</h3><p>Try another IP service filter.</p></div>`
+          : `<div class="chat-empty-state"><i class="fa-solid fa-envelope"></i><h3>No IPOPHL emails found</h3><p>No official IPOPHL reports match this filter.</p></div>`
       }
     </div>
   `;
+}
+
+function getIPOPHLEmailReports() {
+  const today = new Date();
+  const rows = [
+    ["IPO-EMAIL-001", "PSU-PAT-2026-002", "Patent", "Formality Report", "Formality Report for Automated Crop Pest Detector", "Missing sequence listing and revised claims formatting.", "2026-05-02", 60, false],
+    ["IPO-EMAIL-002", "PSU-UM-2026-031", "Utility Model", "Formality Report", "Formality Report for Foldable Sea Cucumber Nursery Tray", "Submit clearer technical drawings and corrected applicant address.", "2026-05-04", 45, false],
+    ["IPO-EMAIL-003", "PSU-PAT-2026-035", "Patent", "Substantive Examination Report", "Substantive Examination Report for Rainwater Microfilter Cartridge", "Respond to novelty objection and clarify claim 1.", "2026-04-22", 90, true],
+  ];
+  return rows.map(([id, caseId, ipType, reportType, subject, message, receivedAt, responseDays, read]) => {
+    const deadline = new Date(receivedAt);
+    deadline.setDate(deadline.getDate() + responseDays);
+    const daysLeft = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+    return { id, caseId, ipType, reportType, subject, message, receivedAt, senderEmail: "noreply@ipophil.gov.ph", deadline, daysLeft, read };
+  });
 }
 
 window.setAdminEmailTypeFilter = function(type) {
@@ -20629,9 +20904,8 @@ window.setAdminEmailTypeFilter = function(type) {
   renderDashboardContent("admin-emails");
 };
 
-window.markInquiryRead = function(id) {
-  const inquiry = marketplaceInquiries.find((entry) => entry.id === id);
-  if (inquiry) inquiry.read = true;
+window.markIPOPHLEmailRead = function(id) {
+  showToast(`IPOPHL email ${id} marked as read.`);
   renderDashboardContent("admin-emails");
 };
 
@@ -20814,6 +21088,7 @@ function getStatusCounts() {
     Pending: 0,
     "Under Review": 0,
     Validated: 0,
+    "On Going": 0,
     Approved: 0,
     Rejected: 0,
     Draft: 0,
@@ -20834,6 +21109,7 @@ function renderUserSubmissions() {
     { id: "Pending", label: "Pending" },
     { id: "Under Review", label: "Under Review" },
     { id: "Validated", label: "Evaluated" },
+    { id: "On Going", label: "On Going" },
     { id: "Rejected", label: "Rejected" },
   ];
 
@@ -20904,6 +21180,87 @@ function renderUserSubmissions() {
     </div>
   `;
 }
+
+function renderReviewerDeadline(submission) {
+  const assignedDate = new Date(submission.assignedAt || submission.date || new Date());
+  const deadline = new Date(assignedDate);
+  deadline.setDate(deadline.getDate() + 90);
+  const daysLeft = Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24));
+  const tone = daysLeft < 0 ? "badge-rejected" : daysLeft <= 14 ? "badge-pending" : "badge-approved";
+  return `<span class="badge ${tone}">${deadline.toLocaleDateString()} (${daysLeft < 0 ? `${Math.abs(daysLeft)} overdue` : `${daysLeft} days left`})</span>`;
+}
+
+function renderEvaluationContentPanel(submission, mode = "read") {
+  const evaluation = getSubmissionEvaluation(submission);
+  const selected = submission.applicantSelectedService || evaluation.recommendedService || "Patent";
+  const docs = getRequiredDocsForEvaluationChoice(selected);
+  const isReviewer = mode === "submit";
+  return `
+    <div class="evaluation-content-panel">
+      <div class="evaluation-content-header">
+        <div>
+          <h4>${isReviewer ? "Submit Evaluation Content" : "Read Evaluation Content"}</h4>
+          <p>${isReviewer ? "Record the evaluation result and recommended next service." : "Review the evaluator's recommendation and choose the service to proceed with."}</p>
+        </div>
+        <span class="badge badge-review">${escapeHtml(evaluation.result)}</span>
+      </div>
+      <div class="evaluation-note">
+        <strong>Evaluator recommendation</strong>
+        <p>${escapeHtml(evaluation.note)}</p>
+        <small>${escapeHtml(evaluation.nextSteps)} ${evaluation.submittedAt ? `Submitted ${escapeHtml(evaluation.submittedAt)}.` : ""}</small>
+      </div>
+      <div class="evaluation-choice">
+        <label>${isReviewer ? "Based on your evaluation, what should the applicant proceed with?" : "Based on the evaluation, which service would you like to proceed with?"}</label>
+        <div class="evaluation-option-row">
+          <button class="filter-btn ${selected === "Patent" ? "active" : ""}" onclick="${isReviewer ? `setReviewerEvaluationChoice('${submission.id}', 'Patent')` : `setApplicantEvaluationChoice('${submission.id}', 'Patent')`}">Patent</button>
+          <button class="filter-btn ${selected === "Utility Model" ? "active" : ""}" onclick="${isReviewer ? `setReviewerEvaluationChoice('${submission.id}', 'Utility Model')` : `setApplicantEvaluationChoice('${submission.id}', 'Utility Model')`}">Utility Model</button>
+        </div>
+      </div>
+      <div class="evaluation-docs">
+        <strong>Required documents for ${escapeHtml(selected)}</strong>
+        <ul>${docs.map((doc) => `<li><i class="fa-solid fa-file-circle-check"></i>${escapeHtml(doc)}</li>`).join("")}</ul>
+      </div>
+      ${
+        isReviewer
+          ? `<textarea id="evaluationNote-${submission.id.replace(/[^a-zA-Z0-9_-]/g, "_")}" placeholder="Write evaluator recommendation and next steps...">${escapeHtml(evaluation.note)}</textarea>
+             <button class="btn btn-primary btn-sm" onclick="submitEvaluationContent('${submission.id}')"><i class="fa-solid fa-paper-plane"></i> Submit Evaluation</button>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+window.setApplicantEvaluationChoice = function(id, choice) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return;
+  submission.applicantSelectedService = choice;
+  persistSubmissions();
+  renderDashboardContent(currentPage);
+  showToast(`${choice} requirements shown.`);
+};
+
+window.setReviewerEvaluationChoice = function(id, choice) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return;
+  const evaluation = getSubmissionEvaluation(submission);
+  evaluation.recommendedService = choice;
+  persistSubmissions();
+  renderDashboardContent("submission-detail");
+};
+
+window.submitEvaluationContent = function(id) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return;
+  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const evaluation = getSubmissionEvaluation(submission);
+  evaluation.note = document.getElementById(`evaluationNote-${safeId}`)?.value.trim() || evaluation.note;
+  evaluation.result = "Evaluated";
+  evaluation.submittedAt = formatAuditTimestamp();
+  submission.status = "Validated";
+  persistSubmissions();
+  showToast("Evaluation content submitted for applicant review.");
+  renderDashboardContent("submission-detail");
+};
 
 function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
   try {
@@ -21021,6 +21378,7 @@ function renderUserSubmissionsTable(filterType, filterStatus, searchQuery) {
         </div>
         
         <div class="case-detail-panel hidden" style="border-top:1px solid var(--gray-100); padding:24px;">
+            ${renderEvaluationContentPanel(s, "read")}
             <div class="case-meta-sidebar">
               <h4 style="font-size:0.9rem; color:var(--navy); font-weight:700; margin-bottom:16px;">Quick Info</h4>
               <div style="display:flex; flex-direction:column; gap:12px;">
@@ -22108,13 +22466,16 @@ function renderAdminUsers() {
     reviewer: "badge-pending",
     applicant: "badge-approved",
   };
-  const visibleUsers = systemUsers.filter((user) => adminUserRoleFilter === "All" || normalizeRole(user.role) === adminUserRoleFilter);
+  const visibleUsers = systemUsers.filter((user) => {
+    const role = normalizeRole(user.role);
+    if (role === "superadmin" || role === "admin") return false;
+    return adminUserRoleFilter === "All" || role === adminUserRoleFilter;
+  });
   return `<div class="page-header"><h1>User Management</h1><p>Manage registered system users according to the RBAC matrix.</p></div>
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
       ${canManageUsers() ? `<button class="btn btn-primary" onclick="navigateTo('create-account')"><i class="fa-solid fa-user-plus"></i> Create Account</button>` : "<span></span>"}
       <select class="filter-select" onchange="setAdminUserRoleFilter(this.value)">
         <option value="All" ${adminUserRoleFilter === "All" ? "selected" : ""}>All Roles</option>
-        <option value="superadmin" ${adminUserRoleFilter === "superadmin" ? "selected" : ""}>Admin</option>
         <option value="reviewer" ${adminUserRoleFilter === "reviewer" ? "selected" : ""}>Evaluator</option>
         <option value="applicant" ${adminUserRoleFilter === "applicant" ? "selected" : ""}>Applicant</option>
       </select>
@@ -23028,7 +23389,8 @@ function renderAdminAnnouncementsPage() {
 
 window.showAnnouncementModal = function(id = null) {
   const isEdit = id !== null;
-  const a = isEdit ? announcements.find(item => item.id === id) : { title: '', content: '', category: 'News', date: new Date().toISOString().split('T')[0], image: '' };
+  const announcementCategories = ["System Updates", "IPOPHL Reminders", "Maintenance Notices", "Application Guidelines", "General Announcements"];
+  const a = isEdit ? announcements.find(item => item.id === id) : { title: '', content: '', category: 'General Announcements', date: new Date().toISOString().split('T')[0], image: '' };
   const isAdmin = normalizeRole(currentRole) === 'admin' || normalizeRole(currentRole) === 'superadmin';
 
   const modalBody = document.getElementById('modalBody');
@@ -23067,9 +23429,7 @@ window.showAnnouncementModal = function(id = null) {
       <div class="form-group" style="margin-bottom: 20px;">
         <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--navy);">Category</label>
         <select id="annCategory" style="width: 100%; padding: 10px; border: 1.5px solid var(--gray-200); border-radius: 8px;">
-          <option ${a.category === 'News' ? 'selected' : ''}>News</option>
-          <option ${a.category === 'Event' ? 'selected' : ''}>Event</option>
-          <option ${a.category === 'Alert' ? 'selected' : ''}>Alert</option>
+          ${announcementCategories.map((category) => `<option ${a.category === category ? "selected" : ""}>${category}</option>`).join("")}
         </select>
       </div>
       <div class="form-group" style="margin-bottom: 20px;">
