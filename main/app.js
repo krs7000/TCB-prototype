@@ -86,6 +86,210 @@ const TCB_API_BASE_URL = (
 const TCB_AUTH_STORAGE_KEY = "TCB_AUTH_SESSION";
 const TCB_RESET_EMAIL_STORAGE_KEY = "TCB_PENDING_RESET_EMAIL";
 const TCB_DEV_RESET_OTP_STORAGE_KEY = "TCB_DEV_RESET_OTP";
+const TCB_USER_SETTINGS_STORAGE_KEY = "TCB_USER_SETTINGS";
+
+const SUPPORTED_LANGUAGES = [
+  { code: "en", label: "English", nativeLabel: "English" },
+  { code: "fil", label: "Filipino / Tagalog", nativeLabel: "Filipino / Tagalog" },
+  { code: "ceb", label: "Cebuano", nativeLabel: "Cebuano" },
+  { code: "ilo", label: "Ilocano", nativeLabel: "Ilocano" },
+  { code: "hil", label: "Hiligaynon", nativeLabel: "Hiligaynon" },
+];
+
+const INTERFACE_TRANSLATIONS = {
+  fil: {
+    "Applicant Settings": "Mga Setting ng Aplikante",
+    "Viewing Language settings.": "Tinitingnan ang mga setting ng Wika.",
+    "Viewing Notifications settings.": "Tinitingnan ang mga setting ng Abiso.",
+    "Viewing Security settings.": "Tinitingnan ang mga setting ng Seguridad.",
+    "Viewing Privacy settings.": "Tinitingnan ang mga setting ng Privacy.",
+    "Viewing Filing Workspace settings.": "Tinitingnan ang mga setting ng Filing Workspace.",
+    Language: "Wika",
+    "Language Settings": "Mga Setting ng Wika",
+    "Preferred Language": "Piniling Wika",
+    "Choose the language used for menus, buttons, forms, help tips, messages, notifications, and dashboards.": "Piliin ang wikang gagamitin sa mga menu, button, form, gabay, mensahe, abiso, at dashboard.",
+    "Applies to navigation menus, buttons, form labels, placeholder text, tooltips, messages, notifications, form instructions, and dashboard labels when translations are available.": "Nalalapat ito sa navigation menu, button, label ng form, placeholder, tooltip, mensahe, abiso, instruksyon sa form, at label ng dashboard kapag may salin.",
+    "Missing translations fall back to English. User-submitted case data is not translated or changed.": "Kung walang salin, English ang gagamitin. Hindi isinasalin o binabago ang datos na isinumite ng user.",
+    "Save Language": "I-save ang Wika",
+    "Save Settings": "I-save ang Settings",
+    "Back to Profile": "Bumalik sa Profile",
+    Notifications: "Mga Abiso",
+    Security: "Seguridad",
+    Privacy: "Privacy",
+    "Filing Workspace": "Filing Workspace",
+    Dashboard: "Dashboard",
+    Home: "Home",
+    Portal: "Portal",
+    Applicant: "Aplikante",
+    Evaluator: "Evaluator",
+    "Super Admin": "Super Admin",
+    "My Cases": "Aking mga Kaso",
+    Forms: "Mga Form",
+    Marketplace: "Marketplace",
+    Messages: "Mga Mensahe",
+    Profile: "Profile",
+    Settings: "Settings",
+    Logout: "Mag-logout",
+    Save: "I-save",
+    Submit: "Ipasa",
+    "Submit Application": "Ipasa ang Aplikasyon",
+    "Finalize & Submit Application": "Tapusin at Ipasa ang Aplikasyon",
+    "Next Step": "Susunod na Hakbang",
+    Next: "Susunod",
+    Previous: "Nakaraan",
+    "Save Draft": "I-save ang Draft",
+    "Save as Draft": "I-save bilang Draft",
+    "Upload Documents": "Mag-upload ng mga Dokumento",
+    "Review & Submit": "Suriin at Ipasa",
+    "Applicant Info": "Impormasyon ng Aplikante",
+    "Applicant Information": "Impormasyon ng Aplikante",
+    "Patent Application": "Aplikasyon sa Patent",
+    "Trademark Application": "Aplikasyon sa Trademark",
+    "Copyright Registration": "Pagpaparehistro ng Copyright",
+    "Utility Model Application": "Aplikasyon sa Utility Model",
+    "Industrial Design Registration": "Pagpaparehistro ng Industrial Design",
+    "Background and Problem Statement": "Background at Pahayag ng Problema",
+    "Description of the Intellectual Property": "Paglalarawan ng Intellectual Property",
+    "Novel Features": "Mga Bagong Katangian",
+    "Inventiveness and Advantages": "Pagkaimbento at mga Kalamangan",
+    "Potential Applications and Uses": "Posibleng Aplikasyon at Gamit",
+    "General Information": "Pangkalahatang Impormasyon",
+    "Technical Disclosure": "Teknikal na Paglalahad",
+    "Funding and University Resources": "Pondo at Resources ng Unibersidad",
+    "Prior Disclosure": "Naunang Paglalahad",
+    "Ownership Declaration Signatories": "Mga Pipirma sa Deklarasyon ng Pagmamay-ari",
+    "Application draft saved successfully!": "Matagumpay na na-save ang draft ng aplikasyon.",
+    "Please fill in all required fields (*) before proceeding.": "Pakipunan ang lahat ng kinakailangang field (*) bago magpatuloy.",
+    "Applicant settings saved": "Na-save ang settings ng aplikante",
+    "Language preference saved": "Na-save ang piniling wika",
+    "No notifications yet": "Wala pang abiso",
+    "Notification Details": "Detalye ng Abiso",
+    Reference: "Sanggunian",
+    Close: "Isara",
+    "Open Submission": "Buksan ang Submission",
+    "Guide for": "Gabay para sa",
+    "Explain the existing problem, limitation, or gap that led to your invention or work. Describe why this issue needs a solution and who is affected by it.": "Ipaliwanag ang kasalukuyang problema, limitasyon, o kakulangan na naging dahilan ng iyong imbensyon o akda. Ilarawan kung bakit kailangan ng solusyon at sino ang apektado.",
+    "Provide a clear and complete explanation of your invention, design, or work. Describe its parts, process, purpose, and how it works. If it involves electrical, mechanical, software, or technical components, explain the function of each part and how they work together.": "Magbigay ng malinaw at kumpletong paliwanag ng iyong imbensyon, disenyo, o akda. Ilarawan ang mga bahagi, proseso, layunin, at kung paano ito gumagana.",
+    "Identify what is new, original, or different about your invention or work compared to existing solutions. Explain the unique elements that make it distinct.": "Tukuyin kung ano ang bago, orihinal, o naiiba sa iyong imbensyon o akda kumpara sa mga kasalukuyang solusyon.",
+    "Describe the improvements, benefits, or advantages of your invention over current methods, products, or systems. Explain why your solution is better, more efficient, safer, cheaper, or more useful.": "Ilarawan ang mga pagpapabuti, benepisyo, o kalamangan ng iyong imbensyon kumpara sa kasalukuyang paraan, produkto, o sistema.",
+    "State where and how your invention or work can be used. Include practical, commercial, educational, industrial, or social applications.": "Sabihin kung saan at paano magagamit ang iyong imbensyon o akda, kabilang ang praktikal, komersyal, edukasyonal, industriyal, o panlipunang gamit.",
+  },
+  ceb: {
+    "Applicant Settings": "Mga Setting sa Aplikante",
+    "Viewing Language settings.": "Gitan-aw ang mga setting sa Pinulongan.",
+    Language: "Pinulongan",
+    "Language Settings": "Mga Setting sa Pinulongan",
+    "Preferred Language": "Gipiling Pinulongan",
+    "Choose the language used for menus, buttons, forms, help tips, messages, notifications, and dashboards.": "Pilia ang pinulongan nga gamiton sa mga menu, button, form, tabang, mensahe, pahibalo, ug dashboard.",
+    "Save Language": "I-save ang Pinulongan",
+    "Save Settings": "I-save ang Settings",
+    "Back to Profile": "Balik sa Profile",
+    Notifications: "Mga Pahibalo",
+    Security: "Seguridad",
+    Privacy: "Privacy",
+    Dashboard: "Dashboard",
+    Home: "Home",
+    Portal: "Portal",
+    Applicant: "Aplikante",
+    "My Cases": "Akong mga Kaso",
+    Forms: "Mga Form",
+    Messages: "Mga Mensahe",
+    Settings: "Settings",
+    Save: "I-save",
+    Submit: "Isumite",
+    Next: "Sunod",
+    Previous: "Miagi",
+    "Save Draft": "I-save ang Draft",
+    "Applicant Information": "Impormasyon sa Aplikante",
+    "Patent Application": "Aplikasyon sa Patent",
+    "Background and Problem Statement": "Background ug Pahayag sa Problema",
+    "Description of the Intellectual Property": "Paglarawan sa Intellectual Property",
+    "Novel Features": "Bag-ong mga Kinaiya",
+    "Inventiveness and Advantages": "Pagkaimbento ug mga Bentaha",
+    "Potential Applications and Uses": "Posibleng Gamit ug Aplikasyon",
+    "Language preference saved": "Na-save ang gipiling pinulongan",
+    "No notifications yet": "Wala pay pahibalo",
+    "Notification Details": "Detalye sa Pahibalo",
+    Reference: "Reference",
+    Close: "Sirado",
+    "Open Submission": "Ablihi ang Submission",
+    "Guide for": "Giya para sa",
+  },
+  ilo: {
+    "Applicant Settings": "Dagiti Setting ti Aplikante",
+    "Viewing Language settings.": "Kitaen dagiti setting ti Lengguahe.",
+    Language: "Lengguahe",
+    "Language Settings": "Dagiti Setting ti Lengguahe",
+    "Preferred Language": "Napili a Lengguahe",
+    "Choose the language used for menus, buttons, forms, help tips, messages, notifications, and dashboards.": "Pilien ti lengguahe a mausarto kadagiti menu, button, form, tulong, mensahe, pakaammo, ken dashboard.",
+    "Save Language": "I-save ti Lengguahe",
+    "Save Settings": "I-save dagiti Setting",
+    "Back to Profile": "Agsubli iti Profile",
+    Notifications: "Dagiti Pakaammo",
+    Security: "Seguridad",
+    Privacy: "Privacy",
+    Dashboard: "Dashboard",
+    Home: "Home",
+    Portal: "Portal",
+    Applicant: "Aplikante",
+    "My Cases": "Dagiti Kaso Ko",
+    Forms: "Dagiti Form",
+    Messages: "Dagiti Mensahe",
+    Settings: "Settings",
+    Save: "I-save",
+    Submit: "Ipasa",
+    Next: "Sumaruno",
+    Previous: "Napalabas",
+    "Save Draft": "I-save ti Draft",
+    "Applicant Information": "Impormasyon ti Aplikante",
+    "Patent Application": "Aplikasyon ti Patent",
+    "Background and Problem Statement": "Background ken Pakaammo ti Problema",
+    "Description of the Intellectual Property": "Pannakailadawan ti Intellectual Property",
+    "Novel Features": "Baro a Kababalin",
+    "Inventiveness and Advantages": "Panagimbento ken Dagiti Pagimbagan",
+    "Potential Applications and Uses": "Mabalin nga Aplikasyon ken Usar",
+    "Language preference saved": "Na-save ti napili a lengguahe",
+    "No notifications yet": "Awan pay pakaammo",
+    "Notification Details": "Detalye ti Pakaammo",
+    Reference: "Pakabasaran",
+    Close: "Isara",
+    "Open Submission": "Lukatan ti Submission",
+    "Guide for": "Giya para iti",
+  },
+  hil: {
+    "Applicant Settings": "Mga Setting sang Aplikante",
+    "Viewing Language settings.": "Ginatan-aw ang mga setting sang Lengguahe.",
+    Language: "Lengguahe",
+    "Language Settings": "Mga Setting sang Lengguahe",
+    "Preferred Language": "Napili nga Lengguahe",
+    "Choose the language used for menus, buttons, forms, help tips, messages, notifications, and dashboards.": "Pilia ang lengguahe nga gamiton sa mga menu, button, form, bulig, mensahe, pahibalo, kag dashboard.",
+    "Save Language": "I-save ang Lengguahe",
+    "Save Settings": "I-save ang Settings",
+    "Back to Profile": "Balik sa Profile",
+    Notifications: "Mga Pahibalo",
+    Security: "Seguridad",
+    Privacy: "Privacy",
+    Dashboard: "Dashboard",
+    Home: "Home",
+    Portal: "Portal",
+    Applicant: "Aplikante",
+    Forms: "Mga Form",
+    Messages: "Mga Mensahe",
+    Settings: "Settings",
+    Save: "I-save",
+    Submit: "Ipasa",
+    Next: "Sunod",
+    Previous: "Nagligad",
+    "Save Draft": "I-save ang Draft",
+    "Language preference saved": "Na-save ang napili nga lengguahe",
+    "No notifications yet": "Wala pa sang pahibalo",
+    "Notification Details": "Detalye sang Pahibalo",
+    Reference: "Reference",
+    Close: "Sirad-i",
+    "Open Submission": "Abrihi ang Submission",
+    "Guide for": "Giya para sa",
+  },
+};
 
 function apiUrl(path) {
   return `${TCB_API_BASE_URL}/${String(path || "").replace(/^\/+/, "")}`;
@@ -105,6 +309,107 @@ function setStoredAuthSession(session) {
     return;
   }
   window.localStorage?.setItem(TCB_AUTH_STORAGE_KEY, JSON.stringify(session));
+}
+
+function getUserSettingsStore() {
+  try {
+    return JSON.parse(window.localStorage?.getItem(TCB_USER_SETTINGS_STORAGE_KEY) || "{}");
+  } catch (err) {
+    return {};
+  }
+}
+
+function persistUserSettingsStore(store) {
+  window.localStorage?.setItem(TCB_USER_SETTINGS_STORAGE_KEY, JSON.stringify(store || {}));
+}
+
+function getUserSettingsKey(user = getCurrentUser()) {
+  return String(user?.id || user?.email || "guest");
+}
+
+function getUserSettings(user = getCurrentUser()) {
+  return getUserSettingsStore()[getUserSettingsKey(user)] || {};
+}
+
+function updateUserSettings(updates, user = getCurrentUser()) {
+  const store = getUserSettingsStore();
+  const key = getUserSettingsKey(user);
+  store[key] = { ...(store[key] || {}), ...updates };
+  persistUserSettingsStore(store);
+
+  const userIndex = systemUsers.findIndex((entry) => String(entry.id) === String(user?.id));
+  if (userIndex >= 0) {
+    systemUsers[userIndex] = { ...systemUsers[userIndex], ...updates };
+  }
+
+  const session = getStoredAuthSession();
+  if (session?.user && String(session.user.id || session.user.email) === String(user?.id || user?.email)) {
+    setStoredAuthSession({
+      ...session,
+      user: {
+        ...session.user,
+        profile: { ...(session.user.profile || {}), ...updates },
+      },
+    });
+  }
+}
+
+function getPreferredLanguage(user = getCurrentUser()) {
+  const settings = getUserSettings(user);
+  const code =
+    settings.preferredLanguage ||
+    user?.preferredLanguage ||
+    user?.profile?.preferredLanguage ||
+    "en";
+  return SUPPORTED_LANGUAGES.some((language) => language.code === code) ? code : "en";
+}
+
+function translateInterfaceText(text, language = getPreferredLanguage()) {
+  if (!text || language === "en") return text;
+  return INTERFACE_TRANSLATIONS[language]?.[text] || text;
+}
+
+function t(text) {
+  return translateInterfaceText(text);
+}
+
+function applyInterfaceLanguage(root = document, language = getPreferredLanguage()) {
+  const scope = root || document;
+  if (language === "en") return;
+  const dictionary = INTERFACE_TRANSLATIONS[language] || {};
+  if (!Object.keys(dictionary).length) return;
+  const ownerDocument = scope.ownerDocument || document;
+  const nodeFilter = window.NodeFilter || (typeof NodeFilter !== "undefined" ? NodeFilter : null);
+  if (!nodeFilter) return;
+
+  const walker = ownerDocument.createTreeWalker(scope, nodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent) return nodeFilter.FILTER_REJECT;
+      if (["SCRIPT", "STYLE", "TEXTAREA", "OPTION"].includes(parent.tagName)) {
+        return nodeFilter.FILTER_REJECT;
+      }
+      const text = node.nodeValue.replace(/\s+/g, " ").trim();
+      return text && dictionary[text]
+        ? nodeFilter.FILTER_ACCEPT
+        : nodeFilter.FILTER_SKIP;
+    },
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    const original = node.nodeValue;
+    const key = original.replace(/\s+/g, " ").trim();
+    node.nodeValue = original.replace(key, dictionary[key]);
+  });
+
+  scope.querySelectorAll("[placeholder], [title], [aria-label]").forEach((element) => {
+    ["placeholder", "title", "aria-label"].forEach((attr) => {
+      const value = element.getAttribute(attr);
+      if (value && dictionary[value]) element.setAttribute(attr, dictionary[value]);
+    });
+  });
 }
 
 function getAccessToken() {
@@ -2214,7 +2519,135 @@ function getRequiredDocsForEvaluationChoice(choice) {
 }
 
 function renderPanelInfo(text) {
-  return `<button type="button" class="panel-info-btn" title="${escapeHtml(text)}" aria-label="${escapeHtml(text)}" onclick="showToast('${escapeHtml(text).replace(/'/g, "\\'")}')"><i class="fa-solid fa-info"></i></button>`;
+  const translatedText = t(text);
+  return `<button type="button" class="panel-info-btn" title="${escapeHtml(translatedText)}" aria-label="${escapeHtml(translatedText)}" onclick="showToast('${escapeHtml(translatedText).replace(/'/g, "\\'")}')"><i class="fa-solid fa-info"></i></button>`;
+}
+
+const APPLICATION_FORM_GUIDES = {
+  "background and problem statement":
+    "Explain the existing problem, limitation, or gap that led to your invention or work. Describe why this issue needs a solution and who is affected by it.",
+  "description of the intellectual property":
+    "Provide a clear and complete explanation of your invention, design, or work. Describe its parts, process, purpose, and how it works. If it involves electrical, mechanical, software, or technical components, explain the function of each part and how they work together.",
+  "novel features":
+    "Identify what is new, original, or different about your invention or work compared to existing solutions. Explain the unique elements that make it distinct.",
+  "inventiveness and advantages":
+    "Describe the improvements, benefits, or advantages of your invention over current methods, products, or systems. Explain why your solution is better, more efficient, safer, cheaper, or more useful.",
+  "potential applications and uses":
+    "State where and how your invention or work can be used. Include practical, commercial, educational, industrial, or social applications.",
+  "general information":
+    "Provide the basic inventor, creator, contact, title, and disclosure details used to identify the IP application record.",
+  "technical disclosure":
+    "Describe the technical substance of the IP clearly enough for review: the problem, full description, novel features, advantages, and practical uses.",
+  "funding and university resources":
+    "Indicate whether PSU facilities, funds, equipment, staff, students, or external funding helped develop the IP.",
+  "prior disclosure":
+    "Declare any previous public disclosure such as thesis work, presentations, publications, demonstrations, exhibits, or online posts, including date and venue when applicable.",
+  "ownership declaration signatories":
+    "List the creators or representatives who will acknowledge the ownership declaration and the IPTTO or TTPU signatories for routing.",
+  "filing route":
+    "Choose the filing route that matches this application and provide any priority, PCT, or divisional information required for that route.",
+  "applicant profile":
+    "Identify the applicant type, entity size, and applicant details that should appear on the official filing form.",
+  "applicant information":
+    "Enter the applicant's complete legal name or organization, address, nationality, contact number, and email for correspondence.",
+  "inventor information":
+    "Enter the inventor's complete identity and contact details. If there are multiple inventors, add each person separately.",
+  "maker information":
+    "Enter the maker details for a utility model. Leave blank only when the applicant is also the maker and the form says the applicant details will be reused.",
+  "designer information":
+    "Enter the designer's complete identity and contact details for the industrial design registration.",
+  "agent / representative":
+    "Provide the resident agent or authorized representative who may receive correspondence for this application.",
+  "industrial design specification":
+    "Describe the design title, product, category, views, characteristic ornamental features, and claim for the industrial design.",
+  "representation summary":
+    "Summarize the number of design views, embodiments, and signature name that will appear in the industrial design filing packet.",
+  "uploads and representations":
+    "Attach the required drawings, representations, forms, and supporting documents for this filing type.",
+  "classification of works":
+    "Select the copyright work class that best matches the creation so the correct authorship claim and copy-of-work requirements can be shown.",
+  "publication identifier":
+    "Add ISBN, ISSN, ISMN, or another identifier only if the work already has one or needs that publication reference recorded.",
+  "copyright owner information":
+    "Provide the person or institution that owns the copyright, including complete address and contact details.",
+  "author/creator/performer information":
+    "Provide the author, creator, performer, or contributor details that establish who created or performed the work.",
+  "work/creation/performance/broadcast information":
+    "Describe the copyrighted work, including title, classification, creation date, publication status, and relevant reference details.",
+  "documents submitted":
+    "Upload or list the documents required for this application type, including the copy of work and any supporting authorization.",
+  "additional information":
+    "Answer mandatory declarations or special subject-matter questions that may affect review, ownership, or legal compliance.",
+};
+
+function normalizeApplicationGuideKey(text = "") {
+  return String(text)
+    .replace(/\s+/g, " ")
+    .replace(/^\d+\.\s*/, "")
+    .replace(/[:*]+$/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function getApplicationFormGuide(label = "") {
+  const key = normalizeApplicationGuideKey(label);
+  if (APPLICATION_FORM_GUIDES[key]) return APPLICATION_FORM_GUIDES[key];
+  if (key.includes("title")) {
+    return "Enter the exact title of the invention, work, design, or application as it should appear in the filing documents.";
+  }
+  if (key.includes("priority")) {
+    return "Complete this only when claiming priority from an earlier application. Include the earlier filing number, date, and country when available.";
+  }
+  if (key.includes("date")) {
+    return "Provide the relevant date for this field using the form's required date format.";
+  }
+  if (key.includes("email") || key.includes("contact")) {
+    return "Provide current contact details that reviewers can use for questions, notices, or correspondence.";
+  }
+  if (key.includes("address")) {
+    return "Provide the complete mailing address, including city or municipality, province, ZIP code, and country where applicable.";
+  }
+  if (key.includes("signature")) {
+    return "Enter the printed name of the person who will sign this part of the application.";
+  }
+  if (key.includes("claim")) {
+    return "State the scope of protection being requested in clear, specific terms that match the invention, utility model, or design.";
+  }
+  if (key.includes("description")) {
+    return "Describe this item clearly and completely so reviewers understand what is being submitted and why it matters.";
+  }
+  return `Provide the information requested for ${String(label).replace(/[:*]+$/g, "").trim() || "this section"} as completely and accurately as possible.`;
+}
+
+function renderApplicationInfoGuide(label, message = "") {
+  const guide = t(message || getApplicationFormGuide(label));
+  const safeGuide = escapeHtml(guide);
+  const toastGuide = safeGuide.replace(/'/g, "\\'");
+  return `
+    <button type="button" class="application-info-guide" title="${safeGuide}" aria-label="${escapeHtml(t("Guide for"))} ${escapeHtml(t(label))}" onclick="showToast('${toastGuide}')">
+      <i class="fa-solid fa-info"></i>
+      <span class="application-info-guide__tooltip">${safeGuide}</span>
+    </button>
+  `;
+}
+
+function enhanceApplicationGuideIcons(root = document) {
+  const scope = root || document;
+  scope.querySelectorAll(".patent-editor-section").forEach((section) => {
+    if (section.querySelector(":scope > .application-section-info")) return;
+    const titleNode = section.querySelector(".patent-paper__section-title, .copyright-reference-title");
+    const label = titleNode?.textContent?.trim() || "This section";
+    section.insertAdjacentHTML(
+      "afterbegin",
+      `<div class="application-section-info">${renderApplicationInfoGuide(label)}</div>`,
+    );
+  });
+
+  scope.querySelectorAll(".patent-editor-inline-group__label").forEach((labelNode) => {
+    if (labelNode.querySelector(".application-info-guide")) return;
+    const label = labelNode.textContent.trim();
+    labelNode.insertAdjacentHTML("beforeend", renderApplicationInfoGuide(label));
+  });
 }
 
 const IPOPHL_EMAIL_STATUS_OPTIONS = [
@@ -2602,6 +3035,195 @@ function renderApplicantActionRequiredControls(submission) {
     </div>
   `;
 }
+
+const CASE_DEADLINE_TASKS = [
+  "Revision submission",
+  "Payment proof upload",
+  "Document completion",
+  "Evaluator review deadline",
+  "Admin verification deadline",
+  "IPOPHL filing preparation",
+  "Applicant response deadline",
+];
+
+const CASE_REMINDER_OFFSETS = [7, 3, 1, 0];
+
+function ensureCaseDeadlines(submission) {
+  if (!submission) return [];
+  if (!Array.isArray(submission.deadlines)) submission.deadlines = [];
+  return submission.deadlines;
+}
+
+function getDeadlineTone(deadline) {
+  const daysLeft = getDaysUntilDate(deadline?.dueDate);
+  if (daysLeft < 0) return "overdue";
+  if (daysLeft <= 1) return "urgent";
+  if (daysLeft <= 3) return "soon";
+  return "normal";
+}
+
+function getDaysUntilDate(dateValue) {
+  if (!dateValue) return 9999;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateValue);
+  target.setHours(0, 0, 0, 0);
+  return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+}
+
+function formatDeadlineStatus(deadline) {
+  const daysLeft = getDaysUntilDate(deadline?.dueDate);
+  if (daysLeft < 0) return `${Math.abs(daysLeft)} day${Math.abs(daysLeft) === 1 ? "" : "s"} overdue`;
+  if (daysLeft === 0) return "Due today";
+  return `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
+}
+
+function getCaseDeadlineRecipients(submission, deadline) {
+  const recipients = new Set();
+  const task = String(deadline?.task || "").toLowerCase();
+  if (
+    task.includes("revision") ||
+    task.includes("payment") ||
+    task.includes("document") ||
+    task.includes("applicant response")
+  ) {
+    const applicantId = getApplicantNotificationUserId(submission);
+    if (applicantId) recipients.add(`applicant:${applicantId}`);
+  }
+  if (task.includes("evaluator") || task.includes("review")) {
+    const reviewerId = getAssignedReviewerId(submission);
+    if (reviewerId) recipients.add(`reviewer:${reviewerId}`);
+  }
+  if (task.includes("admin") || task.includes("ipophl") || task.includes("filing")) {
+    recipients.add("superadmin:");
+  }
+  if (!recipients.size) {
+    const applicantId = getApplicantNotificationUserId(submission);
+    if (applicantId) recipients.add(`applicant:${applicantId}`);
+    const reviewerId = getAssignedReviewerId(submission);
+    if (reviewerId) recipients.add(`reviewer:${reviewerId}`);
+  }
+  return Array.from(recipients).map((item) => {
+    const [role, userId] = item.split(":");
+    return { role, userId: userId ? Number(userId) : null };
+  });
+}
+
+function maybeSendDeadlineReminders(submission) {
+  const deadlines = ensureCaseDeadlines(submission).filter((deadline) => !deadline.completed);
+  let changed = false;
+  deadlines.forEach((deadline) => {
+    const daysLeft = getDaysUntilDate(deadline.dueDate);
+    const reminderKey = daysLeft < 0 ? "overdue" : String(daysLeft);
+    const shouldSend =
+      daysLeft < 0 || CASE_REMINDER_OFFSETS.includes(daysLeft);
+    if (!shouldSend) return;
+    deadline.remindersSent = Array.isArray(deadline.remindersSent)
+      ? deadline.remindersSent
+      : [];
+    if (deadline.remindersSent.includes(reminderKey)) return;
+
+    getCaseDeadlineRecipients(submission, deadline).forEach(({ role, userId }) => {
+      pushRoleNotification(role, {
+        userId,
+        icon: daysLeft < 0 ? "fa-triangle-exclamation" : "fa-calendar-day",
+        color: daysLeft < 0 ? "#ef4444" : "#f59e0b",
+        title: daysLeft < 0 ? "Deadline Overdue" : "Deadline Reminder",
+        body: `${deadline.task} for ${submission.id} is ${formatDeadlineStatus(deadline)}. Due date: ${deadline.dueDate}.`,
+        type: "case-deadline-reminder",
+        submissionId: submission.id,
+        deadlineId: deadline.id,
+      });
+    });
+    deadline.remindersSent.push(reminderKey);
+    changed = true;
+  });
+  if (changed) persistSubmissions();
+}
+
+function renderCaseDeadlinePanel(submission) {
+  maybeSendDeadlineReminders(submission);
+  const deadlines = ensureCaseDeadlines(submission);
+  const activeDeadlines = deadlines.filter((deadline) => !deadline.completed);
+  const canManageDeadlines = ["reviewer", "superadmin", "admin"].includes(normalizeRole(currentRole));
+  const options = CASE_DEADLINE_TASKS.map((task) => `<option>${escapeHtml(task)}</option>`).join("");
+  return `
+    <div class="detail-panel deadline-panel" style="margin-top:20px">
+      <h3><i class="fa-solid fa-calendar-check"></i> Deadlines & Reminders</h3>
+      ${
+        activeDeadlines.length
+          ? `<div class="deadline-list">${activeDeadlines
+              .map((deadline) => {
+                const tone = getDeadlineTone(deadline);
+                return `
+                  <div class="deadline-item ${tone}">
+                    <div>
+                      <div class="deadline-task">${escapeHtml(deadline.task)}</div>
+                      <div class="deadline-meta">Due ${escapeHtml(deadline.dueDate)} - ${escapeHtml(formatDeadlineStatus(deadline))}</div>
+                      ${deadline.note ? `<div class="deadline-note">${escapeHtml(deadline.note)}</div>` : ""}
+                    </div>
+                    ${
+                      canManageDeadlines
+                        ? `<button class="btn btn-sm btn-outline-navy" onclick="completeCaseDeadline('${submission.id}', '${deadline.id}')"><i class="fa-solid fa-check"></i> Mark Done</button>`
+                        : ""
+                    }
+                  </div>
+                `;
+              })
+              .join("")}</div>`
+          : `<div class="deadline-empty"><i class="fa-solid fa-calendar-plus"></i> No active deadline for this case.</div>`
+      }
+      ${
+        canManageDeadlines
+          ? `<div class="deadline-create">
+              <select id="caseDeadlineTask">${options}</select>
+              <input type="date" id="caseDeadlineDate" />
+              <input type="text" id="caseDeadlineNote" placeholder="Optional reminder note" />
+              <button class="btn btn-primary btn-sm" onclick="createCaseDeadline('${submission.id}')"><i class="fa-solid fa-plus"></i> Add Deadline</button>
+            </div>`
+          : ""
+      }
+      <p class="deadline-helper">Reminder notifications are generated 7 days, 3 days, 1 day, on the due date, and after overdue.</p>
+    </div>
+  `;
+}
+
+window.createCaseDeadline = function(submissionId) {
+  const submission = submissions.find((item) => item.id === submissionId);
+  if (!submission) return;
+  const task = document.getElementById("caseDeadlineTask")?.value || "";
+  const dueDate = document.getElementById("caseDeadlineDate")?.value || "";
+  const note = document.getElementById("caseDeadlineNote")?.value || "";
+  if (!task || !dueDate) {
+    showToast("Please select a deadline task and date.");
+    return;
+  }
+  ensureCaseDeadlines(submission).push({
+    id: `DL-${Date.now()}`,
+    task,
+    dueDate,
+    note,
+    createdAt: new Date().toISOString(),
+    createdBy: getCurrentUser().name,
+    remindersSent: [],
+    completed: false,
+  });
+  persistSubmissions();
+  showToast("Deadline added and reminder tracking enabled.");
+  renderDashboardContent("submission-detail");
+};
+
+window.completeCaseDeadline = function(submissionId, deadlineId) {
+  const submission = submissions.find((item) => item.id === submissionId);
+  const deadline = ensureCaseDeadlines(submission).find((item) => item.id === deadlineId);
+  if (!deadline) return;
+  deadline.completed = true;
+  deadline.completedAt = new Date().toISOString();
+  deadline.completedBy = getCurrentUser().name;
+  persistSubmissions();
+  showToast("Deadline marked as completed.");
+  renderDashboardContent("submission-detail");
+};
 
 function renderDocumentUploadActionButton(submission) {
   if (!canUploadDocuments(submission)) return "";
@@ -3571,7 +4193,7 @@ function showNotificationDetail(notification, options = {}) {
     notification.ipophlEmailSummary || submission?.ipophlEmailSummary || "";
   const emailReceivedAt =
     notification.ipophlEmailReceivedAt || submission?.ipophlEmailReceivedAt || "";
-  modalTitle.textContent = "Notification Details";
+  modalTitle.textContent = t("Notification Details");
   modalTitle.style.display = "block";
   modalBody.innerHTML = `
     <div class="notification-detail-modal">
@@ -3579,10 +4201,10 @@ function showNotificationDetail(notification, options = {}) {
         <i class="fa-solid ${notification.icon}"></i>
       </div>
       <div class="notification-detail-content">
-        <h2>${escapeHtml(notification.title)}</h2>
-        <p>${escapeHtml(notification.body)}</p>
-        <div class="notification-detail-time">${escapeHtml(notification.time || "Just now")}</div>
-        ${submissionId ? `<div class="notification-detail-ref"><strong>Reference:</strong> ${escapeHtml(submissionId)}</div>` : ""}
+        <h2>${escapeHtml(t(notification.title))}</h2>
+        <p>${escapeHtml(t(notification.body))}</p>
+        <div class="notification-detail-time">${escapeHtml(t(notification.time || "Just now"))}</div>
+        ${submissionId ? `<div class="notification-detail-ref"><strong>${escapeHtml(t("Reference"))}:</strong> ${escapeHtml(submissionId)}</div>` : ""}
         ${
           isIPOPHLEmailNotification
             ? `<div class="notification-detail-record">
@@ -3596,10 +4218,10 @@ function showNotificationDetail(notification, options = {}) {
         ${options.note ? `<div class="notification-detail-note"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(options.note)}</div>` : ""}
       </div>
       <div class="detail-actions" style="justify-content:flex-end; margin-top:22px;">
-        <button class="btn btn-outline-navy" onclick="closeModal()">Close</button>
+        <button class="btn btn-outline-navy" onclick="closeModal()">${escapeHtml(t("Close"))}</button>
         ${
           submissionId && getVisibleSubmissions(currentRole).some((item) => item.id === submissionId)
-            ? `<button class="btn btn-primary" onclick="closeModal(); openSubmissionFromNotification('${submissionId}')"><i class="fa-solid fa-arrow-right"></i> Open Submission</button>`
+            ? `<button class="btn btn-primary" onclick="closeModal(); openSubmissionFromNotification('${submissionId}')"><i class="fa-solid fa-arrow-right"></i> ${escapeHtml(t("Open Submission"))}</button>`
             : ""
         }
       </div>
@@ -3732,7 +4354,7 @@ function renderNotifications() {
 
   if (roleNotifs.length === 0) {
     list.innerHTML =
-      '<div style="padding:40px 20px;text-align:center;color:var(--gray-400);font-size:.85rem;"><i class="fa-solid fa-bell-slash" style="display:block;font-size:1.5rem;margin-bottom:12px;opacity:.3;"></i>No notifications yet</div>';
+      `<div style="padding:40px 20px;text-align:center;color:var(--gray-400);font-size:.85rem;"><i class="fa-solid fa-bell-slash" style="display:block;font-size:1.5rem;margin-bottom:12px;opacity:.3;"></i>${escapeHtml(t("No notifications yet"))}</div>`;
     return;
   }
 
@@ -3746,9 +4368,9 @@ function renderNotifications() {
         <i class="fa-solid ${n.icon}"></i>
       </div>
       <div class="notif-info">
-        <div class="notif-title">${escapeHtml(n.title)}</div>
-        <div class="notif-body">${escapeHtml(n.body)}</div>
-        <div class="notif-time">${escapeHtml(n.time)}</div>
+        <div class="notif-title">${escapeHtml(t(n.title))}</div>
+        <div class="notif-body">${escapeHtml(t(n.body))}</div>
+        <div class="notif-time">${escapeHtml(t(n.time))}</div>
         ${actions}
       </div>
     </div>
@@ -4619,7 +5241,7 @@ function updateTopbarRole() {
 
   const roleLabel = document.querySelector(".user-role-label");
   if (roleLabel) {
-    roleLabel.textContent = userRole + " Portal";
+    roleLabel.textContent = `${t(userRole)} ${t("Portal")}`;
   }
   updateBodyRoleClass(normRole);
   updateProfileDropdownRoleVisibility();
@@ -4651,6 +5273,8 @@ function updateProfileDropdownRoleVisibility() {
   });
   const profileHelpLink = document.getElementById("profileHelpLink");
   if (profileHelpLink) profileHelpLink.style.display = "none";
+  const profileDropdown = document.getElementById("profileDropdown");
+  if (profileDropdown) applyInterfaceLanguage(profileDropdown);
 }
 
 // ===== SIDEBAR =====
@@ -4735,7 +5359,7 @@ function renderSidebar() {
         ${mainItems.map((m) => {
           const badge = m.page === "messages" ? renderChatNavBadge() : "";
           return `
-          <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="top-nav-link">${m.text === "Dashboard" ? "Home" : m.text}${badge}</a>
+          <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}" class="top-nav-link">${escapeHtml(t(m.text === "Dashboard" ? "Home" : m.text))}${badge}</a>
         `;
         }).join('')}
       `;
@@ -4756,7 +5380,7 @@ function renderSidebar() {
       <div class="sidebar-nav-group ${isOpen ? "open" : ""} ${isActive ? "active" : ""}" data-nav-group="${m.key}">
         <button type="button" class="sidebar-nav-parent" onclick="toggleInquiryNav('${m.key}')" aria-expanded="${isOpen}">
           <i class="fa-solid ${m.icon}"></i>
-          <span class="nav-text">${m.text}</span>
+          <span class="nav-text">${escapeHtml(t(m.text))}</span>
           ${groupBadge}
           <i class="fa-solid fa-chevron-down nav-chevron"></i>
         </button>
@@ -4767,7 +5391,7 @@ function renderSidebar() {
               return `
           <a href="#" onclick="navigateTo('${child.page}')" data-page="${child.page}" class="sidebar-subnav-link">
             <i class="fa-solid ${child.icon}"></i>
-            <span class="nav-text">${child.text}${badge}</span>
+            <span class="nav-text">${escapeHtml(t(child.text))}${badge}</span>
           </a>
         `;
             })
@@ -4780,7 +5404,7 @@ function renderSidebar() {
           return `
       <a href="#" onclick="navigateTo('${m.page}')" data-page="${m.page}">
         <i class="fa-solid ${m.icon}"></i>
-        <span class="nav-text">${m.text}${badge}</span>
+        <span class="nav-text">${escapeHtml(t(m.text))}${badge}</span>
       </a>
     `;
         },
@@ -5350,6 +5974,7 @@ function renderDashboardContent(page) {
     if (["superadmin", "admin"].includes(normalizeRole(currentRole))) {
       mc.insertAdjacentHTML("beforeend", renderFloatingAIAssistant());
     }
+    applyInterfaceLanguage(document.body);
   } catch (err) {
     console.error("Dashboard Render Error:", err);
     mc.innerHTML = `
@@ -8665,6 +9290,19 @@ window.confirmActionRequiredRequest = function(id) {
   sub.actionRequiredItems.push(item);
   sub.status = "Under Review";
   sub.statusNote = buildActionRequiredStatusNote(sub);
+  if (dueDate) {
+    ensureCaseDeadlines(sub).push({
+      id: `DL-${Date.now()}`,
+      task: target === "documents" ? "Document completion" : "Applicant response deadline",
+      dueDate,
+      note: `${field}: ${instruction}`,
+      createdAt: new Date().toISOString(),
+      createdBy: user.name,
+      remindersSent: [],
+      completed: false,
+      sourceActionRequiredId: item.id,
+    });
+  }
   syncSubmissionWorkflowState(sub);
   persistSubmissions();
   addAuditLog({
@@ -9543,7 +10181,7 @@ function renderSubmissionDetail() {
 
     <div style="padding:12px 18px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-person-chalkboard" style="color:#d97706; font-size:1.1rem;"></i>
-      <div><strong style="color:#d97706;">Manual Review Policy</strong><p style="font-size:.82rem; color:var(--gray-500); margin:2px 0 0;">This system does not use automated or AI-driven document assessment. All submissions undergo human evaluation by authorized IP Office personnel before status is updated.</p></div>
+      <div><strong style="color:#d97706;">Manual Review Policy</strong><p style="font-size:.82rem; color:var(--gray-500); margin:2px 0 0;">AI completeness checks provide applicant suggestions only. All submissions still undergo human evaluation by authorized IP Office personnel before status is updated.</p></div>
     </div>
 
     ${
@@ -9676,6 +10314,7 @@ function renderSubmissionDetail() {
               : ""
           }
         </div>
+        ${renderCaseDeadlinePanel(s)}
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-timeline"></i> ${timelineTitle}</h3>
           ${
@@ -11437,7 +12076,10 @@ function renderPatentEditorFieldShell(label, body, fullWidth = false) {
   const modifier = fullWidth ? " patent-editor-field--full" : "";
   return `
     <label class="patent-editor-field${modifier}">
-      <span class="patent-editor-field__label">${label}</span>
+      <span class="patent-editor-field__label">
+        <span>${escapeHtml(t(label))}</span>
+        ${renderApplicationInfoGuide(label)}
+      </span>
       ${body}
     </label>
   `;
@@ -11633,6 +12275,12 @@ function renderPatentGoogleForm(
                   : `<button class="btn btn-success" onclick="submitForm()">${finalButtonLabel} <i class="fa-solid fa-paper-plane"></i></button>`
               }
             </div>
+          </div>
+          <div class="completeness-check-shell patent-gform-completeness">
+            <button class="btn btn-outline-navy" type="button" onclick="checkFormCompleteness()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Check Completeness
+            </button>
+            <div id="formCompletenessPanel"></div>
           </div>
         </div>
 
@@ -13519,6 +14167,12 @@ function renderCopyrightGoogleForm(
                   : `<button class="btn btn-success" onclick="submitForm()">${isRevision ? "Resubmit Corrections" : "Submit Copyright Form"} <i class="fa-solid fa-paper-plane"></i></button>`
               }
             </div>
+          </div>
+          <div class="completeness-check-shell patent-gform-completeness">
+            <button class="btn btn-outline-navy" type="button" onclick="checkFormCompleteness()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Check Completeness
+            </button>
+            <div id="formCompletenessPanel"></div>
           </div>
         </div>
 
@@ -16060,6 +16714,12 @@ function renderUtilityGoogleForm(
               }
             </div>
           </div>
+          <div class="completeness-check-shell patent-gform-completeness">
+            <button class="btn btn-outline-navy" type="button" onclick="checkFormCompleteness()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Check Completeness
+            </button>
+            <div id="formCompletenessPanel"></div>
+          </div>
         </div>
 
         <aside class="patent-gform-sidebar">
@@ -17147,6 +17807,12 @@ function renderIndustrialGoogleForm(
               }
             </div>
           </div>
+          <div class="completeness-check-shell patent-gform-completeness">
+            <button class="btn btn-outline-navy" type="button" onclick="checkFormCompleteness()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Check Completeness
+            </button>
+            <div id="formCompletenessPanel"></div>
+          </div>
         </div>
 
         <aside class="patent-gform-sidebar">
@@ -17669,6 +18335,8 @@ function captureIndustrialGoogleData() {
 }
 
 function renderFormWizard(title) {
+  setTimeout(() => enhanceApplicationGuideIcons(), 0);
+
   if (isPatentIntakeFlow()) {
     return renderPatentGoogleForm();
   }
@@ -17756,6 +18424,12 @@ function renderFormWizard(title) {
               : `<button class="btn btn-success" id="finalSubmitBtn" onclick="submitForm()" style="padding:12px 32px; font-weight:800;" disabled>Finalize & Submit Application <i class="fa-solid fa-paper-plane"></i></button>`
           }
         </div>
+      </div>
+      <div class="completeness-check-shell">
+        <button class="btn btn-outline-navy" type="button" onclick="checkFormCompleteness()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Check Completeness
+        </button>
+        <div id="formCompletenessPanel"></div>
       </div>
     </div>
 
@@ -18845,6 +19519,7 @@ function refreshWizard() {
                 : "Industrial Design Registration",
         );
       }
+      enhanceApplicationGuideIcons(target);
     }
     return;
   }
@@ -18871,7 +19546,205 @@ function refreshWizard() {
         : `<button class="btn btn-success" id="finalSubmitBtn" onclick="submitForm()" ${currentFormType === 'copyright' && submissionMethod === 'upload' ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i> Submit Application</button>`
     }
   `;
+  enhanceApplicationGuideIcons(document.getElementById("wizardBody"));
+  const completenessShell = document.querySelector(".completeness-check-shell");
+  if (completenessShell && !document.getElementById("formCompletenessPanel")) {
+    completenessShell.insertAdjacentHTML("beforeend", '<div id="formCompletenessPanel"></div>');
+  }
 }
+
+function getCompletenessFieldValue(key) {
+  return String(wizardData[key] || "").trim();
+}
+
+function scoreCompletenessText(label, value, { minWords = 12, strongWords = 35 } = {}) {
+  const words = String(value || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) {
+    return {
+      score: 0,
+      issue: `${label} is empty.`,
+      suggestion: `Provide the requested information for ${label}.`,
+    };
+  }
+  if (words.length < minWords) {
+    return {
+      score: 45,
+      issue: `${label} looks too short or unclear.`,
+      suggestion: `Add more complete details for ${label}; aim for a clear paragraph instead of a phrase.`,
+    };
+  }
+  if (words.length < strongWords) {
+    return {
+      score: 75,
+      issue: `${label} may need more supporting detail.`,
+      suggestion: `Expand ${label} with specifics, examples, or technical context.`,
+    };
+  }
+  return { score: 100 };
+}
+
+function getCompletenessReviewFields(formType = currentFormType) {
+  const commonDisclosure = [
+    ["Background and Problem Statement", "disclosureBackground", { minWords: 15, strongWords: 35 }],
+    ["Description of the Intellectual Property", "disclosureDescription", { minWords: 25, strongWords: 60 }],
+    ["Novel Features", "disclosureNovelFeatures", { minWords: 15, strongWords: 35 }],
+    ["Inventiveness and Advantages", "disclosureAdvantages", { minWords: 15, strongWords: 35 }],
+    ["Potential Applications and Uses", "disclosureApplications", { minWords: 12, strongWords: 28 }],
+  ];
+  if (["patent", "utility"].includes(formType)) return commonDisclosure;
+  if (formType === "industrial") {
+    return [
+      ["Title of Industrial Design", "title", { minWords: 2, strongWords: 5 }],
+      ["Brief Explanation of the Drawings / Views", "industrialViewsExplanation", { minWords: 15, strongWords: 35 }],
+      ["Characteristic Features of the Design", "industrialCharacteristicFeatures", { minWords: 12, strongWords: 30 }],
+      ["Description of Design", "desc", { minWords: 18, strongWords: 40 }],
+      ["Omnibus Claim", "industrialClaim", { minWords: 8, strongWords: 20 }],
+    ];
+  }
+  if (formType === "copyright") {
+    return [
+      ["Title of Work", "title", { minWords: 2, strongWords: 5 }],
+      ["Description of Work", "desc", { minWords: 15, strongWords: 35 }],
+      ["Originality / Ownership Details", "copyrightOwnershipBasis", { minWords: 10, strongWords: 24 }],
+      ["AI system / extent of use", "copyrightAiDetails", { minWords: 8, strongWords: 20 }],
+    ];
+  }
+  return [
+    ["Title", "title", { minWords: 2, strongWords: 5 }],
+    ["Description", "description", { minWords: 15, strongWords: 35 }],
+    ["Field", "field", { minWords: 2, strongWords: 5 }],
+  ];
+}
+
+function getRepeatedAnswerIssues(fields) {
+  const seen = new Map();
+  const issues = [];
+  fields.forEach(([label, key]) => {
+    const normalized = getCompletenessFieldValue(key).toLowerCase().replace(/\s+/g, " ");
+    if (normalized.length < 30) return;
+    if (seen.has(normalized)) {
+      issues.push({
+        issue: `${label} repeats the same answer used in ${seen.get(normalized)}.`,
+        suggestion: `Rewrite ${label} so it answers that field specifically.`,
+      });
+    } else {
+      seen.set(normalized, label);
+    }
+  });
+  return issues;
+}
+
+function analyzeFormCompleteness() {
+  captureWizardData();
+  const formType = getFormTypeKeyFromSubmissionType(currentFormType);
+  const fields = getCompletenessReviewFields(formType);
+  const issues = [];
+  const suggestions = [];
+  let scoreTotal = 0;
+  let scoreItems = 0;
+
+  fields.forEach(([label, key, options]) => {
+    const result = scoreCompletenessText(label, getCompletenessFieldValue(key), options);
+    scoreTotal += result.score;
+    scoreItems += 1;
+    if (result.issue) issues.push(result.issue);
+    if (result.suggestion) suggestions.push(result.suggestion);
+  });
+
+  const dataText = fields
+    .map(([, key]) => getCompletenessFieldValue(key).toLowerCase())
+    .join(" ");
+  const technicalSignals = ["component", "process", "step", "system", "method", "material", "software", "mechanical", "electrical", "function"];
+  if (["patent", "utility"].includes(formType) && !technicalSignals.some((signal) => dataText.includes(signal))) {
+    issues.push("The technical details are missing or too generic.");
+    suggestions.push("Add the parts, process steps, materials, system components, and how they work together.");
+    scoreTotal -= 12;
+  }
+  if (["patent", "utility"].includes(formType) && !/(new|novel|original|different|unique|improved|distinct)/.test(getCompletenessFieldValue("disclosureNovelFeatures").toLowerCase())) {
+    issues.push("The Novel Features field does not clearly explain what makes the invention different.");
+    suggestions.push("Explain the unique features compared to existing solutions.");
+    scoreTotal -= 10;
+  }
+  if (["patent", "utility"].includes(formType) && !/(benefit|advantage|better|efficient|safer|cheaper|useful|improve)/.test(getCompletenessFieldValue("disclosureAdvantages").toLowerCase())) {
+    issues.push("The advantages or benefits are not clearly stated.");
+    suggestions.push("Describe why the solution is better, safer, cheaper, more efficient, or more useful.");
+    scoreTotal -= 8;
+  }
+  if (["patent", "utility"].includes(formType) && !/(use|application|industry|commercial|education|social|field|market|community)/.test(getCompletenessFieldValue("disclosureApplications").toLowerCase())) {
+    issues.push("The purpose or practical application is missing.");
+    suggestions.push("State where and how the invention can be used in practice.");
+    scoreTotal -= 8;
+  }
+
+  getRepeatedAnswerIssues(fields).forEach((item) => {
+    issues.push(item.issue);
+    suggestions.push(item.suggestion);
+    scoreTotal -= 8;
+  });
+
+  const requiredDocs = getRequiredDocumentsForType(formType, wizardData).filter((doc) => doc.type === "Required");
+  const uploads = ensureRequirementUploads(wizardData);
+  const missingDocs = requiredDocs.filter((doc) => !uploads[doc.key]);
+  if (missingDocs.length) {
+    issues.push(`${missingDocs.length} required supporting file${missingDocs.length === 1 ? " is" : "s are"} missing.`);
+    suggestions.push(`Upload: ${missingDocs.map((doc) => doc.name).join(", ")}.`);
+    scoreTotal -= missingDocs.length * 10;
+  }
+
+  const completeness = Math.max(0, Math.min(100, Math.round(scoreTotal / Math.max(scoreItems, 1))));
+  return {
+    completeness,
+    issues: [...new Set(issues)].slice(0, 8),
+    suggestions: [...new Set(suggestions)].slice(0, 8),
+  };
+}
+
+function renderCompletenessReviewPanel(result) {
+  const tone = result.completeness >= 85 ? "good" : result.completeness >= 65 ? "warn" : "risk";
+  return `
+    <div class="completeness-panel ${tone}">
+      <div class="completeness-header">
+        <div>
+          <div class="completeness-kicker">AI Form Completeness Checker</div>
+          <h3>Completeness Result: ${result.completeness}% Complete</h3>
+        </div>
+        <span class="completeness-score">${result.completeness}%</span>
+      </div>
+      <div class="completeness-grid">
+        <div>
+          <h4>Issues Found</h4>
+          ${
+            result.issues.length
+              ? `<ul>${result.issues.map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>`
+              : `<p>No major completeness issues found.</p>`
+          }
+        </div>
+        <div>
+          <h4>Suggested Improvements</h4>
+          ${
+            result.suggestions.length
+              ? `<ul>${result.suggestions.map((suggestion) => `<li>${escapeHtml(suggestion)}</li>`).join("")}</ul>`
+              : `<p>The application appears ready for manual review.</p>`
+          }
+        </div>
+      </div>
+      <p class="completeness-note"><i class="fa-solid fa-circle-info"></i> Suggestions only. The checker does not change your answers or uploaded files.</p>
+    </div>
+  `;
+}
+
+window.checkFormCompleteness = function() {
+  const panel = document.getElementById("formCompletenessPanel");
+  const result = analyzeFormCompleteness();
+  wizardData.completenessCheck = {
+    ...result,
+    checkedAt: new Date().toISOString(),
+  };
+  if (panel) {
+    panel.innerHTML = renderCompletenessReviewPanel(result);
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+};
 
 window.handleSaveDraft = function() {
   syncWizardData();
@@ -19679,6 +20552,16 @@ function applyWizardDataToSubmission(
             },
       );
     }
+    ensureCaseDeadlines(submission).forEach((deadline) => {
+      if (
+        !deadline.completed &&
+        requestedItems.some((item) => item.id && item.id === deadline.sourceActionRequiredId)
+      ) {
+        deadline.completed = true;
+        deadline.completedAt = timestamp;
+        deadline.completedBy = getCurrentUser().name;
+      }
+    });
     submission.status = "Under Review";
     submission.statusNote = "";
     submission.lastApplicantRevisionAt = timestamp;
@@ -21466,17 +22349,53 @@ function renderApplicantSettingsAction(icon, label, description, buttonLabel, to
   `;
 }
 
+function renderLanguageSettingsPanel() {
+  const selectedLanguage = getPreferredLanguage();
+  const options = SUPPORTED_LANGUAGES.map(
+    (language) =>
+      `<option value="${escapeHtml(language.code)}" ${selectedLanguage === language.code ? "selected" : ""}>${escapeHtml(language.label)}</option>`,
+  ).join("");
+
+  return `
+    <div class="detail-panel language-settings-panel">
+      <h3><i class="fa-solid fa-language" style="color:var(--gold); margin-right:8px;"></i> ${escapeHtml(t("Language Settings"))}</h3>
+      <div class="language-settings-row">
+        <div>
+          <label for="preferredLanguageSelect">${escapeHtml(t("Preferred Language"))}</label>
+          <p>${escapeHtml(t("Choose the language used for menus, buttons, forms, help tips, messages, notifications, and dashboards."))}</p>
+        </div>
+        <select id="preferredLanguageSelect" onchange="setPreferredLanguage(this.value)">
+          ${options}
+        </select>
+      </div>
+      <div class="settings-note">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>${escapeHtml(t("Applies to navigation menus, buttons, form labels, placeholder text, tooltips, messages, notifications, form instructions, and dashboard labels when translations are available."))}</span>
+      </div>
+      <div class="settings-note settings-note--muted">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>${escapeHtml(t("Missing translations fall back to English. User-submitted case data is not translated or changed."))}</span>
+      </div>
+      <button class="btn btn-primary" type="button" onclick="savePreferredLanguage()">
+        <i class="fa-solid fa-save"></i> ${escapeHtml(t("Save Language"))}
+      </button>
+    </div>
+  `;
+}
+
 function renderApplicantSettings() {
   const user = getCurrentUser();
   const params = typeof currentParams === "object" && currentParams ? currentParams : {};
-  const selectedSection = params.settingsSection || "notifications";
+  const selectedSection = params.settingsSection || "language";
   const sectionNames = {
+    language: "Language",
     notifications: "Notifications",
     security: "Security",
     privacy: "Privacy",
     workspace: "Filing Workspace",
   };
   const sectionPanels = {
+    language: renderLanguageSettingsPanel(),
     notifications: `
       <div class="detail-panel">
         <h3><i class="fa-solid fa-bell" style="color:var(--gold); margin-right:8px;"></i> Notifications</h3>
@@ -21518,23 +22437,51 @@ function renderApplicantSettings() {
   };
   const currentSectionName = sectionNames[selectedSection] || sectionNames.notifications;
   const currentPanel = sectionPanels[selectedSection] || sectionPanels.notifications;
+  const sectionTabs = Object.entries(sectionNames)
+    .map(
+      ([key, label]) =>
+        `<button class="settings-section-tab ${selectedSection === key ? "active" : ""}" type="button" onclick="navigateTo('user-settings', false, { settingsSection: '${key}' })">${escapeHtml(t(label))}</button>`,
+    )
+    .join("");
   return `
     ${renderBackNav("user-profile", "Profile")}
     <div class="page-header">
-      <h1>Applicant Settings</h1>
-      <p>Viewing ${currentSectionName} settings.</p>
+      <h1>${escapeHtml(t("Applicant Settings"))}</h1>
+      <p>${escapeHtml(t(`Viewing ${currentSectionName} settings.`))}</p>
     </div>
+
+    <div class="settings-section-tabs">${sectionTabs}</div>
 
     <div class="detail-layout">
       ${currentPanel}
     </div>
 
     <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px; flex-wrap:wrap;">
-      <button class="btn btn-outline-navy" onclick="navigateTo('user-profile')"><i class="fa-solid fa-arrow-left"></i> Back to Profile</button>
-      <button class="btn btn-primary" onclick="showToast('Applicant settings saved')"><i class="fa-solid fa-save"></i> Save Settings</button>
+      <button class="btn btn-outline-navy" onclick="navigateTo('user-profile')"><i class="fa-solid fa-arrow-left"></i> ${escapeHtml(t("Back to Profile"))}</button>
+      <button class="btn btn-primary" onclick="showToast('Applicant settings saved')"><i class="fa-solid fa-save"></i> ${escapeHtml(t("Save Settings"))}</button>
     </div>
   `;
 }
+
+window.setPreferredLanguage = function(languageCode) {
+  const code = SUPPORTED_LANGUAGES.some((language) => language.code === languageCode)
+    ? languageCode
+    : "en";
+  updateUserSettings({ preferredLanguage: code });
+  renderSidebar();
+  updateTopbarRole();
+  if (currentPage) {
+    renderDashboardContent(currentPage);
+  } else {
+    applyInterfaceLanguage(document.body, code);
+  }
+};
+
+window.savePreferredLanguage = function() {
+  const selected = document.getElementById("preferredLanguageSelect")?.value || "en";
+  window.setPreferredLanguage(selected);
+  showToast("Language preference saved");
+};
 
 function getProfileNameParts(user = {}) {
   if (user.firstName || user.lastName) {
@@ -23024,7 +23971,7 @@ window.filterAnnouncementCategory = function(category) {
 // ===== TOAST =====
 function showToast(msg) {
   const t = document.getElementById("toast");
-  document.getElementById("toastMessage").textContent = msg;
+  document.getElementById("toastMessage").textContent = translateInterfaceText(msg);
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 3000);
 }
