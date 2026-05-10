@@ -442,7 +442,7 @@
           <div class="login-header">
             <div class="brand-icon"><i class="fa-solid fa-key"></i></div>
             <h2>Reset Your Password</h2>
-            <p>Please enter your email address to receive a recovery link.</p>
+            <p>Enter your account email. We will verify the address and send a secure OTP for password recovery.</p>
           </div>
           <div id="forgotPasswordFormContainer">
             <form id="forgotPasswordForm" onsubmit="handleForgotPasswordSubmit(event)">
@@ -454,7 +454,7 @@
                 </div>
               </div>
               <button type="submit" class="btn btn-primary btn-block">
-                <i class="fa-solid fa-paper-plane"></i> Send Reset Link
+                <i class="fa-solid fa-paper-plane"></i> Send Reset OTP
               </button>
             </form>
           </div>
@@ -499,6 +499,7 @@
                 <div class="strength-meter"><div id="strengthBar" class="strength-bar"></div></div>
                 <span id="strengthLabel" class="strength-label">Weak</span>
               </div>
+              <small class="password-rules">Use at least 8 characters with an uppercase letter, number, and symbol.</small>
             </div>
             <div class="form-group">
               <label for="confirmPassword">Confirm Password</label>

@@ -1842,7 +1842,7 @@ function setLoginMode(role = "applicant") {
   if (subtitle) subtitle.textContent = copy.subtitle;
   if (email) email.placeholder = copy.emailPlaceholder;
   if (password) password.placeholder = "Enter your password";
-  if (forgotLink) forgotLink.style.display = isApplicantLogin ? "" : "none";
+  if (forgotLink) forgotLink.style.display = "";
   if (applicantFooter) applicantFooter.style.display = isApplicantLogin ? "" : "none";
   ["loginEmailError", "loginPasswordError"].forEach((id) => {
     const el = document.getElementById(id);
@@ -5119,6 +5119,11 @@ window.handleResetPasswordSubmit = async function(e) {
     return;
   }
 
+  if (!isStrongResetPassword(newPass)) {
+    showToast("Use at least 8 characters with an uppercase letter, number, and symbol.", "warning");
+    return;
+  }
+
   try {
     await apiRequest("accounts/reset-password/", {
       method: "POST",
@@ -5158,6 +5163,15 @@ window.handleResetPasswordSubmit = async function(e) {
   overlay.classList.add("active");
   showToast("Password successfully reset!");
 };
+
+function isStrongResetPassword(pass) {
+  return (
+    String(pass || "").length >= 8 &&
+    /[A-Z]/.test(pass) &&
+    /[0-9]/.test(pass) &&
+    /[^A-Za-z0-9]/.test(pass)
+  );
+}
 
 window.checkPasswordStrength = function() {
   const pass = document.getElementById('newPassword').value;
@@ -5199,15 +5213,20 @@ window.checkPasswordMatch = function() {
   const confirm = document.getElementById('confirmPassword').value;
   const btn = document.getElementById('resetBtn');
   const error = document.getElementById('confirmPasswordError');
+  if (!btn || !error) return;
   
   if (confirm && pass !== confirm) {
     error.innerText = 'Passwords do not match.';
     error.style.display = 'block';
     btn.disabled = true;
+  } else if (pass && !isStrongResetPassword(pass)) {
+    error.innerText = 'Password must include an uppercase letter, number, and symbol.';
+    error.style.display = 'block';
+    btn.disabled = true;
   } else {
     error.innerText = '';
     error.style.display = 'none';
-    btn.disabled = pass.length < 8;
+    btn.disabled = !isStrongResetPassword(pass);
   }
 };
 
@@ -8295,12 +8314,6 @@ function getRoleSpecificPanels(role) {
               <option value="Validated" ${dashboardAnalyticsStatus === "Validated" ? "selected" : ""}>Evaluated</option>
               <option value="On Going" ${dashboardAnalyticsStatus === "On Going" ? "selected" : ""}>On Going</option>
             </select>
-            <select class="filter-select" onchange="setDashboardAnalyticsFilter('applicantType', this.value)">
-              <option value="All" ${dashboardAnalyticsApplicantType === "All" ? "selected" : ""}>All Applicants</option>
-              <option value="Student" ${dashboardAnalyticsApplicantType === "Student" ? "selected" : ""}>Student</option>
-              <option value="Faculty" ${dashboardAnalyticsApplicantType === "Faculty" ? "selected" : ""}>Faculty</option>
-              <option value="External" ${dashboardAnalyticsApplicantType === "External" ? "selected" : ""}>External</option>
-            </select>
             <select class="filter-select" onchange="setDashboardAnalyticsFilter('result', this.value)">
               <option value="All" ${dashboardAnalyticsResult === "All" ? "selected" : ""}>All Results</option>
               <option value="Patent" ${dashboardAnalyticsResult === "Patent" ? "selected" : ""}>Patent</option>
@@ -8360,12 +8373,6 @@ function getFilteredDashboardAnalyticsSubmissions(role = currentRole) {
   }
   if (dashboardAnalyticsStatus !== "All") {
     rows = rows.filter((submission) => submission.status === dashboardAnalyticsStatus);
-  }
-  if (dashboardAnalyticsApplicantType !== "All") {
-    rows = rows.filter((submission) => {
-      const label = submission.applicantType || (String(submission.email || "").includes("@psu") ? "Faculty" : "Student");
-      return label === dashboardAnalyticsApplicantType;
-    });
   }
   if (dashboardAnalyticsResult !== "All") {
     rows = rows.filter((submission) => getSubmissionEvaluation(submission)?.recommendedService === dashboardAnalyticsResult);
@@ -10676,6 +10683,18 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function renderOptionalUploadGuidance() {
+  return `
+    <div class="optional-upload-guidance">
+      <i class="fa-solid fa-circle-info"></i>
+      <div>
+        <strong>Optional supporting documents can strengthen your application.</strong>
+        <p>Optional supporting documents may help evaluators assess your application more accurately and efficiently. Providing additional relevant files can strengthen the validation and review process.</p>
+      </div>
+    </div>
+  `;
+}
+
 function getSubmittedFieldValue(data, keys, fallback = "") {
   for (const key of keys) {
     const value = data?.[key];
@@ -12816,6 +12835,7 @@ function renderPatentOptionalDocumentsStep() {
       <div class="patent-editor-sheet">
         <div class="patent-editor-section">
           <div class="patent-paper__section-title">${sectionTitle}</div>
+          ${isIndustrial ? "" : renderOptionalUploadGuidance()}
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
             ${entries
               .map((entry) => {
@@ -13337,6 +13357,86 @@ function renderPatentSubmissionList() {
       ${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
     </ul>
   `;
+}
+
+function renderModernReviewValue(value, { multiline = false } = {}) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return `<span class="modern-review-value modern-review-value--empty">Not provided</span>`;
+  }
+  return `<span class="modern-review-value ${multiline ? "modern-review-value--multi" : ""}">${escapeHtml(text)}</span>`;
+}
+
+function renderModernReviewField(label, value, options = {}) {
+  return `
+    <div class="modern-review-field ${options.full ? "modern-review-field--full" : ""}">
+      <span class="modern-review-label">${escapeHtml(label)}</span>
+      ${renderModernReviewValue(value, options)}
+    </div>
+  `;
+}
+
+function renderModernReviewSection(title, icon, fields) {
+  return `
+    <section class="modern-review-section">
+      <div class="modern-review-section__header">
+        <i class="fa-solid ${icon}"></i>
+        <h3>${escapeHtml(title)}</h3>
+      </div>
+      <div class="modern-review-grid">
+        ${fields.join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderPatentModernReviewSections() {
+  const typeLabel = getPatentIntakeTypeLabel();
+  const creatorChoice = getPatentMultipleCreatorsChoice() === "yes" ? "Yes" : "No";
+  const supplementalEntries = Array.isArray(wizardData.patentSupplementalEntries)
+    ? wizardData.patentSupplementalEntries
+    : [];
+
+  const sections = [
+    renderModernReviewSection("Advisory Service Information", "fa-user-check", [
+      renderModernReviewField("Applicant Name", wizardData.name),
+      renderModernReviewField("Email Address", wizardData.email || wizardData.applicantEmail),
+      renderModernReviewField("College / Office", wizardData.college || wizardData.dept),
+      renderModernReviewField("Contact Number", wizardData.contact || wizardData.applicantContact),
+      renderModernReviewField("Client Type", wizardData.advisoryClientType),
+      renderModernReviewField("Requested IP Service", typeLabel),
+    ]),
+    renderModernReviewSection("IP Disclosure Details", "fa-lightbulb", [
+      renderModernReviewField("Title", wizardData.title || wizardData.disclosureTitle, { full: true }),
+      renderModernReviewField("Technical Field", wizardData.field || wizardData.disclosureField),
+      renderModernReviewField("Date Conceived / Created", formatPatentHumanDate(wizardData.date || wizardData.creationDate)),
+      renderModernReviewField("Background and Problem Statement", wizardData.background || wizardData.problem || wizardData.disclosureBackground, { full: true, multiline: true }),
+      renderModernReviewField("Description of the Intellectual Property", wizardData.desc || wizardData.description || wizardData.disclosureDescription, { full: true, multiline: true }),
+      renderModernReviewField("Novel Features", wizardData.novelty || wizardData.novelFeatures, { full: true, multiline: true }),
+      renderModernReviewField("Inventiveness and Advantages", wizardData.advantages || wizardData.inventiveness || wizardData.benefits, { full: true, multiline: true }),
+      renderModernReviewField("Potential Applications and Uses", wizardData.applications || wizardData.industrial || wizardData.uses, { full: true, multiline: true }),
+    ]),
+    renderModernReviewSection("Filing Details", "fa-file-signature", [
+      renderModernReviewField("Application Route", wizardData.applicationRoute),
+      renderModernReviewField("Priority Claim", wizardData.priorityClaim),
+      renderModernReviewField("Priority Number", wizardData.priorityNumber),
+      renderModernReviewField("Priority Filing Date", formatPatentHumanDate(wizardData.priorityDate)),
+      renderModernReviewField("International Application No.", wizardData.internationalAppNo),
+      renderModernReviewField("International Publication No.", wizardData.internationalPublicationNo),
+      renderModernReviewField("Drawings Count", wizardData.drawingsCount),
+      renderModernReviewField("Claims Count", wizardData.claimsCount),
+    ]),
+    renderModernReviewSection("Applicants, Inventors, and Authors", "fa-users", [
+      renderModernReviewField("Applicant", joinSubmittedName(wizardData, ["applicantFirstName", "applicantMiddleName", "applicantLastName"]) || wizardData.name),
+      renderModernReviewField("Applicant Address", wizardData.applicantAddress, { full: true, multiline: true }),
+      renderModernReviewField("Inventor / Author", joinSubmittedName(wizardData, ["inventorFirstName", "inventorMiddleName", "inventorLastName"])),
+      renderModernReviewField("Inventor / Author Address", wizardData.inventorAddress, { full: true, multiline: true }),
+      renderModernReviewField("Multiple Inventors / Authors", creatorChoice),
+      renderModernReviewField("Additional Entries", supplementalEntries.length ? `${supplementalEntries.length} listed` : ""),
+    ]),
+  ];
+
+  return `<div class="modern-form-review">${sections.join("")}</div>`;
 }
 
 function formatPatentHumanDate(value) {
@@ -14032,20 +14132,16 @@ function renderPatentFormSheet() {
 
 function renderPatentPreviewStep() {
   const stepCount = getPatentFormSteps().length;
-  const title = "Review the Completed PSU Forms";
-  const copy = shouldRenderPatentSupplementalSheet()
-    ? "The Advisory Service Sheet, IP Disclosure Form, and Form 110 supplemental sheet below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version."
-    : "The Advisory Service Sheet and IP Disclosure Form below are generated from your fill-up answers. Go back to any section if you need to correct the final paper version.";
 
   return `
     <div class="patent-gform-card">
       <span class="patent-gform-kicker">Step ${stepCount} - Preview and Submit</span>
-      <h2>${title}</h2>
-      <p>${copy}</p>
+      <h2>Review Application Details</h2>
+      <p>Review the editable form information below before submission. Use the Previous button to return to any section and update the details directly.</p>
     </div>
 
-    <div class="patent-gform-card patent-gform-card--sheet">
-      ${renderPatentIntakeFormBundle({ includeFlow: true })}
+    <div class="patent-gform-card">
+      ${renderPatentModernReviewSections()}
     </div>
 
     <div class="patent-gform-card">
@@ -14183,7 +14279,7 @@ function renderCopyrightGoogleForm(
             <div class="patent-progress-bar">
               <span style="width:${getCopyrightProgressPercent()}%; background:linear-gradient(135deg, #10b981, #0f766e);"></span>
             </div>
-            <p>Step ${currentWizardStep} of ${steps.length}. The final step shows your completed advisory sheet and copyright registry form.</p>
+            <p>Step ${currentWizardStep} of ${steps.length}. The final step summarizes your editable form details before submission.</p>
           </div>
 
           <div class="patent-gform-card">
@@ -14192,7 +14288,7 @@ function renderCopyrightGoogleForm(
               <li>The first section mirrors the PSU Advisory Service Sheet.</li>
               <li>The upload section uses the selected Classification of Works to guide the copy-of-work file format.</li>
               <li>The BCRR fields map to the enrollment form sections in your screenshots.</li>
-              <li>The last step composes the advisory and registry-style previews for final checking.</li>
+              <li>The last step uses a standard form review layout for final checking.</li>
               <li>Required uploads still follow the system checklist before submission is allowed.</li>
             </ul>
           </div>
@@ -15119,17 +15215,51 @@ function renderCopyrightPreviewStep() {
   return `
     <div class="patent-gform-card">
       <span class="patent-gform-kicker">Section ${currentWizardStep}</span>
-      <h2>Final Advisory and BCRR Preview</h2>
-      <p>This is the completed Advisory Service Sheet and BCRR-style output based on your samples. Go back to any section if you want to revise the final forms before submitting.</p>
+      <h2>Review Copyright Application Details</h2>
+      <p>Review the editable form information below before submission. Use the Previous button to return to any section and update the details directly.</p>
     </div>
 
-    <div class="patent-gform-card patent-gform-card--sheet">
-      ${renderCopyrightIntakeFormBundle()}
+    <div class="patent-gform-card">
+      ${renderCopyrightModernReviewSections()}
     </div>
 
     <div class="patent-gform-card">
       <h3>Submission Summary</h3>
       ${renderCopyrightSubmissionList()}
+    </div>
+  `;
+}
+
+function renderCopyrightModernReviewSections() {
+  const hasMultiple = getCopyrightMultipleContributorsChoice() === "yes";
+  const contributors = Array.isArray(wizardData.copyrightSupplementalEntries)
+    ? wizardData.copyrightSupplementalEntries
+    : [];
+
+  return `
+    <div class="modern-form-review">
+      ${renderModernReviewSection("Advisory Service Information", "fa-user-check", [
+        renderModernReviewField("Applicant Name", wizardData.name),
+        renderModernReviewField("Email Address", wizardData.email || wizardData.copyrightApplicantEmail),
+        renderModernReviewField("College / Office", wizardData.college || wizardData.dept),
+        renderModernReviewField("Contact Number", wizardData.contact || wizardData.copyrightApplicantContact),
+        renderModernReviewField("Client Type", wizardData.advisoryClientType),
+        renderModernReviewField("Requested IP Service", "Copyright"),
+      ])}
+      ${renderModernReviewSection("Copyright Work Details", "fa-copyright", [
+        renderModernReviewField("Title of Work", wizardData.copyrightWorkTitle || wizardData.title, { full: true }),
+        renderModernReviewField("Classification", wizardData.copyrightWorkClassification || wizardData.worktype),
+        renderModernReviewField("Date of Creation", formatPatentHumanDate(wizardData.date || wizardData.copyrightCreationDate)),
+        renderModernReviewField("Owner Mode", wizardData.copyrightOwnerMode),
+        renderModernReviewField("Description", wizardData.desc || wizardData.copyrightDescription, { full: true, multiline: true }),
+        renderModernReviewField("Originality Declaration", wizardData.originality || wizardData.copyrightOriginality, { full: true, multiline: true }),
+      ])}
+      ${renderModernReviewSection("Authors and Contributors", "fa-users", [
+        renderModernReviewField("Multiple Authors / Contributors", hasMultiple ? "Yes" : "No"),
+        renderModernReviewField("Additional Entries", contributors.length ? `${contributors.length} listed` : ""),
+        renderModernReviewField("Submission Type", wizardData.copyrightSubmissionType || "electronic"),
+        renderModernReviewField("Required Uploads", `${getUploadedRequiredCount("copyright", wizardData)}/${getRequiredDocumentCount("copyright")}`),
+      ])}
     </div>
   `;
 }
@@ -18758,6 +18888,7 @@ function renderStep3() {
       <div>
         <h4 style="color:var(--navy); margin-bottom:6px;">Dynamic Requirement Uploads</h4>
         <p style="color:var(--gray-500); font-size:0.88rem; line-height:1.6; margin:0 0 20px;">Upload one file for each listed requirement. This behavior is shared across all application types for consistency.</p>
+        ${renderOptionalUploadGuidance()}
         ${renderDynamicRequirementUploaders(currentFormType)}
       </div>
 
@@ -20231,16 +20362,109 @@ function getNQLRows(query) {
   return rows;
 }
 
+function renderNQLResultsTable(query, rows) {
+  const safeQuery = escapeHtml(query || "All active applications");
+  const visibleRows = rows.slice(0, 50);
+  const typeSummary = IP_SERVICE_TYPES
+    .map((type) => ({ type, count: rows.filter((row) => row.type === type).length }))
+    .filter((item) => item.count > 0)
+    .map(
+      (item) => `
+        <span class="nql-summary-chip">
+          <strong>${escapeHtml(item.count)}</strong>
+          ${escapeHtml(item.type)}
+        </span>
+      `,
+    )
+    .join("");
+
+  if (!rows.length) {
+    return `
+      <div class="nql-result-panel">
+        <div class="nql-result-header">
+          <div>
+            <span class="nql-result-kicker">Query Result</span>
+            <h3>${safeQuery}</h3>
+          </div>
+          <span class="nql-result-count">0 matches</span>
+        </div>
+        <div class="nql-empty-state">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <p>No matching records found. Try a broader status, service type, or date phrase.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="nql-result-panel">
+      <div class="nql-result-header">
+        <div>
+          <span class="nql-result-kicker">Query Result</span>
+          <h3>${safeQuery}</h3>
+        </div>
+        <span class="nql-result-count">${rows.length} match${rows.length === 1 ? "" : "es"}</span>
+      </div>
+      <div class="nql-summary-row">
+        ${typeSummary || `<span class="nql-summary-chip"><strong>${rows.length}</strong> Active records</span>`}
+      </div>
+      <div class="nql-table-toolbar">
+        <label for="nqlTableFilter">Filter results</label>
+        <input id="nqlTableFilter" type="search" placeholder="Search reference, applicant, status, or title" oninput="filterNQLResults(this.value)" />
+      </div>
+      <div class="nql-table-wrap">
+        <table class="nql-results-table">
+          <thead>
+            <tr>
+              <th>Reference No.</th>
+              <th>IP Type</th>
+              <th>Title</th>
+              <th>Applicant</th>
+              <th>Status</th>
+              <th>Filed</th>
+              <th>Evaluator</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${visibleRows
+              .map((row) => {
+                const display = getSubmissionDisplayData(row);
+                const filed = formatPatentHumanDate(row.date) || row.date || "Not set";
+                const evaluator = getAssignedReviewerName(row);
+                return `
+                  <tr data-nql-row>
+                    <td><strong>${escapeHtml(row.id)}</strong></td>
+                    <td>${escapeHtml(row.type)}</td>
+                    <td>${escapeHtml(display.title || row.title || "Untitled")}</td>
+                    <td>${escapeHtml(display.applicant || row.applicant || "Not provided")}</td>
+                    <td><span class="nql-status-badge">${escapeHtml(getDisplayStatusLabel(row.status))}</span></td>
+                    <td>${escapeHtml(filed)}</td>
+                    <td>${escapeHtml(evaluator)}</td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+      ${rows.length > visibleRows.length ? `<p class="nql-result-footnote">Showing first ${visibleRows.length} records. Use export for the full result set.</p>` : ""}
+    </div>
+  `;
+}
+
 window.runNQLAssistant = function() {
   const query = document.getElementById("nqlInput")?.value || "";
   const rows = getNQLRows(query);
   const preview = document.getElementById("aiReportPreview");
   if (!preview) return;
-  preview.innerHTML = `
-    <strong>Query:</strong> ${escapeHtml(query || "All active applications")}<br>
-    <strong>Matches:</strong> ${rows.length}<br><br>
-    ${rows.slice(0, 12).map((row) => `${escapeHtml(row.id)} | ${escapeHtml(row.type)} | ${escapeHtml(row.title)} | ${getDisplayStatusLabel(row.status)} | ${escapeHtml(row.applicant)}`).join("<br>") || "No matching records found."}
-  `;
+  preview.innerHTML = renderNQLResultsTable(query, rows);
+};
+
+window.filterNQLResults = function(value) {
+  const term = String(value || "").toLowerCase();
+  document.querySelectorAll("[data-nql-row]").forEach((row) => {
+    row.style.display = row.textContent.toLowerCase().includes(term) ? "" : "none";
+  });
 };
 
 window.showApplicantTypeModal = function(typeId, method) {
