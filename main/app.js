@@ -17,6 +17,7 @@ let selectedSubmissionId = null;
 let wizardData = {};
 let notifOpen = false;
 let pendingSignupData = null; // Holds signup data during OTP verification
+let pendingLoginOtp = null; // Holds prototype login state while dummy OTP is entered
 let pendingParams = {};
 let pendingAction = null; // Stores action to perform after login/signup
 let currentMpType = "All";
@@ -783,117 +784,384 @@ const mockNotifications = {
   superadmin: [
     {
       id: 201,
-      icon: "fa-circle-plus",
+      icon: "fa-file-circle-plus",
       color: "#22c55e",
       title: "New Application Submitted",
-      body: "A new Patent application (PSU-PAT-2026-022) is awaiting initial review.",
+      body: "Juan Dela Cruz submitted Case #PSU-PAT-2026-015.",
       time: "10 minutes ago",
       read: false,
+      type: "case-update",
+      category: "Case Update",
+      submissionId: "PSU-PAT-2026-015",
     },
     {
       id: 202,
-      icon: "fa-triangle-exclamation",
-      color: "#ef4444",
-      title: "Urgent: Review Queue",
-      body: "Priority applications are waiting for reviewer action.",
-      time: "1 hour ago",
+      icon: "fa-user-check",
+      color: "#2563eb",
+      title: "Case Taken by Evaluator",
+      body: "Engr. Miguel Tan took Case #PSU-PAT-2026-015.",
+      time: "25 minutes ago",
       read: false,
+      type: "case-update",
+      category: "Case Update",
+      submissionId: "PSU-PAT-2026-015",
     },
     {
       id: 203,
-      icon: "fa-file-shield",
+      icon: "fa-rotate",
+      color: "#f59e0b",
+      title: "Status Changed",
+      body: "Engr. Miguel Tan changed Case #PSU-PAT-2026-015 from Pending to Under Review.",
+      time: "30 minutes ago",
+      read: false,
+      type: "case-status",
+      category: "Status Update",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 204,
+      icon: "fa-clipboard-check",
+      color: "#22c55e",
+      title: "Evaluation Submitted",
+      body: "Engr. Miguel Tan submitted evaluation content for Case #PSU-PAT-2026-015.",
+      time: "1 hour ago",
+      read: false,
+      type: "evaluation-update",
+      category: "Evaluation Update",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 205,
+      icon: "fa-file-arrow-up",
       color: "#3b82f6",
-      title: "Audit Log Export Complete",
-      body: "The monthly audit log for March 2026 is ready for download.",
+      title: "Documents Uploaded",
+      body: "Applicant Maria Reyes uploaded additional documents for Case #PSU-UM-2026-011.",
+      time: "2 hours ago",
+      read: false,
+      type: "document-upload",
+      category: "Document Upload",
+      submissionId: "PSU-UM-2026-011",
+    },
+    {
+      id: 206,
+      icon: "fa-calendar-day",
+      color: "#f59e0b",
+      title: "Deadline Approaching",
+      body: "Case #PSU-COP-2026-008 has an evaluation deadline due in 2 days.",
+      time: "3 hours ago",
+      read: false,
+      type: "case-deadline-reminder",
+      category: "Deadline Reminder",
+      submissionId: "PSU-COP-2026-008",
+    },
+    {
+      id: 207,
+      icon: "fa-envelope-circle-check",
+      color: "#2563eb",
+      title: "IPOPHL Report Received",
+      body: "A Formality Report was received for Case #PSU-PAT-2026-015.",
       time: "5 hours ago",
       read: true,
+      type: "ipophl-report",
+      category: "IPOPHL Report",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 208,
+      icon: "fa-inbox",
+      color: "#6366f1",
+      title: "New Contact Submission",
+      body: "A new inquiry was received from the Contact Form.",
+      time: "Yesterday",
+      read: true,
+      type: "contact-submission",
+      category: "Message",
+    },
+    {
+      id: 209,
+      icon: "fa-user-plus",
+      color: "#22c55e",
+      title: "New Applicant Registered",
+      body: "Carlos Mendoza created a new applicant account.",
+      time: "Yesterday",
+      read: true,
+      type: "user-account",
+      category: "System Notice",
+    },
+    {
+      id: 210,
+      icon: "fa-bullhorn",
+      color: "#f97316",
+      title: "Announcement Published",
+      body: "A new IPOPHL reminder announcement was published.",
+      time: "2 days ago",
+      read: true,
+      type: "announcement",
+      category: "System Notice",
     }
   ],
   reviewer: [
     {
-      id: 101,
+      id: 301,
       userId: 3,
-      icon: "fa-clipboard-list",
-      color: "#3b82f6",
-      title: "New Specialist Case",
-      body: "You have been assigned as specialist for PSU-PAT-2026-015.",
-      time: "1 hour ago",
+      icon: "fa-circle-check",
+      color: "#22c55e",
+      title: "Case Taken Successfully",
+      body: "You have successfully taken Case #PSU-PAT-2026-015.",
+      time: "10 minutes ago",
       read: false,
+      type: "case-update",
+      category: "Case Update",
+      submissionId: "PSU-PAT-2026-015",
     },
     {
-      id: 102,
+      id: 302,
+      userId: 3,
+      icon: "fa-rotate",
+      color: "#3b82f6",
+      title: "Status Updated",
+      body: "You changed Case #PSU-PAT-2026-015 from Pending to Under Review.",
+      time: "15 minutes ago",
+      read: false,
+      type: "case-status",
+      category: "Status Update",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 303,
       userId: 3,
       icon: "fa-clock",
       color: "#f59e0b",
       title: "Deadline Approaching",
-      body: "Evaluation for PSU-COP-2026-008 is due in 2 days.",
-      time: "5 hours ago",
+      body: "Evaluation for Case #PSU-COP-2026-008 is due in 2 days.",
+      time: "1 hour ago",
       read: false,
+      type: "case-deadline-reminder",
+      category: "Deadline Reminder",
+      submissionId: "PSU-COP-2026-008",
     },
     {
-      id: 103,
+      id: 304,
       userId: 3,
-      icon: "fa-circle-check",
+      icon: "fa-file-arrow-up",
+      color: "#3b82f6",
+      title: "Documents Uploaded",
+      body: "The applicant uploaded additional documents for Case #PSU-UM-2026-011.",
+      time: "2 hours ago",
+      read: false,
+      type: "document-upload",
+      category: "Document Upload",
+      submissionId: "PSU-UM-2026-011",
+    },
+    {
+      id: 305,
+      userId: 3,
+      icon: "fa-reply",
+      color: "#6366f1",
+      title: "Applicant Response Received",
+      body: "The applicant responded to your evaluation for Case #PSU-PAT-2026-015.",
+      time: "3 hours ago",
+      read: true,
+      type: "applicant-response",
+      category: "Message",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 306,
+      userId: 3,
+      icon: "fa-clipboard-check",
       color: "#22c55e",
-      title: "Review Confirmed",
-      body: "Your feedback for PSU-COP-2026-004 has been received by Admin.",
+      title: "Evaluation Submitted",
+      body: "Your evaluation content for Case #PSU-PAT-2026-015 has been submitted successfully.",
+      time: "5 hours ago",
+      read: true,
+      type: "evaluation-update",
+      category: "Evaluation Update",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 307,
+      userId: 3,
+      icon: "fa-envelope-circle-check",
+      color: "#2563eb",
+      title: "IPOPHL Report Received",
+      body: "A Formality Report was received for Case #PSU-PAT-2026-015.",
       time: "Yesterday",
       read: true,
+      type: "ipophl-report",
+      category: "IPOPHL Report",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 308,
+      userId: 3,
+      icon: "fa-triangle-exclamation",
+      color: "#ef4444",
+      title: "Substantive Examination Alert",
+      body: "A Substantive Examination Report requires action for Case #PSU-PAT-2026-015.",
+      time: "Yesterday",
+      read: true,
+      type: "ipophl-report",
+      category: "IPOPHL Report",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 309,
+      userId: 3,
+      icon: "fa-user-shield",
+      color: "#6366f1",
+      title: "Admin Feedback Received",
+      body: "Admin reviewed your evaluation for Case #PSU-COP-2026-004.",
+      time: "2 days ago",
+      read: true,
+      type: "admin-feedback",
+      category: "Evaluation Update",
+      submissionId: "PSU-COP-2026-004",
+    },
+    {
+      id: 310,
+      userId: 3,
+      icon: "fa-comment-dots",
+      color: "#3b82f6",
+      title: "Message Received",
+      body: "You received a new message from the applicant for Case #PSU-UM-2026-011.",
+      time: "2 days ago",
+      read: true,
+      type: "case-message",
+      category: "Message",
+      caseId: "PSU-UM-2026-011",
     }
   ],
   applicant: [
     {
-      id: 1,
-      icon: "fa-circle-check",
-      color: "#22c55e",
-      title: "PSU-PAT-2026-001 Approved",
-      body: "Your patent application has been certified by the IP Office.",
-      time: "2 hours ago",
-      read: false,
-      submissionId: "PSU-PAT-2026-001",
-    },
-    {
-      id: 5,
+      id: 401,
       userId: 9,
-      icon: "fa-store",
-      color: "#f97316",
-      title: "Marketplace Approval Request",
-      body: "Admin requests approval to publish Bamboo-Based Water Filter in the marketplace.",
-      time: "Just now",
+      icon: "fa-file-circle-check",
+      color: "#22c55e",
+      title: "Application Submitted",
+      body: "Your application for Case #PSU-PAT-2026-015 was submitted successfully.",
+      time: "15 minutes ago",
       read: false,
-      type: "marketplace-approval",
-      requestId: "MKT-REQ-001",
-      submissionId: "PSU-PAT-2026-155",
+      type: "case-update",
+      category: "Case Update",
+      submissionId: "PSU-PAT-2026-015",
     },
     {
-      id: 2,
-      icon: "fa-file-circle-plus",
-      color: "#f59e0b",
-      title: "Documents Requested",
-      body: "Atty. Ramon Lopez requests additional docs for PSU-COP-2026-002.",
-      time: "Yesterday",
+      id: 402,
+      userId: 9,
+      icon: "fa-user-check",
+      color: "#22c55e",
+      title: "Case Accepted",
+      body: "Your case has been accepted by Engr. Miguel Tan.",
+      time: "30 minutes ago",
       read: false,
-      submissionId: "PSU-COP-2026-002",
+      type: "case-update",
+      category: "Case Update",
+      submissionId: "PSU-PAT-2026-015",
     },
     {
-      id: 3,
-      icon: "fa-triangle-exclamation",
-      color: "#ef4444",
-      title: "Action Required: PSU-COP-2026-014",
-      body: "Missing documents detected for Palawan Biodiversity Database.",
-      time: " Just now",
-      read: false,
-      submissionId: "PSU-COP-2026-014",
-    },
-    {
-      id: 4,
-      icon: "fa-circle-info",
+      id: 403,
+      userId: 9,
+      icon: "fa-rotate",
       color: "#3b82f6",
-      title: "System Notice",
-      body: "System Notice: We’ll be temporarily closed on April 20 from 2:00 AM to 4:00 AM due to the holiday. You may experience intermittent access during this time.",
-      time: "3 days ago",
+      title: "Status Updated",
+      body: "Your application status was changed to Under Review.",
+      time: "45 minutes ago",
+      read: false,
+      type: "case-status",
+      category: "Status Update",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 404,
+      userId: 9,
+      icon: "fa-clipboard-check",
+      color: "#22c55e",
+      title: "Evaluation Available",
+      body: "Evaluation content is now available for your review.",
+      time: "1 hour ago",
       read: true,
-      announcementId: 3,
+      type: "evaluation-update",
+      category: "Evaluation Update",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 405,
+      userId: 9,
+      icon: "fa-file-circle-exclamation",
+      color: "#ef4444",
+      title: "Documents Required",
+      body: "Please upload the required documents for Patent processing.",
+      time: "2 hours ago",
+      read: true,
+      type: "document-request",
+      category: "Document Upload",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 406,
+      userId: 9,
+      icon: "fa-cloud-arrow-up",
+      color: "#22c55e",
+      title: "Upload Confirmed",
+      body: "Your additional documents have been received.",
+      time: "3 hours ago",
+      read: true,
+      type: "document-upload",
+      category: "Document Upload",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 407,
+      userId: 9,
+      icon: "fa-calendar-day",
+      color: "#f59e0b",
+      title: "Deadline Reminder",
+      body: "Your required document submission is due in 3 days.",
+      time: "5 hours ago",
+      read: true,
+      type: "case-deadline-reminder",
+      category: "Deadline Reminder",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 408,
+      userId: 9,
+      icon: "fa-comment-dots",
+      color: "#3b82f6",
+      title: "Message Received",
+      body: "You received a new message from your evaluator.",
+      time: "Yesterday",
+      read: true,
+      type: "case-message",
+      category: "Message",
+      caseId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 409,
+      userId: 9,
+      icon: "fa-envelope-circle-check",
+      color: "#2563eb",
+      title: "IPOPHL Update",
+      body: "An IPOPHL-related update requires your attention.",
+      time: "Yesterday",
+      read: true,
+      type: "ipophl-report",
+      category: "IPOPHL Report",
+      submissionId: "PSU-PAT-2026-015",
+    },
+    {
+      id: 410,
+      userId: 9,
+      icon: "fa-certificate",
+      color: "#22c55e",
+      title: "Case Certified",
+      body: "Your case has been marked as Certified.",
+      time: "2 days ago",
+      read: true,
+      type: "case-status",
+      category: "Status Update",
+      submissionId: "PSU-PAT-2026-015",
     }
   ]
 };
@@ -1695,70 +1963,112 @@ let systemUsers = [
 
 const auditLogs = [
   {
-    timestamp: "2026-03-27 14:32",
-    accountName: "Dir. Garcia",
-    action: "Approved",
-    record: "PSU-PAT-2026-001",
+    timestamp: "2026-05-11 09:00",
+    accountName: "Engr. Miguel Tan",
+    role: "Evaluator",
+    action: "Took Case",
+    record: "PSU-PAT-2026-015",
     module: "Patent",
-    details: "Approved Bamboo-Based Water Filtration Device for final filing.",
+    details: "Took the case and started the evaluation process.",
   },
   {
-    timestamp: "2026-03-27 13:15",
+    timestamp: "2026-05-11 09:01",
+    accountName: "System",
+    role: "System",
+    action: "Status Changed",
+    record: "PSU-PAT-2026-015",
+    module: "Patent",
+    details: "Status automatically changed from Pending to Under Review after the case was taken.",
+  },
+  {
+    timestamp: "2026-05-11 09:10",
+    accountName: "Engr. Miguel Tan",
+    role: "Evaluator",
+    action: "Status Changed",
+    record: "PSU-PAT-2026-015",
+    module: "Patent",
+    details: "Changed case status from Pending to Under Review.",
+  },
+  {
+    timestamp: "2026-05-11 10:30",
+    accountName: "Juan Dela Cruz",
+    role: "Applicant",
+    action: "Uploaded Document",
+    record: "PSU-PAT-2026-015",
+    module: "Patent",
+    details: "Uploaded additional Patent processing requirements.",
+  },
+  {
+    timestamp: "2026-05-11 11:15",
+    accountName: "Engr. Miguel Tan",
+    role: "Evaluator",
+    action: "Submitted Evaluation",
+    record: "PSU-PAT-2026-015",
+    module: "Patent",
+    details: "Submitted evaluation content and recommended Patent filing.",
+  },
+  {
+    timestamp: "2026-05-11 11:20",
+    accountName: "System",
+    role: "System",
+    action: "Sent Notification",
+    record: "PSU-PAT-2026-015",
+    module: "Notifications",
+    details: "Sent case update notifications to the applicant and admin.",
+  },
+  {
+    timestamp: "2026-05-11 13:00",
+    accountName: "Dir. Garcia",
+    role: "Admin",
+    action: "Added Deadline",
+    record: "PSU-PAT-2026-015",
+    module: "Patent",
+    details: "Added a revision submission deadline for the applicant.",
+  },
+  {
+    timestamp: "2026-05-11 14:25",
+    accountName: "System",
+    role: "System",
+    action: "Received IPOPHL Email",
+    record: "PSU-PAT-2026-015",
+    module: "Emails",
+    details: "Received Formality Report from IPOPHL.",
+  },
+  {
+    timestamp: "2026-05-11 15:40",
+    accountName: "Dir. Garcia",
+    role: "Admin",
+    action: "Published Announcement",
+    record: "ANN-2026-004",
+    module: "Announcements",
+    details: "Published an IPOPHL reminder announcement.",
+  },
+  {
+    timestamp: "2026-05-11 16:10",
     accountName: "Maria Santos",
-    action: "Submitted",
-    record: "PSU-PAT-2026-001",
-    module: "Patent",
-    details: "Submitted a new patent application for intake review.",
-  },
-
-  {
-    timestamp: "2026-03-26 10:20",
-    accountName: "Juan dela Cruz",
-    action: "Submitted",
-    record: "PSU-COP-2026-002",
+    role: "Applicant",
+    action: "Submitted Application",
+    record: "PSU-COP-2026-018",
     module: "Copyright",
-    details: "Submitted a copyright registration packet.",
+    details: "Submitted a copyright registration application.",
   },
   {
-    timestamp: "2026-03-25 09:00",
-    accountName: "Dir. Garcia",
-    action: "Rejected",
-    record: "PSU-PAT-2026-004",
-    module: "Patent",
-    details: "Rejected the filing due to insufficient documentation.",
-  },
-
-  {
-    timestamp: "2026-03-24 11:00",
-    accountName: "Dir. Garcia",
-    action: "Exported Audit",
-    record: "March 2026 Audit Log",
-    module: "Audit Log",
-    details: "Exported the monthly audit log for institutional reporting.",
-  },
-  {
-    timestamp: "2026-03-23 08:45",
-    accountName: "Liza Manalo",
-    action: "Submitted",
-    record: "PSU-COP-2026-005",
-    module: "Copyright",
-    details: "Submitted a copyright registration packet.",
-  },
-  {
-    timestamp: "2026-03-22 14:10",
-    accountName: "Dir. Garcia",
-    action: "Created Account",
-    record: "celeste.navarro@psu.edu.ph",
+    timestamp: "2026-05-11 16:30",
+    accountName: "Dr. Celeste Navarro",
+    role: "Evaluator",
+    action: "OTP Verified",
+    record: "Login Session",
     module: "Accounts",
-    details: "Created a specialist account for Dr. Celeste Navarro.",
+    details: "Verified dummy 6-digit OTP and accessed the evaluator dashboard.",
   },
   {
-    timestamp: "2026-03-21 09:30",
-    accountName: "Dr. Ricardo Aquino",
-    action: "Submitted",
-    record: "PSU-COP-2026-007",
-    module: "Copyright",
-    details: "Submitted a copyright registration packet.",
+    timestamp: "2026-05-11 17:00",
+    accountName: "Dir. Garcia",
+    role: "Admin",
+    action: "Exported Audit Log",
+    record: "May 2026 Audit Log",
+    module: "Audit Log",
+    details: "Exported audit log report as CSV.",
   },
 ];
 
@@ -1816,6 +2126,7 @@ function getProtectedPageLogin(page) {
 
 function setLoginMode(role = "applicant") {
   selectedLoginRole = normalizeRole(role);
+  pendingLoginOtp = null;
 
   const title = document.getElementById("loginTitle");
   const subtitle = document.getElementById("loginSubtitle");
@@ -1852,6 +2163,7 @@ function setLoginMode(role = "applicant") {
   if (password) password.placeholder = "Enter your password";
   if (forgotLink) forgotLink.style.display = "";
   if (applicantFooter) applicantFooter.style.display = isApplicantLogin ? "" : "none";
+  resetLoginOtpScreen();
   ["loginEmailError", "loginPasswordError"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -1924,6 +2236,7 @@ const OPERATIONAL_AUDIT_MODULES = new Set([
   "Emails",
   "Announcements",
   "Messages",
+  "Notifications",
 ]);
 const REVIEWER_ASSIGNMENTS = {
   "PSU-PAT-2026-002": 3,
@@ -2308,6 +2621,28 @@ const ACTIVE_ROLE_USER_IDS = {
 };
 
 const DEFAULT_APPLICANT_USER_ID = 9;
+const AUDIT_ACTION_FILTERS = [
+  "Login",
+  "Logout",
+  "Created Account",
+  "Submitted Application",
+  "Took Case",
+  "Status Changed",
+  "Uploaded Document",
+  "Submitted Evaluation",
+  "Added Deadline",
+  "Updated Deadline",
+  "Sent Notification",
+  "Received IPOPHL Email",
+  "Published Announcement",
+  "Updated Announcement",
+  "Archived Case",
+  "Exported Audit Log",
+  "Updated User Role",
+  "Password Reset",
+  "OTP Verified",
+];
+const AUDIT_ROLE_FILTERS = ["Admin", "Evaluator", "Applicant", "System"];
 
 function formatAuditTimestamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
@@ -2326,11 +2661,62 @@ function getAuditDetails(log) {
   return log.details || log.detail || "";
 }
 
-function addAuditLog({ accountName, action, record, details, module = "System" }) {
+function getAuditRoleForAccount(accountName) {
+  if (!accountName || accountName === "System") return "System";
+  const user = systemUsers.find(
+    (entry) =>
+      entry.name === accountName ||
+      entry.email === accountName ||
+      String(entry.id) === String(accountName),
+  );
+  if (user) return formatRoleLabel(user.role);
+  return formatRoleLabel(currentRole);
+}
+
+function getAuditRole(log) {
+  return log.role || getAuditRoleForAccount(getAuditAccountName(log));
+}
+
+function normalizeAuditAction(action = "") {
+  const label = String(action || "").trim();
+  const normalized = label.toLowerCase();
+  const map = {
+    submitted: "Submitted Application",
+    "submitted application": "Submitted Application",
+    "applicant resubmitted corrections": "Uploaded Document",
+    "uploaded payment receipt": "Uploaded Document",
+    "updated review": "Status Changed",
+    "status updated": "Status Changed",
+    "validated copyright": "Status Changed",
+    "created deadline": "Added Deadline",
+    "updated deadline": "Updated Deadline",
+    "completed deadline": "Updated Deadline",
+    "exported audit": "Exported Audit Log",
+    "updated account role": "Updated User Role",
+    "updated account status": "Updated User Role",
+    "added announcement": "Published Announcement",
+  };
+  return map[normalized] || label || "System Action";
+}
+
+function getAuditActionBadgeClass(action = "") {
+  const normalized = String(action || "").toLowerCase();
+  if (/submitted|uploaded|exported/.test(normalized)) return "audit-badge-blue";
+  if (/took case|approved|certified/.test(normalized)) return "audit-badge-green";
+  if (/status changed|deadline/.test(normalized)) return "audit-badge-orange";
+  if (/otp verified|login|logout|password reset/.test(normalized)) return "audit-badge-purple";
+  if (/rejected|archived/.test(normalized)) return "audit-badge-red";
+  if (/system|notification|ipophl/.test(normalized)) return "audit-badge-gray";
+  return "audit-badge-gray";
+}
+
+function addAuditLog({ accountName, role, action, record, details, module = "System" }) {
+  const safeAccountName = accountName || "System";
   auditLogs.unshift({
     timestamp: formatAuditTimestamp(),
-    accountName,
-    action,
+    accountName: safeAccountName,
+    role: role || getAuditRoleForAccount(safeAccountName),
+    action: normalizeAuditAction(action),
     record,
     details,
     module,
@@ -2501,8 +2887,9 @@ function pushRoleNotification(role, notification) {
 }
 
 function pushAdminNotification(notification) {
-  pushRoleNotification("superadmin", notification);
-  pushRoleNotification("admin", notification);
+  [...new Set(["superadmin", "admin"].map((role) => normalizeRole(role)))].forEach((role) => {
+    pushRoleNotification(role, notification);
+  });
 }
 
 function getCaseNotificationBase(submission, overrides = {}) {
@@ -2566,6 +2953,14 @@ function notifyCaseTaken(submission, evaluator, previousStatus = "Pending") {
       body: `You have taken Case #${submission.id}. The applicant and admin have been notified.`,
     }),
   );
+  addAuditLog({
+    accountName: "System",
+    role: "System",
+    action: "Sent Notification",
+    record: submission.id,
+    details: "Sent case accepted and status update notifications to the applicant, evaluator, and admin.",
+    module: "Notifications",
+  });
 }
 
 function notifyEvaluatorStatusChanged(submission, evaluator, previousStatus, newStatus) {
@@ -2590,6 +2985,14 @@ function notifyEvaluatorStatusChanged(submission, evaluator, previousStatus, new
       category: "Status Update",
     }),
   );
+  addAuditLog({
+    accountName: "System",
+    role: "System",
+    action: "Sent Notification",
+    record: submission.id,
+    details: `Sent status update notifications for ${getDisplayStatusLabel(newStatus)}.`,
+    module: "Notifications",
+  });
 }
 
 function notifyEvaluationSubmitted(submission, evaluator) {
@@ -2625,6 +3028,14 @@ function notifyEvaluationSubmitted(submission, evaluator) {
       category: "Evaluation Update",
     }),
   );
+  addAuditLog({
+    accountName: "System",
+    role: "System",
+    action: "Sent Notification",
+    record: submission.id,
+    details: "Sent evaluation availability notifications to the applicant, evaluator, and admin.",
+    module: "Notifications",
+  });
 }
 
 function notifyDocumentsRequired(submission, evaluator, detail = "") {
@@ -3016,6 +3427,14 @@ function pushIPOPHLVerificationEmailNotifications(submission, evaluator) {
     ipophlEmailStatus: emailStatus,
     ipophlEmailSummary: emailSummary,
     ipophlEmailReceivedAt: submission.ipophlEmailReceivedAt || "",
+  });
+  addAuditLog({
+    accountName: "System",
+    role: "System",
+    action: "Received IPOPHL Email",
+    record: submission.id,
+    details: `Received ${emailStatus} from IPOPHL${emailSummary ? `: ${emailSummary}` : "."}`,
+    module: "Emails",
   });
 }
 
@@ -3481,7 +3900,7 @@ window.createCaseDeadline = function(submissionId) {
   });
   addAuditLog({
     accountName: getCurrentUser().name,
-    action: "Created Deadline",
+    action: "Added Deadline",
     record: submission.id,
     details: `${task} deadline set for ${dueDate}${note ? ` with note: ${note}` : ""}.`,
     module: submission.type,
@@ -3501,7 +3920,7 @@ window.completeCaseDeadline = function(submissionId, deadlineId) {
   deadline.completedBy = getCurrentUser().name;
   addAuditLog({
     accountName: getCurrentUser().name,
-    action: "Completed Deadline",
+    action: "Updated Deadline",
     record: submission.id,
     details: `${deadline.task} deadline marked done.`,
     module: submission.type,
@@ -4673,7 +5092,7 @@ function renderNotifications() {
   }
   const headerCount = document.getElementById("notifHeaderCount");
   if (headerCount) {
-    headerCount.innerText = `${roleNotifs.length} ${roleNotifs.length === 1 ? "alert" : "alerts"}`;
+    headerCount.innerText = `${unreadCount} ${unreadCount === 1 ? "alert" : "alerts"}`;
   }
 
   if (roleNotifs.length === 0) {
@@ -5328,6 +5747,144 @@ function findLoginUser(role, email) {
   return matchingRoleUsers[0] || null;
 }
 
+function resetLoginOtpScreen() {
+  const loginForm = document.getElementById("loginForm");
+  const otpPanel = document.getElementById("loginOtpPanel");
+  const applicantFooter = document.getElementById("loginApplicantFooter");
+  const otpCode = document.getElementById("loginOtpCode");
+  const otpError = document.getElementById("loginOtpError");
+
+  if (loginForm) loginForm.style.display = "";
+  if (otpPanel) otpPanel.style.display = "none";
+  if (applicantFooter) {
+    applicantFooter.style.display =
+      normalizeRole(selectedLoginRole) === "applicant" ? "" : "none";
+  }
+  if (otpCode) otpCode.value = "";
+  if (otpError) {
+    otpError.textContent = "";
+    otpError.style.display = "none";
+  }
+}
+
+function showLoginOtpScreen(user, role) {
+  const normalizedRole = normalizeRole(role);
+  const loginForm = document.getElementById("loginForm");
+  const otpPanel = document.getElementById("loginOtpPanel");
+  const applicantFooter = document.getElementById("loginApplicantFooter");
+  const title = document.getElementById("loginTitle");
+  const subtitle = document.getElementById("loginSubtitle");
+  const otpCode = document.getElementById("loginOtpCode");
+  const otpError = document.getElementById("loginOtpError");
+
+  pendingLoginOtp = {
+    role: normalizedRole,
+    userId: user.id,
+    userName: user.name,
+  };
+  selectedLoginRole = normalizedRole;
+
+  if (loginForm) loginForm.style.display = "none";
+  if (applicantFooter) applicantFooter.style.display = "none";
+  if (otpPanel) otpPanel.style.display = "grid";
+  if (title) title.textContent = "OTP Verification";
+  if (subtitle) {
+    subtitle.textContent = "Enter the 6-digit OTP code sent to your registered contact.";
+  }
+  if (otpCode) {
+    otpCode.value = "";
+    setTimeout(() => otpCode.focus(), 0);
+  }
+  if (otpError) {
+    otpError.textContent = "";
+    otpError.style.display = "none";
+  }
+
+  showToast("Demo OTP step ready. Any 6-digit number will be accepted.", "info");
+}
+
+function completeLoginAfterOtp() {
+  if (!pendingLoginOtp) {
+    showToast("Please sign in again before entering an OTP.", "warning");
+    setLoginMode(selectedLoginRole);
+    return;
+  }
+
+  const loginRole = normalizeRole(pendingLoginOtp.role);
+  isLoggedIn = true;
+  currentRole = loginRole;
+  selectedLoginRole = loginRole;
+  ACTIVE_ROLE_USER_IDS[loginRole] = pendingLoginOtp.userId;
+  const userName = pendingLoginOtp.userName;
+  pendingLoginOtp = null;
+  updateTopbarRole();
+  addAuditLog({
+    accountName: userName,
+    role: formatRoleLabel(loginRole),
+    action: "Login",
+    record: "Login Session",
+    details: `${formatRoleLabel(loginRole)} completed the login flow after OTP verification.`,
+    module: "Accounts",
+  });
+  addAuditLog({
+    accountName: userName,
+    role: formatRoleLabel(loginRole),
+    action: "OTP Verified",
+    record: "Login Session",
+    details: `Verified dummy 6-digit OTP and accessed the ${formatRoleLabel(loginRole).toLowerCase()} dashboard.`,
+    module: "Accounts",
+  });
+
+  showToast("OTP verified successfully.", "success");
+
+  if (pendingAction && pendingAction.type === 'registration') {
+    const action = pendingAction;
+    pendingAction = null;
+    startSubmissionFlow(action.typeId, action.method);
+  } else {
+    navigateTo(getDefaultDashboardPage(currentRole));
+  }
+
+  if (userName) {
+    setTimeout(() => showToast(`Prototype Access: Logged in as ${userName}`, "success"), 250);
+  }
+}
+
+window.sanitizeLoginOtpInput = function(input) {
+  if (!input) return;
+  input.value = String(input.value || "").replace(/\D/g, "").slice(0, 6);
+  const otpError = document.getElementById("loginOtpError");
+  if (otpError && input.value.length === 6) {
+    otpError.textContent = "";
+    otpError.style.display = "none";
+  }
+};
+
+window.verifyLoginOtp = function() {
+  const code = String(document.getElementById("loginOtpCode")?.value || "").trim();
+  if (!/^\d{6}$/.test(code)) {
+    showError("loginOtpError", "Please enter a valid 6-digit OTP code.");
+    showToast("Please enter a valid 6-digit OTP code.", "warning");
+    return;
+  }
+  completeLoginAfterOtp();
+};
+
+window.resendLoginOtp = function() {
+  if (!pendingLoginOtp) {
+    showToast("Please sign in again before requesting an OTP.", "warning");
+    setLoginMode(selectedLoginRole);
+    return;
+  }
+  showToast("Demo OTP resent. Any 6-digit number will be accepted.", "info");
+};
+
+window.backToLoginFromOtp = function() {
+  const role = pendingLoginOtp?.role || selectedLoginRole || "applicant";
+  pendingLoginOtp = null;
+  setLoginMode(role);
+};
+
 async function handleLogin(e) {
   if (e) e.preventDefault();
 
@@ -5350,21 +5907,7 @@ async function handleLogin(e) {
     return;
   }
 
-  // PROTOTYPE LOGIN: Bypass backend and log in directly
-  isLoggedIn = true;
-  currentRole = loginRole;
-  ACTIVE_ROLE_USER_IDS[loginRole] = fallbackUser.id;
-  updateTopbarRole();
-
-  showToast(`Prototype Access: Logged in as ${fallbackUser.name}`, "success");
-
-  if (pendingAction && pendingAction.type === 'registration') {
-    const action = pendingAction;
-    pendingAction = null;
-    startSubmissionFlow(action.typeId, action.method);
-  } else {
-    navigateTo(getDefaultDashboardPage(currentRole));
-  }
+  showLoginOtpScreen(fallbackUser, loginRole);
 }
 
 window.otpAutoFocus = function (el) {
@@ -5408,6 +5951,8 @@ window.verifyOtp = function () {
 };
 
 function logout() {
+  const logoutUser = isLoggedIn ? getCurrentUser() : null;
+  const logoutRole = currentRole;
   const refresh = getRefreshToken();
   if (refresh && getAccessToken()) {
     apiRequest("accounts/logout/", {
@@ -5416,6 +5961,16 @@ function logout() {
     }).catch(() => {});
   }
   setStoredAuthSession(null);
+  if (logoutUser) {
+    addAuditLog({
+      accountName: logoutUser.name,
+      role: formatRoleLabel(logoutRole),
+      action: "Logout",
+      record: "Login Session",
+      details: `${formatRoleLabel(logoutRole)} signed out of the system.`,
+      module: "Accounts",
+    });
+  }
   isLoggedIn = false;
   currentRole = "applicant";
   selectedLoginRole = "applicant";
@@ -5436,6 +5991,7 @@ function showError(id, msg) {
   const el = document.getElementById(id);
   if (el) {
     el.innerText = msg;
+    el.textContent = msg;
     el.style.display = 'block';
   }
 }
@@ -5561,6 +6117,14 @@ window.handleResetPasswordSubmit = async function(e) {
     });
     window.localStorage?.removeItem(TCB_RESET_EMAIL_STORAGE_KEY);
     window.localStorage?.removeItem(TCB_DEV_RESET_OTP_STORAGE_KEY);
+    addAuditLog({
+      accountName: email,
+      role: getAuditRoleForAccount(email),
+      action: "Password Reset",
+      record: "Password Recovery",
+      details: "Password reset completed after OTP verification.",
+      module: "Accounts",
+    });
   } catch (err) {
     showToast(err.message || "Password reset failed.", "error");
     return;
@@ -9533,6 +10097,14 @@ function takeCase(id) {
     details: `${user.name} accepted the case. Changed status from ${getDisplayStatusLabel(previousStatus)} to Under Review.`,
     module: sub.type,
   });
+  addAuditLog({
+    accountName: "System",
+    role: "System",
+    action: "Status Changed",
+    record: sub.id,
+    details: `Status automatically changed from ${getDisplayStatusLabel(previousStatus)} to Under Review after the case was taken.`,
+    module: sub.type,
+  });
   notifyCaseTaken(sub, user, previousStatus);
 
   showToast(`You have taken the case: ${sub.id}`);
@@ -10952,7 +11524,7 @@ function formatEvaluatorTimelineEvent(log, evaluatorName, audience = currentRole
   const normalized = action.toLowerCase();
   const isApplicant = normalizeRole(audience) === "applicant";
 
-  if (normalized.includes("updated review") || normalized.includes("status updated")) {
+  if (normalized.includes("updated review") || normalized.includes("status updated") || normalized.includes("status changed")) {
     const statusMatch = details.match(/to\s+([^.]*)\./i);
     if (isApplicant) {
       return statusMatch
@@ -10984,12 +11556,12 @@ function formatEvaluatorTimelineEvent(log, evaluatorName, audience = currentRole
       ? `The recommended IP service was updated${details ? `: ${details}` : "."}`
       : `${evaluatorName} updated the recommended IP service${details ? `: ${details}` : "."}`;
   }
-  if (normalized.includes("created deadline")) {
+  if (normalized.includes("created deadline") || normalized.includes("added deadline")) {
     return isApplicant
       ? `A case deadline was set${details ? `: ${details}` : "."}`
       : `${evaluatorName} set a case deadline${details ? `: ${details}` : "."}`;
   }
-  if (normalized.includes("completed deadline")) {
+  if (normalized.includes("completed deadline") || normalized.includes("updated deadline")) {
     return isApplicant
       ? "A deadline item was completed."
       : `${evaluatorName} completed a deadline item.`;
@@ -11012,13 +11584,13 @@ function formatEvaluatorTimelineEvent(log, evaluatorName, audience = currentRole
 function getTimelineLabelForAction(action = "") {
   const normalized = String(action).toLowerCase();
   if (normalized.includes("took")) return "Case Accepted";
-  if (normalized.includes("updated review") || normalized.includes("status updated")) return "Status Updated";
+  if (normalized.includes("updated review") || normalized.includes("status updated") || normalized.includes("status changed")) return "Status Updated";
   if (normalized.includes("submitted evaluation")) return "Evaluation Submitted";
   if (normalized.includes("edited evaluation")) return "Evaluation Updated";
   if (normalized.includes("requested documents")) return "Documents Required";
   if (normalized.includes("requested form")) return "Revision Required";
-  if (normalized.includes("created deadline")) return "Deadline Added";
-  if (normalized.includes("completed deadline")) return "Deadline Completed";
+  if (normalized.includes("created deadline") || normalized.includes("added deadline")) return "Deadline Added";
+  if (normalized.includes("completed deadline") || normalized.includes("updated deadline")) return "Deadline Completed";
   if (normalized.includes("archive")) return "Case Archived";
   if (normalized.includes("uploaded")) return "Documents Uploaded";
   return action || "Case Updated";
@@ -11046,7 +11618,7 @@ function getStatusChangeLabelsFromDetails(details = "") {
 
 function isTimelineStatusChangeAction(action = "") {
   const normalized = String(action).toLowerCase();
-  return normalized.includes("status updated") || normalized.includes("updated review");
+  return normalized.includes("status updated") || normalized.includes("updated review") || normalized.includes("status changed");
 }
 
 function renderCaseActivityTimeline(submission, submittedSummary = {}, audience = currentRole) {
@@ -11121,7 +11693,7 @@ function renderCaseActivityTimeline(submission, submittedSummary = {}, audience 
   }
 
   const evaluatorTimelineActionPattern =
-    /status updated|updated review|submitted evaluation|edited evaluation choice|requested documents|requested form correction|created deadline|completed deadline|reviewed documents|verified requirements/i;
+    /status updated|updated review|status changed|submitted evaluation|edited evaluation choice|requested documents|requested form correction|created deadline|added deadline|completed deadline|updated deadline|reviewed documents|verified requirements/i;
   const visibleLogs = evaluatorLogs.filter((log) =>
     evaluatorTimelineActionPattern.test(log.action),
   );
@@ -21631,11 +22203,11 @@ function applyWizardDataToSubmission(
     syncSubmissionWorkflowState(submission);
     addAuditLog({
       accountName: getCurrentUser().name,
-      action: "Applicant Resubmitted Corrections",
+      action: "Uploaded Document",
       record: submission.id,
       details: requestedNote
-        ? `Applicant resubmitted corrections for: ${requestedNote}`
-        : "Applicant resubmitted requested corrections.",
+        ? `Applicant uploaded requested corrections for: ${requestedNote}`
+        : "Applicant uploaded requested corrections and supporting documents.",
       module: submission.type,
     });
   }
@@ -21764,6 +22336,14 @@ async function submitForm() {
     syncSubmissionDisplayFields(newPatentSubmission);
     submissions.unshift(newPatentSubmission);
     notifyApplicationSubmitted(newPatentSubmission);
+    addAuditLog({
+      accountName: submittedSummary.applicant || getCurrentUser().name,
+      role: "Applicant",
+      action: "Submitted Application",
+      record: newPatentSubmission.id,
+      details: `Submitted a ${typeLabel} application for intake review.`,
+      module: typeLabel,
+    });
     persistSubmissions();
 
     const patentConfirmationTarget =
@@ -21806,6 +22386,14 @@ async function submitForm() {
   syncSubmissionDisplayFields(newSub);
   submissions.unshift(newSub);
   notifyApplicationSubmitted(newSub);
+  addAuditLog({
+    accountName: submittedSummary.applicant || getCurrentUser().name,
+    role: "Applicant",
+    action: "Submitted Application",
+    record: newSub.id,
+    details: `Submitted a ${typeLabel} application for intake review.`,
+    module: typeLabel,
+  });
   persistSubmissions();
 
   const confirmationTarget =
@@ -21909,6 +22497,7 @@ function renderAdminMarketplacePage() {
                   <td>
                     <div class="action-btns">
                       <button class="btn btn-sm btn-outline-navy" onclick="showInnovationDetail(${item.id})"><i class="fa-solid fa-eye"></i> View</button>
+                      <button class="btn btn-sm btn-primary" onclick="showMarketListingModal(${item.id})"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                       ${item.archived ? `<button class="btn btn-sm btn-secondary" disabled><i class="fa-solid fa-lock"></i> Read Only</button>` : `<button class="btn btn-sm btn-secondary" onclick="archiveMarketListing(${item.id})"><i class="fa-solid fa-box-archive"></i> Archive</button>`}
                     </div>
                   </td>
@@ -22856,6 +23445,17 @@ window.setAdminEmailTypeFilter = function(type) {
 };
 
 window.markIPOPHLEmailRead = function(id) {
+  const email = getIPOPHLEmailReports().find((item) => item.id === id);
+  addAuditLog({
+    accountName: "System",
+    role: "System",
+    action: "Received IPOPHL Email",
+    record: email?.caseId || id,
+    details: email
+      ? `Received ${email.reportType} from IPOPHL.`
+      : `Received IPOPHL email ${id}.`,
+    module: "Emails",
+  });
   showToast(`IPOPHL email ${id} marked as read.`);
   renderDashboardContent("admin-emails");
 };
@@ -22886,18 +23486,19 @@ function closeModal() {
 // ===== AUDIT LOG =====
 function renderAuditTableRows(logs) {
   if (!logs.length) {
-    return '<tr><td colspan="5" style="text-align:center;padding:48px;color:var(--gray-400);">No audit entries match the current filters.</td></tr>';
+    return '<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--gray-400);">No audit entries match the current filters.</td></tr>';
   }
 
   return logs
     .map(
       (log) => `
         <tr>
-          <td>${log.timestamp}</td>
-          <td>${getAuditAccountName(log)}</td>
-          <td><span class="badge badge-review">${log.action}</span></td>
-          <td>${getAuditRecord(log)}</td>
-          <td>${getAuditDetails(log)}</td>
+          <td>${escapeHtml(log.timestamp || "")}</td>
+          <td>${escapeHtml(getAuditAccountName(log))}</td>
+          <td><span class="audit-role-badge">${escapeHtml(getAuditRole(log))}</span></td>
+          <td><span class="audit-action-badge ${getAuditActionBadgeClass(log.action)}">${escapeHtml(log.action)}</span></td>
+          <td>${escapeHtml(getAuditRecord(log))}</td>
+          <td>${escapeHtml(getAuditDetails(log))}</td>
         </tr>`,
     )
     .join("");
@@ -22905,43 +23506,43 @@ function renderAuditTableRows(logs) {
 
 function renderAuditLog() {
   const visibleLogs = getVisibleAuditLogs(currentRole);
-  const actions = Array.from(new Set(visibleLogs.map((log) => log.action))).sort();
-  const people = Array.from(
-    new Set(visibleLogs.map((log) => getAuditAccountName(log))),
-  ).sort();
   return `
     <div class="page-header"><h1>Audit Log</h1><p>Track account activity, case handling, listings, and announcement updates.</p></div>
     <div class="audit-filters">
-      <div class="form-group"><label>From Date</label><input type="date" id="auditFrom" /></div>
-      <div class="form-group"><label>To Date</label><input type="date" id="auditTo" /></div>
+      <div class="form-group"><label>From Date</label><input type="date" id="auditFrom" onchange="filterAudit()" /></div>
+      <div class="form-group"><label>To Date</label><input type="date" id="auditTo" onchange="filterAudit()" /></div>
       <div class="form-group"><label>Action</label>
-        <select id="auditAction" onchange="filterAudit()"><option value="All">All Actions</option>${actions
+        <select id="auditAction" onchange="filterAudit()"><option value="All">All Actions</option>${AUDIT_ACTION_FILTERS
           .map((action) => `<option value="${action}">${action}</option>`)
           .join("")}</select></div>
       <div class="form-group"><label>People</label>
-        <select id="auditPeople" onchange="filterAudit()"><option value="All">All People</option>${people
-          .map((person) => `<option value="${person}">${person}</option>`)
+        <select id="auditPeople" onchange="filterAudit()"><option value="All">All People</option>${AUDIT_ROLE_FILTERS
+          .map((role) => `<option value="${role}">${role}</option>`)
           .join("")}</select></div>
       ${canExportAudit() ? '<button class="btn btn-primary btn-sm" style="margin-top:auto" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>' : ""}
     </div>
-    <div class="table-container"><div class="table-responsive"><table class="data-table" id="auditTable"><thead><tr><th>Timestamp</th><th>Account Name</th><th>Action</th><th>Record</th><th>Details</th></tr></thead><tbody>
+    <div class="table-container"><div class="table-responsive"><table class="data-table" id="auditTable"><thead><tr><th>Timestamp</th><th>Account Name</th><th>Role</th><th>Action</th><th>Record</th><th>Details</th></tr></thead><tbody>
       ${renderAuditTableRows(visibleLogs)}
     </tbody></table></div></div>`;
 }
 
-function filterAudit() {
+function getFilteredAuditLogsFromControls() {
   const from = document.getElementById("auditFrom").value;
   const to = document.getElementById("auditTo").value;
   const action = document.getElementById("auditAction").value;
   const people = document.getElementById("auditPeople").value;
-  const filtered = getVisibleAuditLogs(currentRole).filter((log) => {
+  return getVisibleAuditLogs(currentRole).filter((log) => {
     const logDate = String(log.timestamp || "").slice(0, 10);
     if (from && logDate < from) return false;
     if (to && logDate > to) return false;
     if (action !== "All" && log.action !== action) return false;
-    if (people !== "All" && getAuditAccountName(log) !== people) return false;
+    if (people !== "All" && getAuditRole(log) !== people) return false;
     return true;
   });
+}
+
+function filterAudit() {
+  const filtered = getFilteredAuditLogsFromControls();
   const tbody = document.querySelector("#auditTable tbody");
   if (tbody) {
     tbody.innerHTML = renderAuditTableRows(filtered);
@@ -22953,9 +23554,12 @@ function exportCSV() {
     showToast("Only the admin can export the audit trail.");
     return;
   }
-  let csv = "Timestamp,Account Name,Action,Record,Details\n";
-  getVisibleAuditLogs(currentRole).forEach((log) => {
-    csv += `"${log.timestamp}","${getAuditAccountName(log)}","${log.action}","${getAuditRecord(log)}","${getAuditDetails(log)}"\n`;
+  const logsToExport = document.getElementById("auditTable")
+    ? getFilteredAuditLogsFromControls()
+    : getVisibleAuditLogs(currentRole);
+  let csv = "Timestamp,Account Name,Role,Action,Record,Details\n";
+  logsToExport.forEach((log) => {
+    csv += `"${log.timestamp}","${getAuditAccountName(log)}","${getAuditRole(log)}","${log.action}","${getAuditRecord(log)}","${getAuditDetails(log)}"\n`;
   });
   const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
@@ -22964,9 +23568,9 @@ function exportCSV() {
   a.click();
   addAuditLog({
     accountName: getCurrentUser().name,
-    action: "Exported Audit",
-    record: "audit_log.csv",
-    details: "Exported the current audit log to CSV.",
+    action: "Exported Audit Log",
+    record: "May 2026 Audit Log",
+    details: "Exported audit log report as CSV.",
     module: "Audit Log",
   });
   showToast("CSV file exported successfully!");
@@ -25546,9 +26150,9 @@ window.saveAnnouncement = function(e, id) {
     shouldNotifyAlert = category === "Alert";
     addAuditLog({
       accountName: getCurrentUser().name,
-      action: "Added Announcement",
-      record: title,
-      details: `Added a new ${category.toLowerCase()} announcement.`,
+      action: "Published Announcement",
+      record: `ANN-${new Date().getFullYear()}-${String(newId).padStart(3, "0")}`,
+      details: `Published a new ${category.toLowerCase()} announcement: ${title}.`,
       module: "Announcements",
     });
     showToast('Announcement created successfully');
@@ -25628,11 +26232,6 @@ window.assignEvaluator = function(submissionId, evaluatorId) {
 
   if (specialist) {
     setActiveUserForRole("reviewer", specialist.id);
-    pushReviewerNotification(
-      specialist.id,
-      "New Assigned Case",
-      `You have been assigned as evaluator for Case #${submission.id}.`,
-    );
     pushAdminNotification(
       getCaseNotificationBase(submission, {
         icon: "fa-user-gear",

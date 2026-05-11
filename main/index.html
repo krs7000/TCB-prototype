@@ -419,6 +419,35 @@
               <i class="fa-solid fa-right-to-bracket"></i> Sign In
             </button>
           </form>
+          <div id="loginOtpPanel" class="login-otp-panel" style="display:none;">
+            <p class="login-otp-copy">
+              Enter the 6-digit OTP code sent to your registered contact.<br />
+              For demo purposes, any 6-digit number will be accepted.
+            </p>
+            <div class="form-group">
+              <label for="loginOtpCode">6-digit OTP code</label>
+              <div class="input-icon">
+                <i class="fa-solid fa-key"></i>
+                <input type="text" id="loginOtpCode" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="Enter 6-digit OTP" oninput="sanitizeLoginOtpInput(this)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); verifyLoginOtp(); }" />
+              </div>
+              <span class="error-msg" id="loginOtpError"></span>
+            </div>
+            <div class="login-otp-demo-note">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Demo Mode: Any 6-digit OTP will be accepted.</span>
+            </div>
+            <div class="login-otp-actions">
+              <button type="button" class="btn btn-primary btn-block" onclick="verifyLoginOtp()">
+                <i class="fa-solid fa-circle-check"></i> Verify OTP
+              </button>
+              <button type="button" class="btn btn-outline-navy btn-block" onclick="resendLoginOtp()">
+                <i class="fa-solid fa-paper-plane"></i> Resend OTP
+              </button>
+            </div>
+            <div class="login-footer">
+              <a href="javascript:void(0)" onclick="backToLoginFromOtp()" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Login</a>
+            </div>
+          </div>
           <div class="login-footer" id="loginApplicantFooter">
             <p>Don't have an account? <a href="#" onclick="navigateTo('signup')">Sign up now</a></p>
             <div style="margin-top: 15px; font-size: 0.75rem; color: var(--gray-400);">
