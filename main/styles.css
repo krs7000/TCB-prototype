@@ -718,6 +718,21 @@ body.show-system-alert.top-nav-layout #dashboard-layout {
   color: var(--navy);
   margin-bottom: 2px;
 }
+.notif-category {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin-bottom: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--gray-500);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 .notif-body {
   font-size: 0.78rem;
   color: var(--gray-500);
@@ -5833,6 +5848,223 @@ body.compact-layout .sidebar-toggle {
   font-weight: 600;
   font-size: 0.9rem;
 }
+.status-update-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: #fff;
+}
+.status-update-panel--locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--gray-500);
+  background: var(--gray-50);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.status-update-panel--locked i {
+  color: var(--gold-dark);
+  margin-top: 2px;
+}
+.status-update-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.84rem;
+}
+.status-update-row span,
+.status-update-panel label {
+  color: var(--gray-500);
+  font-weight: 800;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.status-update-row strong {
+  color: var(--navy);
+  text-align: right;
+}
+.status-update-panel select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--navy);
+  background: #fff;
+}
+.status-update-panel .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.submission-detail-layout > *,
+.submission-detail-main,
+.submission-detail-sidebar,
+.detail-panel {
+  min-width: 0;
+}
+
+.submission-detail-sidebar {
+  overflow: hidden;
+}
+
+.submission-detail-sidebar .detail-panel,
+.submission-detail-sidebar .evaluation-content-panel,
+.submission-detail-sidebar .evaluation-note,
+.submission-detail-sidebar .evaluation-docs {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+body.role-reviewer .reviewer-cases-table {
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+body.role-reviewer .reviewer-cases-table .table-header {
+  padding: 16px 20px;
+}
+
+body.role-reviewer .reviewer-cases-table .filter-btn,
+body.role-reviewer .reviewer-cases-table .filter-select {
+  min-height: 36px;
+  font-size: 0.82rem;
+}
+
+body.role-reviewer .reviewer-case-data-table th,
+body.role-reviewer .reviewer-case-data-table td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+body.role-reviewer .reviewer-case-data-table td:nth-child(3),
+body.role-reviewer .reviewer-case-data-table td:nth-child(4) {
+  max-width: 280px;
+  overflow-wrap: anywhere;
+}
+
+body.role-reviewer .reviewer-case-data-table .action-btns {
+  justify-content: flex-start;
+}
+
+body.role-reviewer .reviewer-case-detail-header {
+  margin-bottom: 18px;
+}
+
+body.role-reviewer .reviewer-case-detail-header h1 {
+  font-family: inherit;
+  font-size: 1.55rem;
+  line-height: 1.25;
+  color: var(--navy);
+  letter-spacing: 0;
+}
+
+body.role-reviewer .reviewer-case-detail-header p {
+  font-size: 0.92rem;
+  color: var(--gray-600);
+}
+
+body.role-reviewer .manual-review-banner {
+  background: #fff7ed !important;
+  border-color: #fed7aa !important;
+  align-items: flex-start !important;
+}
+
+body.role-reviewer .reviewer-case-detail-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  gap: 20px;
+  align-items: start;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .detail-panel {
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  border-color: var(--gray-200);
+}
+
+body.role-reviewer .reviewer-case-detail-layout .detail-panel h3 {
+  font-size: 1rem;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .detail-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 170px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .detail-row .value {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .evaluation-content-panel {
+  padding: 14px;
+  border-radius: 12px;
+  background: #fff;
+  border-color: var(--gray-200);
+}
+
+body.role-reviewer .reviewer-case-detail-layout .evaluation-content-header {
+  flex-direction: column;
+  gap: 8px;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .evaluation-content-header h4 {
+  font-size: 1rem;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .evaluation-note,
+body.role-reviewer .reviewer-case-detail-layout .evaluation-docs {
+  padding: 12px;
+  border-radius: 10px;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .evaluation-note p,
+body.role-reviewer .reviewer-case-detail-layout .evaluation-note small,
+body.role-reviewer .reviewer-case-detail-layout .evaluation-content-header p {
+  font-size: 0.82rem;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .evaluation-option-row .filter-btn {
+  flex: 1 1 130px;
+  justify-content: center;
+}
+
+body.role-reviewer .reviewer-case-detail-layout .evaluation-content-panel textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1180px) {
+  body.role-reviewer .reviewer-case-detail-layout {
+    grid-template-columns: 1fr;
+  }
+  body.role-reviewer .reviewer-case-detail-layout .detail-row .value {
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  body.role-reviewer .reviewer-case-detail-header h1 {
+    font-size: 1.28rem;
+  }
+  body.role-reviewer .reviewer-case-detail-layout .detail-panel {
+    padding: 18px;
+  }
+  body.role-reviewer .reviewer-case-detail-layout .detail-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
 .submitted-form-step-strip {
   display: grid;
   grid-template-columns: repeat(var(--submitted-step-count, 4), minmax(0, 1fr));
@@ -5910,6 +6142,52 @@ body.compact-layout .sidebar-toggle {
   font-size: 0.85rem;
   color: var(--gray-700);
   font-weight: 500;
+}
+.reviewer-activity-timeline .timeline-item .event i {
+  color: var(--gold-dark);
+  margin-right: 6px;
+}
+.case-activity-timeline .timeline-item .event i {
+  color: var(--gold-dark);
+  margin-right: 6px;
+}
+.timeline-item--evaluator::before {
+  background: #2563eb;
+}
+.timeline-item--evaluator .time,
+.timeline-item--evaluator .event i {
+  color: #1d4ed8;
+}
+.timeline-item--success::before {
+  background: var(--green);
+}
+.timeline-item--success .event i {
+  color: var(--green);
+}
+.timeline-item--info::before {
+  background: #6366f1;
+}
+.timeline-item--info .event i {
+  color: #6366f1;
+}
+.timeline-empty-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--gray-200);
+  border-radius: 10px;
+  background: var(--gray-50);
+  color: var(--gray-500);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.timeline-empty-state i {
+  color: var(--gold-dark);
+  margin-top: 2px;
+}
+.timeline-empty-state p {
+  margin: 0;
 }
 .workflow-note {
   padding: 12px 14px;
@@ -6629,6 +6907,14 @@ body.compact-layout .sidebar-toggle {
 .deadline-panel h3 {
   margin-bottom: 14px;
 }
+.deadline-panel {
+  max-width: 100%;
+  overflow: hidden;
+}
+.deadline-panel,
+.deadline-panel * {
+  box-sizing: border-box;
+}
 .deadline-list {
   display: flex;
   flex-direction: column;
@@ -6679,17 +6965,48 @@ body.compact-layout .sidebar-toggle {
 }
 .deadline-create {
   display: grid;
-  grid-template-columns: minmax(160px, 1.1fr) minmax(130px, 0.8fr) minmax(160px, 1fr) auto;
-  gap: 8px;
-  margin-top: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+  align-items: stretch;
 }
 .deadline-create select,
 .deadline-create input {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 44px;
   border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 9px 10px;
+  border-radius: 10px;
+  padding: 10px 12px;
   color: var(--navy);
+  background: #fff;
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+.deadline-create select {
+  appearance: auto;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.deadline-create .btn {
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  white-space: nowrap;
+}
+@media (min-width: 1200px) {
+  .submission-detail-sidebar .deadline-create {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .submission-detail-sidebar .deadline-create input[type="text"],
+  .submission-detail-sidebar .deadline-create .btn {
+    grid-column: 1 / -1;
+  }
+}
+body.role-reviewer .reviewer-case-detail-layout .deadline-empty {
+  overflow-wrap: anywhere;
 }
 @media (max-width: 700px) {
   .language-settings-row {

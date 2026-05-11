@@ -126,11 +126,11 @@
             <div class="notif-dropdown" id="notifDropdown">
               <div class="notif-dropdown-header">
                 <span><i class="fa-solid fa-bell" style="margin-right:6px;color:var(--gold)"></i>Notifications</span>
-                <span style="font-size:.75rem;color:var(--gray-400)">3 alerts</span>
+                <span id="notifHeaderCount" style="font-size:.75rem;color:var(--gray-400)">0 alerts</span>
               </div>
               <div id="notifList"></div>
               <div style="padding:10px 16px;text-align:center;">
-                <button onclick="event.stopPropagation();showToast('All notifications cleared')" style="background:none;border:none;color:var(--gold-dark);font-size:.8rem;font-weight:600;cursor:pointer;">Clear All</button>
+                <button onclick="event.stopPropagation();clearCurrentRoleNotifications()" style="background:none;border:none;color:var(--gold-dark);font-size:.8rem;font-weight:600;cursor:pointer;">Clear All</button>
               </div>
             </div>
           </div>

@@ -24,6 +24,13 @@ let landingMpType = "All";
 let dismissedTopAlertId = null;
 const IP_SERVICE_TYPES = ["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"];
 const CORE_CASE_STATUSES = ["Under Review", "Validated", "On Going"];
+const EVALUATOR_STATUS_OPTIONS = [
+  { value: "Pending", label: "Pending" },
+  { value: "Under Review", label: "Under Review" },
+  { value: "Validated", label: "Evaluated" },
+  { value: "On Going", label: "On Going" },
+  { value: "Approved", label: "Certified" },
+];
 const IP_TYPE_GUIDES = {
   "patent-form": {
     key: "patent",
@@ -2454,6 +2461,16 @@ function getCurrentRoleNotifications(role = currentRole) {
   );
 }
 
+window.clearCurrentRoleNotifications = function() {
+  const normalizedRole = normalizeRole(currentRole);
+  const activeUser = getCurrentUser();
+  mockNotifications[normalizedRole] = (mockNotifications[normalizedRole] || []).filter(
+    (notification) => notification.userId && activeUser && notification.userId !== activeUser.id,
+  );
+  renderNotifications();
+  showToast("Notifications cleared.", "success");
+};
+
 function pushReviewerNotification(userId, title, body) {
   mockNotifications.reviewer.unshift({
     id: Date.now(),
@@ -2464,6 +2481,7 @@ function pushReviewerNotification(userId, title, body) {
     body,
     time: "Just now",
     read: false,
+    category: "Case Update",
   });
 }
 
@@ -2479,6 +2497,256 @@ function pushRoleNotification(role, notification) {
   if (normalizeRole(currentRole) === normalizedRole) {
     renderNotifications();
   }
+}
+
+function pushAdminNotification(notification) {
+  pushRoleNotification("superadmin", notification);
+  pushRoleNotification("admin", notification);
+}
+
+function getCaseNotificationBase(submission, overrides = {}) {
+  return {
+    icon: "fa-folder-open",
+    color: "#3b82f6",
+    type: "case-update",
+    category: "Case Update",
+    submissionId: submission?.id,
+    ...overrides,
+  };
+}
+
+function notifyCaseTaken(submission, evaluator, previousStatus = "Pending") {
+  const applicantUserId = getApplicantNotificationUserId(submission);
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-user-check",
+      color: "#22c55e",
+      title: "Case Accepted",
+      body: `Your case has been accepted by ${evaluator.name}.`,
+    }),
+  );
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-rotate",
+      color: "#3b82f6",
+      title: "Status Updated",
+      body: `Your application is now ${getDisplayStatusLabel(submission.status)}.`,
+      category: "Status Update",
+    }),
+  );
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-user-check",
+      color: "#2563eb",
+      title: "Case Taken by Evaluator",
+      body: `${evaluator.name} has taken Case #${submission.id}.`,
+    }),
+  );
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-rotate",
+      color: "#f59e0b",
+      title: "Status Updated",
+      body: `Case #${submission.id} changed from ${getDisplayStatusLabel(previousStatus)} to ${getDisplayStatusLabel(submission.status)}.`,
+      category: "Status Update",
+    }),
+  );
+  pushRoleNotification(
+    "reviewer",
+    getCaseNotificationBase(submission, {
+      userId: evaluator.id,
+      icon: "fa-circle-check",
+      color: "#22c55e",
+      title: "Case Taken Successfully",
+      body: `You have taken Case #${submission.id}. The applicant and admin have been notified.`,
+    }),
+  );
+}
+
+function notifyEvaluatorStatusChanged(submission, evaluator, previousStatus, newStatus) {
+  const applicantUserId = getApplicantNotificationUserId(submission);
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-rotate",
+      color: "#3b82f6",
+      title: "Status Updated",
+      body: `Your application status changed to ${getDisplayStatusLabel(newStatus)}.`,
+      category: "Status Update",
+    }),
+  );
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-rotate",
+      color: "#f59e0b",
+      title: "Status Changed",
+      body: `${evaluator.name} changed Case #${submission.id} from ${getDisplayStatusLabel(previousStatus)} to ${getDisplayStatusLabel(newStatus)}.`,
+      category: "Status Update",
+    }),
+  );
+}
+
+function notifyEvaluationSubmitted(submission, evaluator) {
+  const applicantUserId = getApplicantNotificationUserId(submission);
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-clipboard-check",
+      color: "#22c55e",
+      title: "Evaluation Available",
+      body: "Evaluation content is now available for your review.",
+      category: "Evaluation Update",
+    }),
+  );
+  pushRoleNotification(
+    "reviewer",
+    getCaseNotificationBase(submission, {
+      userId: evaluator.id,
+      icon: "fa-circle-check",
+      color: "#22c55e",
+      title: "Evaluation Submitted",
+      body: `Your evaluation content for Case #${submission.id} has been submitted successfully.`,
+      category: "Evaluation Update",
+    }),
+  );
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-clipboard-check",
+      color: "#2563eb",
+      title: "Evaluation Submitted",
+      body: `${evaluator.name} submitted evaluation content for Case #${submission.id}.`,
+      category: "Evaluation Update",
+    }),
+  );
+}
+
+function notifyDocumentsRequired(submission, evaluator, detail = "") {
+  const applicantUserId = getApplicantNotificationUserId(submission);
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-file-circle-exclamation",
+      color: "#ef4444",
+      title: "Documents Required",
+      body: detail || `Please upload the required documents for ${submission.type} processing.`,
+      category: "Document Upload",
+    }),
+  );
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-file-circle-exclamation",
+      color: "#f59e0b",
+      title: "Documents Required",
+      body: `${evaluator.name} requested documents for Case #${submission.id}.`,
+      category: "Document Upload",
+    }),
+  );
+}
+
+function notifyApplicationSubmitted(submission) {
+  const applicantUserId = getApplicantNotificationUserId(submission);
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-file-circle-check",
+      color: "#22c55e",
+      title: "Application Submitted",
+      body: "Your application was submitted successfully.",
+    }),
+  );
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-file-circle-plus",
+      color: "#2563eb",
+      title: "New Application Submitted",
+      body: `${submission.applicant || "An applicant"} submitted Case #${submission.id}.`,
+    }),
+  );
+}
+
+function notifyApplicantDocumentsUploaded(submission) {
+  const applicantUserId = getApplicantNotificationUserId(submission);
+  const reviewerId = getAssignedReviewerId(submission);
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-cloud-arrow-up",
+      color: "#22c55e",
+      title: "Upload Confirmed",
+      body: "Your additional documents have been received.",
+      category: "Document Upload",
+    }),
+  );
+  if (reviewerId) {
+    pushRoleNotification(
+      "reviewer",
+      getCaseNotificationBase(submission, {
+        userId: reviewerId,
+        icon: "fa-file-arrow-up",
+        color: "#3b82f6",
+        title: "Documents Uploaded",
+        body: `The applicant uploaded additional documents for Case #${submission.id}.`,
+        category: "Document Upload",
+      }),
+    );
+  }
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-file-arrow-up",
+      color: "#2563eb",
+      title: "Documents Uploaded",
+      body: `${submission.applicant || "The applicant"} uploaded additional documents for Case #${submission.id}.`,
+      category: "Document Upload",
+    }),
+  );
+}
+
+function notifyDeadlineCreated(submission, task, dueDate) {
+  const applicantUserId = getApplicantNotificationUserId(submission);
+  const reviewerId = getAssignedReviewerId(submission);
+  const body = `${task} for Case #${submission.id} is due on ${dueDate}.`;
+  pushRoleNotification(
+    "applicant",
+    getCaseNotificationBase(submission, {
+      userId: applicantUserId,
+      icon: "fa-calendar-check",
+      color: "#f59e0b",
+      title: "Deadline Added",
+      body,
+      category: "Deadline Reminder",
+    }),
+  );
+  if (reviewerId) {
+    pushRoleNotification(
+      "reviewer",
+      getCaseNotificationBase(submission, {
+        userId: reviewerId,
+        icon: "fa-calendar-check",
+        color: "#f59e0b",
+        title: "Deadline Updated",
+        body,
+        category: "Deadline Reminder",
+      }),
+    );
+  }
+  pushAdminNotification(
+    getCaseNotificationBase(submission, {
+      icon: "fa-calendar-check",
+      color: "#f59e0b",
+      title: "Deadline Updated",
+      body,
+      category: "Deadline Reminder",
+    }),
+  );
 }
 
 function getApplicantNotificationUserId(submission) {
@@ -2742,6 +3010,7 @@ function pushIPOPHLVerificationEmailNotifications(submission, evaluator) {
     title: "Email from IPOPHL Received",
     body: `IPOPHL sent an official email for ${submission.id}. Email status: ${emailStatus}. Click this notification to sync the status to the applicant side.`,
     type: "ipophl-verification-email",
+    category: "IPOPHL Report",
     submissionId: submission.id,
     ipophlEmailStatus: emailStatus,
     ipophlEmailSummary: emailSummary,
@@ -3131,6 +3400,7 @@ function maybeSendDeadlineReminders(submission) {
         title: daysLeft < 0 ? "Deadline Overdue" : "Deadline Reminder",
         body: `${deadline.task} for ${submission.id} is ${formatDeadlineStatus(deadline)}. Due date: ${deadline.dueDate}.`,
         type: "case-deadline-reminder",
+        category: "Deadline Reminder",
         submissionId: submission.id,
         deadlineId: deadline.id,
       });
@@ -3208,6 +3478,14 @@ window.createCaseDeadline = function(submissionId) {
     remindersSent: [],
     completed: false,
   });
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Created Deadline",
+    record: submission.id,
+    details: `${task} deadline set for ${dueDate}${note ? ` with note: ${note}` : ""}.`,
+    module: submission.type,
+  });
+  notifyDeadlineCreated(submission, task, dueDate);
   persistSubmissions();
   showToast("Deadline added and reminder tracking enabled.");
   renderDashboardContent("submission-detail");
@@ -3220,6 +3498,13 @@ window.completeCaseDeadline = function(submissionId, deadlineId) {
   deadline.completed = true;
   deadline.completedAt = new Date().toISOString();
   deadline.completedBy = getCurrentUser().name;
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Completed Deadline",
+    record: submission.id,
+    details: `${deadline.task} deadline marked done.`,
+    module: submission.type,
+  });
   persistSubmissions();
   showToast("Deadline marked as completed.");
   renderDashboardContent("submission-detail");
@@ -3560,9 +3845,8 @@ function typeBadge(type) {
   return `<span class="badge ${m[type] || "badge-pending"}">${type}</span>`;
 }
 function getDisplayStatusLabel(status) {
-  const normalizedRole = normalizeRole(currentRole);
   if (status === "Validated") return "Evaluated";
-  if (normalizedRole === "applicant" && status === "Approved") return "Certified";
+  if (status === "Approved") return "Certified";
   return status;
 }
 function statusBadge(status) {
@@ -3577,6 +3861,41 @@ function statusBadge(status) {
     Draft: "badge-review",
   };
   return `<span class="badge ${m[status] || "badge-pending"}">${getDisplayStatusLabel(status)}</span>`;
+}
+
+function renderEvaluatorStatusUpdateControl(submission) {
+  if (normalizeRole(currentRole) !== "reviewer") return "";
+  if (!isAssignedReviewerSubmission(submission)) {
+    return `
+      <div class="status-update-panel status-update-panel--locked">
+        <i class="fa-solid fa-lock"></i>
+        <span>Only the assigned evaluator can update this case status.</span>
+      </div>
+    `;
+  }
+
+  const currentLabel = getDisplayStatusLabel(submission.status);
+  return `
+    <div class="status-update-panel">
+      <div class="status-update-row">
+        <span>Current Status</span>
+        <strong>${escapeHtml(currentLabel)}</strong>
+      </div>
+      <div class="status-update-row">
+        <span>Assigned Evaluator</span>
+        <strong>${escapeHtml(getAssignedReviewerName(submission))}</strong>
+      </div>
+      <label for="caseStatusSelect-${escapeHtml(submission.id)}">Change Status</label>
+      <select id="caseStatusSelect-${escapeHtml(submission.id)}">
+        ${EVALUATOR_STATUS_OPTIONS.map(
+          (option) => `<option value="${option.value}" ${submission.status === option.value ? "selected" : ""}>${option.label}</option>`,
+        ).join("")}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="updateEvaluatorCaseStatus('${submission.id}')">
+        <i class="fa-solid fa-rotate"></i> Update Status
+      </button>
+    </div>
+  `;
 }
 
 function downloadCsv(filename, rows) {
@@ -4351,6 +4670,10 @@ function renderNotifications() {
     badge.innerText = unreadCount;
     badge.style.display = unreadCount > 0 ? "flex" : "none";
   }
+  const headerCount = document.getElementById("notifHeaderCount");
+  if (headerCount) {
+    headerCount.innerText = `${roleNotifs.length} ${roleNotifs.length === 1 ? "alert" : "alerts"}`;
+  }
 
   if (roleNotifs.length === 0) {
     list.innerHTML =
@@ -4368,6 +4691,7 @@ function renderNotifications() {
         <i class="fa-solid ${n.icon}"></i>
       </div>
       <div class="notif-info">
+        ${n.category ? `<div class="notif-category">${escapeHtml(t(n.category))}</div>` : ""}
         <div class="notif-title">${escapeHtml(t(n.title))}</div>
         <div class="notif-body">${escapeHtml(t(n.body))}</div>
         <div class="notif-time">${escapeHtml(t(n.time))}</div>
@@ -6968,6 +7292,7 @@ function pushChatNotification(receiverId, submission, preview) {
     time: "Just now",
     read: false,
     type: "case-message",
+    category: "Message",
     caseId: submission.id,
   });
 }
@@ -8731,7 +9056,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
   const hideReviewerQueueStatus = normalizeRole(currentRole) === "reviewer" && adminCaseScope === "queue";
 
   return `
-    <div class="table-container" id="adminSubmissionsTable">
+    <div class="table-container ${reviewerMode ? "reviewer-cases-table" : ""}" id="adminSubmissionsTable">
       <div class="table-header">
         ${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<h3>Visible Cases <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>`}
         <select class="filter-select" onchange="filterAdminStatus(this.value)">
@@ -8745,7 +9070,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
                  <option value="Under Review" ${(filterStatus || "") === "Under Review" ? "selected" : ""}>Under Review</option>
                  <option value="Validated" ${(filterStatus || "") === "Validated" ? "selected" : ""}>Evaluated</option>
                  <option value="On Going" ${(filterStatus || "") === "On Going" ? "selected" : ""}>On Going</option>
-                 <option value="Approved" ${(filterStatus || "") === "Approved" ? "selected" : ""}>Approved</option>
+                 <option value="Approved" ${(filterStatus || "") === "Approved" ? "selected" : ""}>Certified</option>
                  <option value="Rejected" ${(filterStatus || "") === "Rejected" ? "selected" : ""}>Rejected</option>
                  <option value="Archived" ${(filterStatus || "") === "Archived" ? "selected" : ""}>Archived</option>`
           }
@@ -8763,7 +9088,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
         <button class="filter-btn ${(filterType || "") === "Utility Model" ? "active" : ""}" onclick="filterAdminTable('Utility Model')">Utility Model</button>
         <button class="filter-btn ${(filterType || "") === "Industrial Design" ? "active" : ""}" onclick="filterAdminTable('Industrial Design')">Industrial Design</button>
       </div>
-      <div class="table-responsive"><table class="data-table"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th>${reviewerMode && isMyCasesView ? "<th>Deadline</th>" : ""}${hideReviewerQueueStatus ? "" : "<th>Status</th>"}<th>Actions</th></tr></thead><tbody>
+      <div class="table-responsive"><table class="data-table ${reviewerMode ? "reviewer-case-data-table" : ""}"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th>${reviewerMode && isMyCasesView ? "<th>Deadline</th>" : ""}${hideReviewerQueueStatus ? "" : "<th>Status</th>"}<th>Actions</th></tr></thead><tbody>
         ${
           filtered.length === 0
             ? `<tr><td colspan="${hideReviewerQueueStatus ? "6" : isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
@@ -9079,8 +9404,10 @@ function takeCase(id) {
     return;
   }
 
+  const previousStatus = sub.status;
   sub.assignedReviewerId = user.id;
   sub.assignedEvaluatorId = user.id;
+  sub.assignedAt = new Date().toISOString();
   sub.status = "Under Review";
   syncSubmissionWorkflowState(sub);
   persistSubmissions();
@@ -9089,9 +9416,10 @@ function takeCase(id) {
     accountName: user.name,
     action: "Took Case",
     record: sub.id,
-    details: `Specialist ${user.name} took the case for processing. Status updated to Under Review.`,
+    details: `${user.name} accepted the case. Changed status from ${getDisplayStatusLabel(previousStatus)} to Under Review.`,
     module: sub.type,
   });
+  notifyCaseTaken(sub, user, previousStatus);
 
   showToast(`You have taken the case: ${sub.id}`);
   navigateTo("reviewer-my-cases");
@@ -9149,6 +9477,46 @@ function changeStatus(id, newStatus) {
   showToast(`${sub.title} marked as ${newStatus}`);
   navigateTo(getDefaultDashboardPage());
 }
+
+window.updateEvaluatorCaseStatus = function(id) {
+  const submission = submissions.find((s) => s.id === id);
+  if (!submission) return;
+  if (normalizeRole(currentRole) !== "reviewer" || !isAssignedReviewerSubmission(submission)) {
+    showToast("Only the assigned evaluator can update this case status.", "warning");
+    return;
+  }
+
+  const selectedStatus = document.getElementById(`caseStatusSelect-${id}`)?.value || "";
+  if (!selectedStatus) return;
+  const selectedLabel = getDisplayStatusLabel(selectedStatus);
+  const previousStatus = submission.status;
+  const previousLabel = getDisplayStatusLabel(previousStatus);
+
+  if (selectedStatus === previousStatus) {
+    showToast(`This case is already marked as ${selectedLabel}.`, "warning");
+    return;
+  }
+
+  submission.status = selectedStatus;
+  syncSubmissionWorkflowState(submission);
+  if (IPOPHL_TYPES.has(submission.type) && selectedStatus === "Validated") {
+    markIPOPHLWebsiteVerified(submission, {
+      evaluatorId: getCurrentUser().id,
+      notifyEvaluator: previousStatus !== "Validated",
+    });
+  }
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Status Updated",
+    record: submission.id,
+    details: `Changed status from ${previousLabel} to ${selectedLabel}.`,
+    module: submission.type,
+  });
+  notifyEvaluatorStatusChanged(submission, getCurrentUser(), previousStatus, selectedStatus);
+  persistSubmissions();
+  showToast(`Status updated to ${selectedLabel}.`, "success");
+  renderDashboardContent("submission-detail");
+};
 
 function requestDocs(id) {
   const sub = submissions.find((s) => s.id === id);
@@ -9319,6 +9687,13 @@ window.confirmActionRequiredRequest = function(id) {
     details: `${getActionRequiredTargetLabel(target, sub)} - ${field}: ${instruction}${dueDate ? ` Due ${dueDate}.` : ""}`,
     module: sub.type,
   });
+  notifyDocumentsRequired(
+    sub,
+    user,
+    target === "documents"
+      ? `Please upload or replace ${field}. ${instruction}`
+      : `Please update ${field}. ${instruction}`,
+  );
   closeModal();
   showToast(`Action-required request sent to ${sub.applicant}.`, "success");
   navigateTo(getDefaultDashboardPage());
@@ -10151,7 +10526,7 @@ function renderSubmissionDetail() {
 
   return `
     ${renderBackNav()}
-    <div class="page-header">
+    <div class="page-header submission-detail-header ${normalizedRole === "reviewer" ? "reviewer-case-detail-header" : ""}">
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <h1 style="margin:0">${escapeHtml(submittedSummary.title || s.title)}</h1>
         ${frozen ? `<span class="badge ${certifiedMetadataEditable ? "badge-review" : "badge-frozen"}"><i class="fa-solid fa-${certifiedMetadataEditable ? "unlock" : "lock"}"></i> ${certifiedMetadataEditable ? "Integrity Unlocked" : "Frozen for Certification"}</span>` : ""}
@@ -10186,7 +10561,7 @@ function renderSubmissionDetail() {
         : ""
     }
 
-    <div style="padding:12px 18px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
+    <div class="manual-review-banner" style="padding:12px 18px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:12px;">
       <i class="fa-solid fa-person-chalkboard" style="color:#d97706; font-size:1.1rem;"></i>
       <div><strong style="color:#d97706;">Manual Review Policy</strong><p style="font-size:.82rem; color:var(--gray-500); margin:2px 0 0;">AI completeness checks provide applicant suggestions only. All submissions still undergo human evaluation by authorized IP Office personnel before status is updated.</p></div>
     </div>
@@ -10205,8 +10580,8 @@ function renderSubmissionDetail() {
         : ""
     }
 
-    <div class="detail-layout">
-      <div>
+    <div class="detail-layout submission-detail-layout ${normalizedRole === "reviewer" ? "reviewer-case-detail-layout" : ""}">
+      <div class="submission-detail-main">
         ${renderCaseApplicantProfilePanel(s)}
         ${renderSubmittedFormDataPanel(s)}
         <div class="detail-panel" style="margin-top:20px">
@@ -10239,11 +10614,12 @@ function renderSubmissionDetail() {
           </div>
         </div>
       </div>
-      <div>
+      <div class="submission-detail-sidebar">
         <div class="detail-panel">
           <h3><i class="fa-solid fa-circle-info"></i> Status</h3>
-          <div style="margin-bottom:16px">${statusBadge(s.status)}</div>
-          <div style="margin-bottom:16px; padding:14px 16px; background:${reviewerReadOnly ? "rgba(148,163,184,0.12)" : "rgba(59,130,246,0.06)"}; border:1px solid ${reviewerReadOnly ? "rgba(148,163,184,0.28)" : "rgba(59,130,246,0.18)"}; border-radius:10px;">
+          ${normalizedRole === "reviewer" ? "" : `<div style="margin-bottom:16px">${statusBadge(s.status)}</div>`}
+          ${renderEvaluatorStatusUpdateControl(s)}
+          ${normalizedRole === "reviewer" ? "" : `<div style="margin-bottom:16px; padding:14px 16px; background:${reviewerReadOnly ? "rgba(148,163,184,0.12)" : "rgba(59,130,246,0.06)"}; border:1px solid ${reviewerReadOnly ? "rgba(148,163,184,0.28)" : "rgba(59,130,246,0.18)"}; border-radius:10px;">
             <div style="font-size:.76rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:${reviewerReadOnly ? "var(--gray-500)" : "#1d4ed8"}; margin-bottom:6px;">Assignment</div>
             <div style="font-size:.95rem; font-weight:700; color:var(--navy);">${assignedReviewerName}</div>
             <div style="font-size:.8rem; color:var(--gray-500); margin-top:4px;">
@@ -10259,7 +10635,7 @@ function renderSubmissionDetail() {
                         : "Assignment and action state are shown here for traceability."
               }
             </div>
-          </div>
+          </div>`}
           ${
             normalizedRole === "reviewer"
               ? ""
@@ -10322,32 +10698,286 @@ function renderSubmissionDetail() {
           }
         </div>
         ${renderCaseDeadlinePanel(s)}
-        <div class="detail-panel" style="margin-top:20px">
-          <h3><i class="fa-solid fa-timeline"></i> ${timelineTitle}</h3>
-          ${
-            normalizedRole === "reviewer"
-              ? `<div class="timeline">
-            ${s.ipophlVerificationEmailReceived ? `<div class="timeline-item"><div class="time">${escapeHtml(s.ipophlEmailReceivedAt || "Just now")}</div><div class="event"><i class="fa-solid fa-envelope-circle-check" style="color:#22c55e"></i> IPOPHL verification email recorded; applicant notified.</div></div>` : ""}
-            ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
-            <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
-            <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${escapeHtml(submittedSummary.applicant || s.applicant)}</div></div>
-          </div>`
-              : showCopyrightOperationalFlow
-              ? renderCopyrightOperationTimeline(s)
-              : `<div class="timeline">
-            ${s.ipophlVerificationEmailReceived ? `<div class="timeline-item"><div class="time">${escapeHtml(s.ipophlEmailReceivedAt || "Just now")}</div><div class="event"><i class="fa-solid fa-envelope-circle-check" style="color:#22c55e"></i> IPOPHL verification email recorded; applicant notified.</div></div>` : ""}
-            ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
-            <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
-            <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${escapeHtml(submittedSummary.applicant || s.applicant)}</div></div>
-          </div>`
-          }
-        </div>
+        ${
+          normalizedRole === "reviewer"
+            ? ""
+            : `<div class="detail-panel" style="margin-top:20px">
+                <h3><i class="fa-solid fa-timeline"></i> ${timelineTitle}</h3>
+                ${renderCaseActivityTimeline(s, submittedSummary, normalizedRole)}
+              </div>`
+        }
       </div>
     </div>`;
+}
+
+function getTimelineIconForAction(action = "") {
+  const normalized = String(action).toLowerCase();
+  if (normalized.includes("took")) return "fa-hand-holding-hand";
+  if (normalized.includes("deadline")) return "fa-calendar-check";
+  if (normalized.includes("document") || normalized.includes("requirement")) return "fa-file-circle-exclamation";
+  if (normalized.includes("evaluation") || normalized.includes("review")) return "fa-clipboard-check";
+  if (normalized.includes("archive")) return "fa-box-archive";
+  if (normalized.includes("approved") || normalized.includes("validated")) return "fa-circle-check";
+  return "fa-circle-info";
+}
+
+function renderTimelineItems(items, className = "") {
+  if (!items.length) {
+    return `
+      <div class="timeline-empty-state">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <p>No timeline activity has been recorded for this case yet.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="timeline ${className}">
+      ${items
+        .map(
+          (item) => `
+            <div class="timeline-item ${item.tone ? `timeline-item--${item.tone}` : ""}">
+              <div class="time">${escapeHtml(item.time)}</div>
+              <div class="event"><i class="fa-solid ${item.icon}"></i> ${escapeHtml(item.event)}</div>
+            </div>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function formatEvaluatorTimelineEvent(log, evaluatorName, audience = currentRole) {
+  const action = String(log.action || "");
+  const details = getAuditDetails(log);
+  const normalized = action.toLowerCase();
+  const isApplicant = normalizeRole(audience) === "applicant";
+
+  if (normalized.includes("updated review") || normalized.includes("status updated")) {
+    const statusMatch = details.match(/to\s+([^.]*)\./i);
+    if (isApplicant) {
+      return statusMatch
+        ? `Your case status was changed to ${statusMatch[1]}.`
+        : `Your case status was updated by ${evaluatorName}.`;
+    }
+    const labels = getStatusChangeLabelsFromDetails(details);
+    return labels.from && labels.to
+      ? `${evaluatorName} changed the case status from ${labels.from} to ${labels.to}.`
+      : `${evaluatorName} updated the case status.`;
+  }
+  if (normalized.includes("requested documents")) {
+    return isApplicant
+      ? `Additional documents are required${details ? `: ${details}` : "."}`
+      : `${evaluatorName} requested additional documents${details ? `: ${details}` : "."}`;
+  }
+  if (normalized.includes("requested form correction")) {
+    return isApplicant
+      ? `Form corrections are required${details ? `: ${details}` : "."}`
+      : `${evaluatorName} requested form corrections${details ? `: ${details}` : "."}`;
+  }
+  if (normalized.includes("submitted evaluation")) {
+    return isApplicant
+      ? "Evaluation content is now available for review."
+      : `${evaluatorName} submitted the evaluation content.`;
+  }
+  if (normalized.includes("edited evaluation choice")) {
+    return isApplicant
+      ? `The recommended IP service was updated${details ? `: ${details}` : "."}`
+      : `${evaluatorName} updated the recommended IP service${details ? `: ${details}` : "."}`;
+  }
+  if (normalized.includes("created deadline")) {
+    return isApplicant
+      ? `A case deadline was set${details ? `: ${details}` : "."}`
+      : `${evaluatorName} set a case deadline${details ? `: ${details}` : "."}`;
+  }
+  if (normalized.includes("completed deadline")) {
+    return isApplicant
+      ? "A deadline item was completed."
+      : `${evaluatorName} completed a deadline item.`;
+  }
+  if (normalized.includes("reviewed documents")) {
+    return isApplicant
+      ? "Your submitted documents are being reviewed."
+      : `${evaluatorName} reviewed the submitted documents.`;
+  }
+  if (normalized.includes("verified requirements")) {
+    return isApplicant
+      ? "Your requirements have been verified."
+      : `${evaluatorName} verified the requirements.`;
+  }
+  return isApplicant
+    ? `Your case was updated by ${evaluatorName}${details ? `: ${details}` : "."}`
+    : `${evaluatorName} updated this case${details ? `: ${details}` : "."}`;
+}
+
+function getTimelineLabelForAction(action = "") {
+  const normalized = String(action).toLowerCase();
+  if (normalized.includes("took")) return "Case Accepted";
+  if (normalized.includes("updated review") || normalized.includes("status updated")) return "Status Updated";
+  if (normalized.includes("submitted evaluation")) return "Evaluation Submitted";
+  if (normalized.includes("edited evaluation")) return "Evaluation Updated";
+  if (normalized.includes("requested documents")) return "Documents Required";
+  if (normalized.includes("requested form")) return "Revision Required";
+  if (normalized.includes("created deadline")) return "Deadline Added";
+  if (normalized.includes("completed deadline")) return "Deadline Completed";
+  if (normalized.includes("archive")) return "Case Archived";
+  if (normalized.includes("uploaded")) return "Documents Uploaded";
+  return action || "Case Updated";
+}
+
+function getTimelineSortValue(value) {
+  const parsed = new Date(String(value || "").replace(" ", "T"));
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function shiftTimelineTimestamp(baseDate, hours = 0, minutes = 0) {
+  const date = new Date(`${baseDate || new Date().toISOString().slice(0, 10)}T09:00:00`);
+  date.setHours(date.getHours() + hours);
+  date.setMinutes(date.getMinutes() + minutes);
+  return formatAuditTimestamp(date);
+}
+
+function getStatusChangeLabelsFromDetails(details = "") {
+  const match = String(details).match(/from\s+(.+?)\s+to\s+(.+?)\./i);
+  return {
+    from: match ? match[1].trim() : "",
+    to: match ? match[2].trim() : "",
+  };
+}
+
+function isTimelineStatusChangeAction(action = "") {
+  const normalized = String(action).toLowerCase();
+  return normalized.includes("status updated") || normalized.includes("updated review");
+}
+
+function renderCaseActivityTimeline(submission, submittedSummary = {}, audience = currentRole) {
+  const role = normalizeRole(audience);
+  const assignedReviewer = getAssignedReviewer(submission);
+  const assignedName = assignedReviewer?.name || "";
+  const timelineLogs = auditLogs.filter(
+    (log) => String(getAuditRecord(log)) === String(submission.id),
+  );
+  const takeLog =
+    timelineLogs.find(
+      (log) =>
+        log.action === "Took Case" &&
+        (!assignedName || getAuditAccountName(log) === assignedName),
+    ) || null;
+  const evaluatorName = assignedName || (takeLog ? getAuditAccountName(takeLog) : "");
+  const evaluatorLogs = evaluatorName
+    ? timelineLogs.filter((log) => getAuditAccountName(log) === evaluatorName)
+    : [];
+  const statusProgressStarted = !["Pending", "Draft", "Archived", "Cancelled"].includes(submission.status);
+  const hasTakenCase = Boolean(takeLog || (evaluatorName && (submission.assignedAt || statusProgressStarted)));
+  const items = [];
+
+  if (!hasTakenCase) {
+    return `
+      <div class="timeline-empty-state">
+        <i class="fa-solid fa-user-lock"></i>
+        <p>No evaluator has taken this case yet.</p>
+      </div>
+    `;
+  }
+
+  const acceptedAt = takeLog?.timestamp || submission.assignedAt || shiftTimelineTimestamp(submission.date, 0, 0);
+  const acceptedTime = takeLog?.timestamp || formatAuditTimestamp(new Date(acceptedAt));
+
+  items.push({
+    time: acceptedTime,
+    sortTime: acceptedAt,
+    event:
+      role === "applicant"
+        ? `Your case has been accepted by ${evaluatorName}.`
+        : `${evaluatorName} took Case #${submission.id}.`,
+    icon: "fa-hand-holding-hand",
+    tone: "evaluator",
+  });
+
+  const takeStatusLabels = takeLog ? getStatusChangeLabelsFromDetails(getAuditDetails(takeLog)) : null;
+  if (takeStatusLabels?.from && takeStatusLabels.to) {
+    items.push({
+      time: takeLog?.timestamp || formatAuditTimestamp(new Date(submission.assignedAt)),
+      sortTime: takeLog?.timestamp || submission.assignedAt,
+      event:
+        role === "applicant"
+          ? `Your case status was changed to ${takeStatusLabels.to}.`
+          : `${evaluatorName} changed the case status from ${takeStatusLabels.from} to ${takeStatusLabels.to}.`,
+      icon: "fa-circle-check",
+      tone: "evaluator",
+    });
+  }
+
+  if (!takeStatusLabels?.from && statusProgressStarted) {
+    items.push({
+      time: shiftTimelineTimestamp(submission.date, 1, 15),
+      sortTime: shiftTimelineTimestamp(submission.date, 1, 15),
+      event:
+        role === "applicant"
+          ? "Your case status was changed to Under Review."
+          : `${evaluatorName} changed the case status from Pending to Under Review.`,
+      icon: "fa-circle-check",
+      tone: "evaluator",
+    });
+  }
+
+  const evaluatorTimelineActionPattern =
+    /status updated|updated review|submitted evaluation|edited evaluation choice|requested documents|requested form correction|created deadline|completed deadline|reviewed documents|verified requirements/i;
+  const visibleLogs = evaluatorLogs.filter((log) =>
+    evaluatorTimelineActionPattern.test(log.action),
+  );
+  visibleLogs.forEach((log) => {
+    if (log.action === "Took Case") return;
+    const details = getAuditDetails(log);
+    const labels = getStatusChangeLabelsFromDetails(details);
+    items.push({
+      time: log.timestamp,
+      sortTime: log.timestamp,
+      event:
+        role === "applicant"
+          ? formatEvaluatorTimelineEvent(log, evaluatorName, role)
+          : labels.from && labels.to
+            ? `${evaluatorName} changed the case status from ${labels.from} to ${labels.to}.`
+            : formatEvaluatorTimelineEvent(log, evaluatorName, role),
+      icon: getTimelineIconForAction(log.action),
+      tone: "evaluator",
+    });
+  });
+
+  const hasEvaluationLog = visibleLogs.some((log) => /submitted evaluation/i.test(log.action));
+  const hasEvaluatedStatusLog = visibleLogs.some((log) => {
+    const labels = getStatusChangeLabelsFromDetails(getAuditDetails(log));
+    return labels.to === "Evaluated";
+  });
+  if (submission.status === "Validated") {
+    if (!hasEvaluationLog) {
+      items.push({
+        time: shiftTimelineTimestamp(submission.date, 4, 45),
+        sortTime: shiftTimelineTimestamp(submission.date, 4, 45),
+        event:
+          role === "applicant"
+            ? "Evaluation content is now available for review."
+            : `${evaluatorName} submitted the evaluation content.`,
+        icon: "fa-clipboard-check",
+        tone: "evaluator",
+      });
+    }
+    if (!hasEvaluatedStatusLog) {
+      items.push({
+        time: shiftTimelineTimestamp(submission.date, 5, 30),
+        sortTime: shiftTimelineTimestamp(submission.date, 5, 30),
+        event:
+          role === "applicant"
+            ? "Your case status was changed to Evaluated."
+            : `${evaluatorName} changed the case status from Under Review to Evaluated.`,
+        icon: "fa-circle-check",
+        tone: "evaluator",
+      });
+    }
+  }
+
+  items.sort((a, b) => getTimelineSortValue(a.sortTime || a.time) - getTimelineSortValue(b.sortTime || b.time));
+  return renderTimelineItems(items, "case-activity-timeline");
 }
 
 function renderIpGuidelines(filterId = null) {
@@ -11634,14 +12264,15 @@ function renderSubmittedFormDataPanel(submission) {
   }
   sections.push(renderSubmittedDocumentUploadsSection(formType, submission, data));
 
-  const packetPreview = renderSubmittedPaperPacketPreview(submission, formType, data);
+  const isReviewerView = normalizeRole(currentRole) === "reviewer";
+  const packetPreview = isReviewerView ? "" : renderSubmittedPaperPacketPreview(submission, formType, data);
   const formPreviewContent = packetPreview.trim() || sections.join("");
   if (!formPreviewContent.trim()) return renderSubmittedFormUnavailablePanel(submission, formType);
 
   return `
     <div class="detail-panel submitted-form-panel" style="margin-top:20px">
       <h3><i class="fa-solid fa-clipboard-list"></i> Submitted ${escapeHtml(typeLabel)} Intake Packet</h3>
-      <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px;">This is the generated form packet from the applicant's saved submission answers.</p>
+      <p style="font-size:0.82rem; color:var(--gray-500); margin:0 0 12px;">${isReviewerView ? "Review applicant answers in a compact evaluator layout." : "This is the generated form packet from the applicant's saved submission answers."}</p>
       ${renderEvaluatorSubmittedFormDownloadActions(submission, formType, data)}
       ${showSubmittedStepStrip ? renderSubmittedFormStepStrip(formType) : ""}
       ${formPreviewContent}
@@ -20866,6 +21497,7 @@ async function submitForm() {
     applyWizardDataToSubmission(revisionSubmission, submittedSummary, {
       markSubmitted: true,
     });
+    notifyApplicantDocumentsUploaded(revisionSubmission);
     persistSubmissions();
     selectedSubmissionId = revisionSubmission.id;
 
@@ -20932,6 +21564,7 @@ async function submitForm() {
 
     syncSubmissionDisplayFields(newPatentSubmission);
     submissions.unshift(newPatentSubmission);
+    notifyApplicationSubmitted(newPatentSubmission);
     persistSubmissions();
 
     const patentConfirmationTarget =
@@ -20973,6 +21606,7 @@ async function submitForm() {
   };
   syncSubmissionDisplayFields(newSub);
   submissions.unshift(newSub);
+  notifyApplicationSubmitted(newSub);
   persistSubmissions();
 
   const confirmationTarget =
@@ -21748,6 +22382,8 @@ function showInnovationDetail(id) {
   if (!item) return;
 
   const isInterested = userInterests.includes(String(id));
+  const role = normalizeRole(currentRole);
+  const canSendInquiry = !["admin", "superadmin", "reviewer"].includes(role);
   const modalOverlay = document.getElementById("modalOverlay");
   const modalCard = document.querySelector("#modalOverlay .modal-card");
   if (modalOverlay) modalOverlay.classList.add("marketplace-detail-overlay");
@@ -21788,9 +22424,13 @@ function showInnovationDetail(id) {
           <footer class="detail-footer-contact">
             Interested in this technology? Connect with the inventors to discuss licensing, partnerships, or acquisition.
           </footer>
-          <button class="btn btn-primary" style="margin-top:16px;" onclick="sendMarketplaceInquiry(${jsArg(item.id)})">
-            <i class="fa-solid fa-paper-plane"></i> Send Inquiry
-          </button>
+          ${
+            canSendInquiry
+              ? `<button class="btn btn-primary" style="margin-top:16px;" onclick="sendMarketplaceInquiry(${jsArg(item.id)})">
+                  <i class="fa-solid fa-paper-plane"></i> Send Inquiry
+                </button>`
+              : ""
+          }
         </div>
 
         <!-- Sidebar / Visuals -->
@@ -21827,6 +22467,11 @@ window.toggleInterest = function(id) {
 };
 
 window.sendMarketplaceInquiry = function(id) {
+  const role = normalizeRole(currentRole);
+  if (["admin", "superadmin", "reviewer"].includes(role)) {
+    showToast("Marketplace inquiries are only available outside the admin portal.", "warning");
+    return;
+  }
   const item = marketplaceItems.find((entry) => String(entry.id) === String(id));
   if (!item) return;
   showMarketplaceInquiryForm(item);
@@ -21853,8 +22498,8 @@ function showMarketplaceInquiryForm(item) {
         <small>${escapeHtml(item.type)} inquiry routed to Inquiry Management</small>
       </div>
       <div class="form-group">
-        <label for="marketplaceInquiryName">First Name</label>
-        <input id="marketplaceInquiryName" type="text" placeholder="First Name" autocomplete="given-name" required />
+        <label for="marketplaceInquiryName">Full Name</label>
+        <input id="marketplaceInquiryName" type="text" placeholder="Full Name" autocomplete="name" required />
       </div>
       <div class="form-group">
         <label for="marketplaceInquiryEmail">Email *</label>
@@ -22350,7 +22995,15 @@ window.setReviewerEvaluationChoice = function(id, choice) {
   const submission = submissions.find((s) => s.id === id);
   if (!submission) return;
   const evaluation = getSubmissionEvaluation(submission);
+  const previousChoice = evaluation.recommendedService;
   evaluation.recommendedService = choice;
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Edited Evaluation Choice",
+    record: submission.id,
+    details: `Changed recommendation from ${previousChoice || "Not set"} to ${choice}.`,
+    module: submission.type,
+  });
   persistSubmissions();
   renderDashboardContent("submission-detail");
 };
@@ -22360,10 +23013,22 @@ window.submitEvaluationContent = function(id) {
   if (!submission) return;
   const safeId = id.replace(/[^a-zA-Z0-9_-]/g, "_");
   const evaluation = getSubmissionEvaluation(submission);
+  const previousStatus = submission.status;
   evaluation.note = document.getElementById(`evaluationNote-${safeId}`)?.value.trim() || evaluation.note;
   evaluation.result = "Evaluated";
   evaluation.submittedAt = formatAuditTimestamp();
   submission.status = "Validated";
+  addAuditLog({
+    accountName: getCurrentUser().name,
+    action: "Submitted Evaluation",
+    record: submission.id,
+    details: `Submitted recommendation for ${evaluation.recommendedService || "Patent"} with result ${evaluation.result}.`,
+    module: submission.type,
+  });
+  notifyEvaluationSubmitted(submission, getCurrentUser());
+  if (previousStatus !== submission.status) {
+    notifyEvaluatorStatusChanged(submission, getCurrentUser(), previousStatus, submission.status);
+  }
   persistSubmissions();
   showToast("Evaluation content submitted for applicant review.");
   renderDashboardContent("submission-detail");
@@ -24700,6 +25365,7 @@ window.saveAnnouncement = function(e, id) {
       title: `Alert: ${savedAnnouncement.title}`,
       body: savedAnnouncement.content,
       type: "announcement-alert",
+      category: "System Notice",
       announcementId: savedAnnouncement.id,
     });
   }
@@ -24765,8 +25431,16 @@ window.assignEvaluator = function(submissionId, evaluatorId) {
     setActiveUserForRole("reviewer", specialist.id);
     pushReviewerNotification(
       specialist.id,
-      "New Specialist Assignment",
-      `${submission.id} has been assigned to you for evaluation.`,
+      "New Assigned Case",
+      `You have been assigned as evaluator for Case #${submission.id}.`,
+    );
+    pushAdminNotification(
+      getCaseNotificationBase(submission, {
+        icon: "fa-user-gear",
+        color: "#2563eb",
+        title: previousSpecialist ? "Case Reassigned" : "Case Assigned to Evaluator",
+        body: `Case #${submission.id} is assigned to ${specialist.name}.`,
+      }),
     );
     addAuditLog({
       accountName: getCurrentUser().name,
