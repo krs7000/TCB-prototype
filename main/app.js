@@ -87,6 +87,7 @@ const TCB_AUTH_STORAGE_KEY = "TCB_AUTH_SESSION";
 const TCB_RESET_EMAIL_STORAGE_KEY = "TCB_PENDING_RESET_EMAIL";
 const TCB_DEV_RESET_OTP_STORAGE_KEY = "TCB_DEV_RESET_OTP";
 const TCB_USER_SETTINGS_STORAGE_KEY = "TCB_USER_SETTINGS";
+const TCB_SIGNUP_OTP_TTL_MS = 10 * 60 * 1000;
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", nativeLabel: "English" },
@@ -862,7 +863,7 @@ const mockNotifications = {
       icon: "fa-file-circle-plus",
       color: "#f59e0b",
       title: "Documents Requested",
-      body: "Admin Garcia requests additional docs for PSU-COP-2026-002.",
+      body: "Atty. Ramon Lopez requests additional docs for PSU-COP-2026-002.",
       time: "Yesterday",
       read: false,
       submissionId: "PSU-COP-2026-002",
@@ -4663,10 +4664,31 @@ window.initSignupWizard = function() {
   if (step3) step3.style.display = 'none';
   if (title) title.innerText = 'Create Account';
   if (subtitle) subtitle.innerText = "Join The Creator's Bulwark Community";
+  pendingSignupData = null;
   
   document.getElementById('signupForm')?.reset();
-  document.getElementById('regEmailHint').innerHTML = '';
-  document.getElementById('regEmailError').innerText = '';
+  const regEmailHint = document.getElementById('regEmailHint');
+  const regEmailError = document.getElementById('regEmailError');
+  const regPasswordError = document.getElementById('regPasswordError');
+  if (regEmailHint) regEmailHint.innerHTML = '';
+  if (regEmailError) {
+    regEmailError.innerText = '';
+    regEmailError.style.display = 'none';
+  }
+  if (regPasswordError) {
+    regPasswordError.innerText = '';
+    regPasswordError.style.display = 'none';
+  }
+  document.querySelectorAll("#signup-step-3 .otp-box").forEach((box) => {
+    box.value = "";
+    box.classList.remove("input-error");
+  });
+  const displayRegEmail = document.getElementById("displayRegEmail");
+  const displaySignupOtp = document.getElementById("displaySignupOtp");
+  const signupOtpHint = document.getElementById("signupOtpHint");
+  if (displayRegEmail) displayRegEmail.textContent = "";
+  if (displaySignupOtp) displaySignupOtp.textContent = "";
+  if (signupOtpHint) signupOtpHint.style.display = "none";
 };
 
 window.selectSignUpRole = function(role) {
@@ -4735,28 +4757,102 @@ function getSignupFormData() {
   };
 }
 
+function setSignupError(element, message = "") {
+  if (!element) return;
+  element.innerText = message;
+  element.style.display = message ? "block" : "none";
+}
+
+function signupEmailExists(email) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) return false;
+  return systemUsers.some(
+    (user) => String(user.email || "").trim().toLowerCase() === normalizedEmail,
+  );
+}
+
+function generateSignupOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function getSignupOtpCode() {
+  return Array.from(document.querySelectorAll("#signup-step-3 .otp-box"))
+    .map((box) => String(box.value || "").replace(/\D/g, "").slice(0, 1))
+    .join("");
+}
+
+function setSignupOtpInputs(value = "") {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 6);
+  const boxes = document.querySelectorAll("#signup-step-3 .otp-box");
+  boxes.forEach((box, index) => {
+    box.value = digits[index] || "";
+    box.classList.remove("input-error");
+  });
+  return boxes;
+}
+
+function showSignupOtpStep(signupData, options = {}) {
+  const otp = generateSignupOtp();
+  pendingSignupData = {
+    ...signupData,
+    devOtp: otp,
+    otpExpiresAt: Date.now() + TCB_SIGNUP_OTP_TTL_MS,
+  };
+
+  const step2 = document.getElementById("signup-step-2");
+  const step3 = document.getElementById("signup-step-3");
+  const title = document.getElementById("signup-title");
+  const subtitle = document.getElementById("signup-subtitle");
+  const displayRegEmail = document.getElementById("displayRegEmail");
+  const displaySignupOtp = document.getElementById("displaySignupOtp");
+  const signupOtpHint = document.getElementById("signupOtpHint");
+
+  if (step2) step2.style.display = "none";
+  if (step3) step3.style.display = "block";
+  if (title) title.innerText = "Verify Your Email";
+  if (subtitle) subtitle.innerText = "Enter the OTP sent to your email to finish creating your account.";
+  if (displayRegEmail) displayRegEmail.textContent = signupData.email;
+  if (displaySignupOtp) displaySignupOtp.textContent = otp;
+  if (signupOtpHint) signupOtpHint.style.display = "block";
+
+  const boxes = setSignupOtpInputs("");
+  setTimeout(() => boxes[0]?.focus(), 0);
+
+  showToast(
+    options.resend
+      ? `A new verification code was sent. Prototype OTP: ${otp}`
+      : `Verification code sent. Prototype OTP: ${otp}`,
+    "success",
+  );
+}
+
 function validateSignupFormData(data) {
   const emailError = document.getElementById("regEmailError");
   const passwordError = document.getElementById("regPasswordError");
-  if (emailError) emailError.innerText = "";
-  if (passwordError) passwordError.innerText = "";
+  setSignupError(emailError);
+  setSignupError(passwordError);
 
   if (!data.firstName || !data.lastName) {
     showToast("Please enter your first name and last name.", "warning");
     return false;
   }
   if (!data.email) {
-    if (emailError) emailError.innerText = "Email address is required.";
+    setSignupError(emailError, "Email address is required.");
     showToast("Please enter your email address.", "warning");
     return false;
   }
+  if (signupEmailExists(data.email)) {
+    setSignupError(emailError, "An account with this email already exists.");
+    showToast("An account with this email already exists.", "warning");
+    return false;
+  }
   if (!data.password || !data.confirmPassword) {
-    if (passwordError) passwordError.innerText = "Password and confirmation are required.";
+    setSignupError(passwordError, "Password and confirmation are required.");
     showToast("Please enter and confirm your password.", "warning");
     return false;
   }
   if (data.password !== data.confirmPassword) {
-    if (passwordError) passwordError.innerText = "Passwords do not match.";
+    setSignupError(passwordError, "Passwords do not match.");
     showToast("Passwords do not match.", "warning");
     return false;
   }
@@ -4788,58 +4884,72 @@ window.handleSignUp = function(e) {
   const signupData = getSignupFormData();
   if (!validateSignupFormData(signupData)) return;
 
-  const newUser = createApplicantUserFromSignup(signupData);
-  systemUsers.push(newUser);
-  
-  // PROTOTYPE BYPASS: Go directly to dashboard
-  isLoggedIn = true;
-  currentRole = 'applicant';
-  ACTIVE_ROLE_USER_IDS.applicant = newUser.id;
-  updateTopbarRole();
-  
-  showToast(`Prototype Access: Account created for ${newUser.name}.`);
+  showSignupOtpStep(signupData);
 };
 
 window.verifySignupOtp = async function() {
   const boxes = document.querySelectorAll("#signup-step-3 .otp-box");
-  const code = Array.from(boxes).map(b => b.value).join("");
+  const code = getSignupOtpCode();
   
   if (code.length < 6) {
     showToast("Please enter the full 6-digit verification code.", "warning");
     return;
   }
-  // In a real app, we'd verify the 'code' here.
-  // For the prototype, any 6-digit code works.
   if (!pendingSignupData) {
-    pendingSignupData = getSignupFormData();
-    if (!validateSignupFormData(pendingSignupData)) return;
+    showToast("Please complete the signup form before entering an OTP.", "warning");
+    navigateTo("signup");
+    return;
+  }
+  if (Date.now() > Number(pendingSignupData.otpExpiresAt || 0)) {
+    boxes.forEach((box) => box.classList.add("input-error"));
+    showToast("This OTP has expired. Please request a new code.", "warning");
+    return;
+  }
+  if (code !== pendingSignupData.devOtp) {
+    boxes.forEach((box) => box.classList.add("input-error"));
+    boxes[0]?.focus();
+    showToast("Invalid OTP. Please check the code and try again.", "error");
+    return;
+  }
+  if (signupEmailExists(pendingSignupData.email)) {
+    showToast("An account with this email already exists. Please log in instead.", "warning");
+    pendingSignupData = null;
+    navigateTo("login");
+    return;
   }
   
   const newUser = createApplicantUserFromSignup(pendingSignupData);
+  const verifiedEmail = pendingSignupData.email;
+  const verifiedName = pendingSignupData.fullName;
   
   systemUsers.push(newUser);
-  
-  // AUTOMATIC LOGIN
-  isLoggedIn = true;
-  currentRole = 'applicant'; // Standard applicant role
-  ACTIVE_ROLE_USER_IDS.applicant = newUser.id;
+
+  isLoggedIn = false;
+  currentRole = "applicant";
+  selectedLoginRole = "applicant";
   updateTopbarRole();
   
-  showToast(`Account verified! Welcome, ${pendingSignupData.fullName}. Logging you in...`);
+  showToast(
+    pendingAction
+      ? `Account verified for ${verifiedName}. Please log in to continue your registration.`
+      : `Account verified for ${verifiedName}. Please log in to continue.`,
+    "success",
+  );
   
-  // Reset and navigate to Dashboard
   pendingSignupData = null;
-  
-  if (pendingAction && pendingAction.type === 'registration') {
-    const action = pendingAction;
-    pendingAction = null;
-    startSubmissionFlow(action.typeId, action.method);
-  } else {
-    navigateTo(getDefaultDashboardPage(currentRole));
-  }
+  navigateTo("login");
+  const loginEmail = document.getElementById("loginEmail");
+  const loginPassword = document.getElementById("loginPassword");
+  if (loginEmail) loginEmail.value = verifiedEmail;
+  if (loginPassword) loginPassword.value = "";
+  loginPassword?.focus();
 };
 
 window.signupOtpAutoFocus = function(el) {
+  el.value = String(el.value || "").replace(/\D/g, "").slice(0, 1);
+  document.querySelectorAll("#signup-step-3 .otp-box").forEach((box) => {
+    box.classList.remove("input-error");
+  });
   if (el.value.length === 1 && el.nextElementSibling) {
     el.nextElementSibling.focus();
   }
@@ -4851,35 +4961,35 @@ window.signupOtpBackspace = function(e, el) {
   }
 };
 
+window.handleSignupOtpPaste = function(e) {
+  e.preventDefault();
+  const text = e.clipboardData?.getData("text") || window.clipboardData?.getData("Text") || "";
+  const boxes = setSignupOtpInputs(text);
+  const filledCount = Math.min(String(text).replace(/\D/g, "").length, boxes.length);
+  boxes[Math.max(0, filledCount - 1)]?.focus();
+};
+
 window.resendSignupOtp = async function() {
   if (!pendingSignupData?.email) {
     showToast("Please enter your signup email first.", "warning");
     return false;
   }
-  try {
-    const response = await apiRequest("accounts/resend-otp/", {
-      method: "POST",
-      auth: false,
-      body: {
-        email: pendingSignupData.email,
-        purpose: "registration",
-      },
-    });
-    pendingSignupData.devOtp = response.dev_otp || "";
-    showToast(
-      response.dev_otp
-        ? `A new verification code was sent. Dev OTP: ${response.dev_otp}`
-        : "A new verification code has been sent to your email.",
-      "success",
-    );
-  } catch (err) {
-    showToast(err.message || "Unable to resend OTP.", "error");
-  }
+  showSignupOtpStep(pendingSignupData, { resend: true });
   return false;
 };
 
 function findLoginUser(role, email) {
   const normalizedRole = normalizeRole(role);
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const matchingRoleUsers = systemUsers.filter(
+    (user) => normalizeRole(user.role) === normalizedRole && user.status === "Active",
+  );
+  if (normalizedEmail) {
+    const emailMatch = matchingRoleUsers.find(
+      (user) => String(user.email || "").trim().toLowerCase() === normalizedEmail,
+    );
+    if (emailMatch) return emailMatch;
+  }
   if (normalizedRole === "applicant") {
     return (
       systemUsers.find((user) => user.id === DEFAULT_APPLICANT_USER_ID) ||
@@ -4890,16 +5000,6 @@ function findLoginUser(role, email) {
       ) ||
       systemUsers.find((user) => normalizeRole(user.role) === "applicant")
     );
-  }
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  const matchingRoleUsers = systemUsers.filter(
-    (user) => normalizeRole(user.role) === normalizedRole && user.status === "Active",
-  );
-  if (normalizedEmail) {
-    const emailMatch = matchingRoleUsers.find(
-      (user) => String(user.email || "").toLowerCase() === normalizedEmail,
-    );
-    if (emailMatch) return emailMatch;
   }
   return matchingRoleUsers[0] || null;
 }
@@ -5045,7 +5145,7 @@ window.handleForgotPasswordSubmit = async function(e) {
         </p>
         ${
           response.dev_otp
-            ? `<p style="color:var(--gold-dark); font-size:0.85rem; margin-top:12px; font-weight:800;">Development OTP: ${response.dev_otp}</p>`
+            ? `<p style="color:var(--gold-dark); font-size:0.85rem; margin-top:12px; font-weight:800;">Prototype OTP: ${response.dev_otp}</p>`
             : ""
         }
         <button class="btn btn-primary btn-block" onclick="navigateTo('reset-password')" style="margin-top:20px;">
@@ -5055,7 +5155,7 @@ window.handleForgotPasswordSubmit = async function(e) {
     `;
     showToast(
       response.dev_otp
-        ? `Password reset OTP sent. Dev OTP: ${response.dev_otp}`
+        ? `Password reset OTP sent. Prototype OTP: ${response.dev_otp}`
         : "Password reset OTP sent.",
       "success",
     );
@@ -10113,6 +10213,87 @@ function renderIPSearchPage() {
 }
 
 // ===== SUBMISSION DETAIL =====
+function renderSubmissionActivityTimeline(submission, submittedSummary) {
+  const status = submission.status || "Pending";
+  const assignedReviewer = getAssignedReviewer(submission);
+  const evaluatorName = assignedReviewer?.name || "assigned evaluator";
+  const evaluatorLabel = escapeHtml(evaluatorName);
+  const applicantName = escapeHtml(submittedSummary.applicant || submission.applicant);
+  const statusLabel = escapeHtml(getDisplayStatusLabel(status));
+  const postReviewStatuses = ["Validated", "Approved", "Rejected", "Action Required", "On Going"];
+  const reviewStartedStatuses = ["Under Review", ...postReviewStatuses];
+  const timelineItems = [];
+
+  if (submission.ipophlVerificationEmailReceived) {
+    timelineItems.push({
+      time: escapeHtml(submission.ipophlEmailReceivedAt || "Just now"),
+      event: `<i class="fa-solid fa-envelope-circle-check" style="color:#22c55e"></i> IPOPHL verification email recorded; applicant notified.`,
+    });
+  }
+
+  if (status === "Approved") {
+    timelineItems.push({
+      time: "Mar 29, 2026 - 11:00 AM",
+      event: `<i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification`,
+    });
+  }
+
+  if (status === "Pending") {
+    timelineItems.push({
+      time: "Mar 27, 2026 - 2:32 PM",
+      event: assignedReviewer
+        ? `Application queued for review by ${evaluatorLabel}`
+        : "Application queued for evaluator assignment",
+    });
+  } else if (status === "Draft") {
+    timelineItems.push({
+      time: "Mar 27, 2026 - 2:32 PM",
+      event: "Application saved as draft",
+    });
+  } else {
+    timelineItems.push({
+      time: "Mar 27, 2026 - 2:32 PM",
+      event: `Status changed to ${statusLabel} by ${evaluatorLabel}`,
+    });
+  }
+
+  if (status === "Action Required") {
+    timelineItems.push({
+      time: "Mar 26, 2026 - 9:45 AM",
+      event: `<i class="fa-solid fa-triangle-exclamation" style="color:var(--gold)"></i> Requirements correction requested by ${evaluatorLabel}`,
+    });
+  } else if (postReviewStatuses.includes(status)) {
+    timelineItems.push({
+      time: "Mar 26, 2026 - 9:45 AM",
+      event: `<i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified by ${evaluatorLabel}`,
+    });
+  }
+
+  if (reviewStartedStatuses.includes(status)) {
+    timelineItems.push({
+      time: "Mar 25, 2026 - 10:15 AM",
+      event:
+        status === "Under Review"
+          ? `Documents under review by ${evaluatorLabel}`
+          : `Documents reviewed by ${evaluatorLabel}`,
+    });
+  }
+
+  timelineItems.push({
+    time: `${escapeHtml(submission.date)} - 9:00 AM`,
+    event: `Application submitted by ${applicantName}`,
+  });
+
+  return `<div class="timeline">
+    ${timelineItems
+      .map(
+        (item) =>
+          `<div class="timeline-item"><div class="time">${item.time}</div><div class="event">${item.event}</div></div>`,
+      )
+      .join("")}
+  </div>`;
+}
+
 function renderSubmissionDetail() {
   const s = submissions.find((sub) => sub.id === selectedSubmissionId);
   if (!s) return "<p>Submission not found.</p>";
@@ -10339,25 +10520,9 @@ function renderSubmissionDetail() {
         <div class="detail-panel" style="margin-top:20px">
           <h3><i class="fa-solid fa-timeline"></i> ${timelineTitle}</h3>
           ${
-            normalizedRole === "reviewer"
-              ? `<div class="timeline">
-            ${s.ipophlVerificationEmailReceived ? `<div class="timeline-item"><div class="time">${escapeHtml(s.ipophlEmailReceivedAt || "Just now")}</div><div class="event"><i class="fa-solid fa-envelope-circle-check" style="color:#22c55e"></i> IPOPHL verification email recorded; applicant notified.</div></div>` : ""}
-            ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
-            <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
-            <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${escapeHtml(submittedSummary.applicant || s.applicant)}</div></div>
-          </div>`
-              : showCopyrightOperationalFlow
+            showCopyrightOperationalFlow
               ? renderCopyrightOperationTimeline(s)
-              : `<div class="timeline">
-            ${s.ipophlVerificationEmailReceived ? `<div class="timeline-item"><div class="time">${escapeHtml(s.ipophlEmailReceivedAt || "Just now")}</div><div class="event"><i class="fa-solid fa-envelope-circle-check" style="color:#22c55e"></i> IPOPHL verification email recorded; applicant notified.</div></div>` : ""}
-            ${s.status === "Approved" ? '<div class="timeline-item"><div class="time">Mar 29, 2026 - 11:00 AM</div><div class="event"><i class="fa-solid fa-lock" style="color:#6366f1"></i> Metadata frozen for certification</div></div>' : ""}
-            <div class="timeline-item"><div class="time">Mar 27, 2026 - 2:32 PM</div><div class="event">Status changed to ${s.status} by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">Mar 26, 2026 - 9:45 AM</div><div class="event"><i class="fa-solid fa-clipboard-check" style="color:var(--gold)"></i> Requirements verified</div></div>
-            <div class="timeline-item"><div class="time">Mar 25, 2026 - 10:15 AM</div><div class="event">Documents reviewed by Admin Garcia</div></div>
-            <div class="timeline-item"><div class="time">${s.date} - 9:00 AM</div><div class="event">Application submitted by ${escapeHtml(submittedSummary.applicant || s.applicant)}</div></div>
-          </div>`
+              : renderSubmissionActivityTimeline(s, submittedSummary)
           }
         </div>
       </div>

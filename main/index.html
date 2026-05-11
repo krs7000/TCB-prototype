@@ -634,22 +634,23 @@
               </div>
               <h3 style="margin-bottom:8px;">Verify Your Email</h3>
               <p style="font-size:.9rem; color:var(--gray-500);">We sent a 6-digit code to <br><strong id="displayRegEmail" style="color:var(--navy);"></strong></p>
+              <p id="signupOtpHint" style="display:none; color:var(--gold-dark); font-size:0.85rem; margin-top:12px; font-weight:800;">Prototype OTP: <strong id="displaySignupOtp"></strong></p>
             </div>
             
             <div class="otp-inputs" style="display:flex; justify-content:center; gap:10px; margin-bottom:24px;">
-              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
-              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
-              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
-              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
-              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
-              <input type="text" maxlength="1" class="otp-box" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" />
+              <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-label="OTP digit 1" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" onpaste="handleSignupOtpPaste(event)" />
+              <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-label="OTP digit 2" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" onpaste="handleSignupOtpPaste(event)" />
+              <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-label="OTP digit 3" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" onpaste="handleSignupOtpPaste(event)" />
+              <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-label="OTP digit 4" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" onpaste="handleSignupOtpPaste(event)" />
+              <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-label="OTP digit 5" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" onpaste="handleSignupOtpPaste(event)" />
+              <input type="text" maxlength="1" class="otp-box" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-label="OTP digit 6" oninput="signupOtpAutoFocus(this)" onkeydown="signupOtpBackspace(event, this)" onpaste="handleSignupOtpPaste(event)" />
             </div>
 
-            <button class="btn btn-primary btn-block" onclick="verifySignupOtp()">
+            <button type="button" class="btn btn-primary btn-block" onclick="verifySignupOtp()">
               <i class="fa-solid fa-user-check"></i> Verify & Complete
             </button>
             <p style="text-align:center; margin-top:20px; font-size:.85rem; color:var(--gray-500);">
-              Didn't receive the code? <a href="#" onclick="resendSignupOtp()" style="color:var(--gold); font-weight:600;">Resend OTP</a>
+              Didn't receive the code? <a href="#" onclick="event.preventDefault(); resendSignupOtp()" style="color:var(--gold); font-weight:600;">Resend OTP</a>
             </p>
           </div>
 
@@ -735,6 +736,6 @@
 
   </div> <!-- End #app -->
 
-  <script src="app.js?v=66"></script>
+  <script src="app.js?v=69"></script>
 </body>
 </html>
