@@ -7414,6 +7414,17 @@ window.showTermsModal = function() {
   }
 };
 
+window.acceptTermsAndClose = function() {
+  ["regTerms", "reviewTermsConfirm"].forEach((id) => {
+    const checkbox = document.getElementById(id);
+    if (checkbox) {
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  closeModal();
+};
+
 window.toggleSubmitButton = function() {
   const checkbox = document.getElementById("reviewTermsConfirm");
   const btn = document.getElementById("finalSubmitBtn");
@@ -7677,7 +7688,10 @@ function renderTermsAndConditions(isModal = false) {
 
         <div style="margin-top:20px;">
           ${isModal 
-            ? `<a href="javascript:void(0)" onclick="closeModal()" style="display:inline-block; padding:12px 32px; background:white; color:#1e40af; font-weight:800; font-size:0.9rem; border-radius:10px; text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,0.15);">Close Terms &amp; Conditions</a>`
+            ? `<div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                <button type="button" onclick="closeModal()" style="display:inline-flex; align-items:center; justify-content:center; min-width:130px; padding:12px 28px; background:rgba(255,255,255,0.14); color:white; font-weight:800; font-size:0.9rem; border-radius:10px; border:1px solid rgba(255,255,255,0.45); cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.12);">Close</button>
+                <button type="button" onclick="acceptTermsAndClose()" style="display:inline-flex; align-items:center; justify-content:center; min-width:130px; padding:12px 28px; background:white; color:#1e40af; font-weight:800; font-size:0.9rem; border-radius:10px; border:1px solid white; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.15);">I Agree</button>
+              </div>`
             : `<a href="javascript:void(0)" onclick="navigateTo('landing')" style="display:inline-block; padding:12px 32px; background:white; color:#1e40af; font-weight:800; font-size:0.9rem; border-radius:10px; text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,0.15);"><i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i> Return to Homepage</a>`
           }
         </div>
