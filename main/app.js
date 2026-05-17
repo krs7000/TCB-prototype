@@ -22,6 +22,7 @@ let pendingParams = {};
 let pendingAction = null; // Stores action to perform after login/signup
 let currentMpType = "All";
 let landingMpType = "All";
+let marketplaceBookmarkedOnly = false;
 let dismissedTopAlertId = null;
 const IP_SERVICE_TYPES = ["Patent", "Trademark", "Copyright", "Utility Model", "Industrial Design"];
 const CORE_CASE_STATUSES = ["Under Review", "Validated", "On Going"];
@@ -95,7 +96,10 @@ const TCB_AUTH_STORAGE_KEY = "TCB_AUTH_SESSION";
 const TCB_RESET_EMAIL_STORAGE_KEY = "TCB_PENDING_RESET_EMAIL";
 const TCB_DEV_RESET_OTP_STORAGE_KEY = "TCB_DEV_RESET_OTP";
 const TCB_USER_SETTINGS_STORAGE_KEY = "TCB_USER_SETTINGS";
+const TCB_MARKETPLACE_BOOKMARKS_STORAGE_KEY = "TCB_MARKETPLACE_BOOKMARKS";
 const TCB_SIGNUP_OTP_TTL_MS = 10 * 60 * 1000;
+const APPLICANT_SESSION_TIMEOUT_MS = 15 * 60 * 1000;
+const APPLICANT_SESSION_WARNING_MS = 14 * 60 * 1000;
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", nativeLabel: "English" },
@@ -382,6 +386,128 @@ function t(text) {
   return translateInterfaceText(text);
 }
 
+function getApplicantBookmarkStore() {
+  try {
+    return JSON.parse(window.localStorage?.getItem(TCB_MARKETPLACE_BOOKMARKS_STORAGE_KEY) || "{}");
+  } catch (err) {
+    return {};
+  }
+}
+
+function persistApplicantBookmarkStore(store) {
+  try {
+    window.localStorage?.setItem(TCB_MARKETPLACE_BOOKMARKS_STORAGE_KEY, JSON.stringify(store || {}));
+  } catch (err) {
+    console.warn("Unable to save marketplace bookmarks", err);
+  }
+}
+
+function getApplicantBookmarkKey(user = getCurrentUser()) {
+  return String(user?.id || user?.email || "guest-applicant");
+}
+
+function getApplicantBookmarks(user = getCurrentUser()) {
+  const store = getApplicantBookmarkStore();
+  return Array.isArray(store[getApplicantBookmarkKey(user)]) ? store[getApplicantBookmarkKey(user)] : [];
+}
+
+function saveApplicantBookmarks(bookmarks, user = getCurrentUser()) {
+  const store = getApplicantBookmarkStore();
+  store[getApplicantBookmarkKey(user)] = Array.isArray(bookmarks) ? bookmarks : [];
+  persistApplicantBookmarkStore(store);
+}
+
+function canUseMarketplaceBookmarks() {
+  return isLoggedIn && normalizeRole(currentRole) === "applicant";
+}
+
+function getMarketplaceBookmark(listingId, user = getCurrentUser()) {
+  return getApplicantBookmarks(user).find((entry) => String(entry.listingId) === String(listingId)) || null;
+}
+
+function clearTemporarySessionData() {
+  pendingLoginOtp = null;
+  pendingSignupData = null;
+  pendingParams = {};
+  pendingAction = null;
+  selectedSubmissionId = null;
+  chatDraftAttachments = {};
+  wizardData = {};
+  currentWizardStep = 1;
+  currentFormType = "";
+  submissionMethod = "online";
+  try {
+    window.sessionStorage?.clear();
+    [
+      "TCB_TEMP_AUTH_TOKEN",
+      "TCB_TEMP_ROLE",
+      "TCB_TEMP_DASHBOARD_CACHE",
+      "TCB_LOGIN_SESSION",
+      "TCB_ROLE_SESSION",
+    ].forEach((key) => window.localStorage?.removeItem(key));
+    document.cookie
+      .split(";")
+      .map((cookie) => cookie.split("=")[0].trim())
+      .filter((name) => /^TCB_|^tcb_|session|auth|login|role/i.test(name))
+      .forEach((name) => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      });
+  } catch (err) {
+    console.warn("Unable to clear temporary session data", err);
+  }
+}
+
+let applicantSessionWarningTimer = null;
+let applicantSessionLogoutTimer = null;
+let applicantSessionWarningShown = false;
+let applicantSessionActivityBound = false;
+
+function stopApplicantSessionTimeout() {
+  clearTimeout(applicantSessionWarningTimer);
+  clearTimeout(applicantSessionLogoutTimer);
+  applicantSessionWarningTimer = null;
+  applicantSessionLogoutTimer = null;
+  applicantSessionWarningShown = false;
+}
+
+function expireApplicantSession() {
+  if (!isLoggedIn || normalizeRole(currentRole) !== "applicant") return;
+  logout({
+    expired: true,
+    message: "Your session has expired after 15 minutes of inactivity. Please log in again.",
+  });
+}
+
+function resetApplicantSessionTimeout() {
+  if (!isLoggedIn || normalizeRole(currentRole) !== "applicant") {
+    stopApplicantSessionTimeout();
+    return;
+  }
+  clearTimeout(applicantSessionWarningTimer);
+  clearTimeout(applicantSessionLogoutTimer);
+  applicantSessionWarningShown = false;
+  applicantSessionWarningTimer = setTimeout(() => {
+    if (!isLoggedIn || normalizeRole(currentRole) !== "applicant" || applicantSessionWarningShown) return;
+    applicantSessionWarningShown = true;
+    showToast("Your session will expire soon due to inactivity. Please continue using the system to stay logged in.", "warning");
+  }, APPLICANT_SESSION_WARNING_MS);
+  applicantSessionLogoutTimer = setTimeout(expireApplicantSession, APPLICANT_SESSION_TIMEOUT_MS);
+}
+
+function bindApplicantSessionActivityListeners() {
+  if (applicantSessionActivityBound) return;
+  applicantSessionActivityBound = true;
+  ["click", "keydown", "mousemove", "scroll", "touchstart", "input"].forEach((eventName) => {
+    document.addEventListener(
+      eventName,
+      () => {
+        if (isLoggedIn && normalizeRole(currentRole) === "applicant") resetApplicantSessionTimeout();
+      },
+      { passive: true },
+    );
+  });
+}
+
 function applyInterfaceLanguage(root = document, language = getPreferredLanguage()) {
   const scope = root || document;
   if (language === "en") return;
@@ -543,6 +669,7 @@ function applyAuthPayload(payload) {
   selectedLoginRole = currentRole;
   setActiveUserForRole(currentRole, user.id);
   updateTopbarRole();
+  resetApplicantSessionTimeout();
   return user;
 }
 
@@ -745,6 +872,7 @@ function updateMarketplaceTypeButtons(selector, type) {
 
 window.setMpType = function(type) {
   currentMpType = type;
+  marketplaceBookmarkedOnly = false;
   updateMarketplaceTypeButtons("#main-content .mp-type-btn, #marketplacePublicContent .mp-type-btn", type);
   filterMarketplace();
 };
@@ -3751,13 +3879,38 @@ function getDeadlineTone(deadline) {
   return "normal";
 }
 
+function parseDeadlineDateOnly(dateValue) {
+  if (!dateValue) return null;
+  const date =
+    dateValue instanceof Date
+      ? new Date(dateValue)
+      : new Date(
+          /^\d{4}-\d{2}-\d{2}$/.test(String(dateValue))
+            ? `${dateValue}T00:00:00`
+            : dateValue,
+        );
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 function getDaysUntilDate(dateValue) {
-  if (!dateValue) return 9999;
+  const target = parseDeadlineDateOnly(dateValue);
+  if (!target) return 9999;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const target = new Date(dateValue);
-  target.setHours(0, 0, 0, 0);
   return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+}
+
+function formatReviewerDeadlineDate(dateValue) {
+  if (!dateValue) return "No Deadline";
+  const date = parseDeadlineDateOnly(dateValue);
+  if (!date) return "No Deadline";
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function formatDeadlineStatus(deadline) {
@@ -3767,14 +3920,89 @@ function formatDeadlineStatus(deadline) {
   return `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
 }
 
+function isEvaluatedOrClosedCase(submission) {
+  return ["Validated", "Approved", "Rejected", "Cancelled", "Archived"].includes(
+    String(submission?.status || ""),
+  );
+}
+
+function getDefaultCaseDeadlineDate(submission) {
+  const sourceDate =
+    submission?.assignedAt ||
+    submission?.submittedAt ||
+    submission?.date ||
+    new Date().toISOString();
+  const date = parseDeadlineDateOnly(sourceDate) || new Date();
+  date.setDate(date.getDate() + 90);
+  return date.toISOString().slice(0, 10);
+}
+
+function getDisplayCaseDeadline(submission) {
+  if (!submission || isEvaluatedOrClosedCase(submission)) return null;
+  return (
+    getReviewerPrimaryDeadline(submission) || {
+      id: `DEFAULT-${submission.id}`,
+      task: "Evaluator review deadline",
+      dueDate: getDefaultCaseDeadlineDate(submission),
+      defaultDeadline: true,
+      completed: false,
+    }
+  );
+}
+
+function getReviewerPrimaryDeadline(submission) {
+  return (
+    ensureCaseDeadlines(submission)
+      .filter((deadline) => !deadline.completed && parseDeadlineDateOnly(deadline.dueDate))
+      .slice()
+      .sort((a, b) => getDaysUntilDate(a.dueDate) - getDaysUntilDate(b.dueDate))[0] || null
+  );
+}
+
+function getReviewerDeadlineMeta(submission) {
+  const deadline = getDisplayCaseDeadline(submission);
+  if (!deadline) {
+    return {
+      deadline: null,
+      daysLeft: Number.POSITIVE_INFINITY,
+      label: "No Deadline",
+      tone: "no-deadline",
+      sortBucket: 5,
+    };
+  }
+
+  const daysLeft = getDaysUntilDate(deadline.dueDate);
+  if (daysLeft < 0) return { deadline, daysLeft, label: "Overdue", tone: "overdue", sortBucket: 0 };
+  if (daysLeft === 0) return { deadline, daysLeft, label: "Due Today", tone: "today", sortBucket: 1 };
+  if (daysLeft <= 3) return { deadline, daysLeft, label: "Due Soon", tone: "soon", sortBucket: 2 };
+  if (daysLeft <= 7) return { deadline, daysLeft, label: "Upcoming", tone: "upcoming", sortBucket: 3 };
+  return { deadline, daysLeft, label: "Later", tone: "later", sortBucket: 4 };
+}
+
+function compareReviewerDeadlines(a, b) {
+  const left = getReviewerDeadlineMeta(a);
+  const right = getReviewerDeadlineMeta(b);
+  if (left.sortBucket !== right.sortBucket) return left.sortBucket - right.sortBucket;
+  if (left.daysLeft !== right.daysLeft) return left.daysLeft - right.daysLeft;
+  if (left.deadline?.dueDate && right.deadline?.dueDate && left.deadline.dueDate !== right.deadline.dueDate) {
+    return compareText(left.deadline.dueDate, right.deadline.dueDate);
+  }
+  return compareText(a.id, b.id);
+}
+
 function getCaseDeadlineRecipients(submission, deadline) {
   const recipients = new Set();
   const task = String(deadline?.task || "").toLowerCase();
-  if (
+  const applicantDeadline =
     task.includes("revision") ||
     task.includes("payment") ||
     task.includes("document") ||
-    task.includes("applicant response")
+    task.includes("applicant response");
+  if (applicantDeadline && isEvaluatedOrClosedCase(submission)) {
+    return [];
+  }
+  if (
+    applicantDeadline
   ) {
     const applicantId = getApplicantNotificationUserId(submission);
     if (applicantId) recipients.add(`applicant:${applicantId}`);
@@ -3834,7 +4062,9 @@ function maybeSendDeadlineReminders(submission) {
 function renderCaseDeadlinePanel(submission) {
   maybeSendDeadlineReminders(submission);
   const deadlines = ensureCaseDeadlines(submission);
-  const activeDeadlines = deadlines.filter((deadline) => !deadline.completed);
+  const activeDeadlines = isEvaluatedOrClosedCase(submission)
+    ? []
+    : deadlines.filter((deadline) => !deadline.completed);
   const canManageDeadlines = ["reviewer", "superadmin", "admin"].includes(normalizeRole(currentRole));
   const options = CASE_DEADLINE_TASKS.map((task) => `<option>${escapeHtml(task)}</option>`).join("");
   return `
@@ -3873,7 +4103,11 @@ function renderCaseDeadlinePanel(submission) {
             </div>`
           : ""
       }
-      <p class="deadline-helper">Reminder notifications are generated 7 days, 3 days, 1 day, on the due date, and after overdue.</p>
+      <p class="deadline-helper">${
+        isEvaluatedOrClosedCase(submission)
+          ? "Applicant deadline reminders are stopped after the case is evaluated or closed."
+          : "Reminder notifications are generated 7 days, 3 days, 1 day, on the due date, and after overdue."
+      }</p>
     </div>
   `;
 }
@@ -4349,7 +4583,7 @@ const DASHBOARD_PAGE_LABELS = {
   },
   "reviewer-my-cases": "My Cases",
   messages: "Messages",
-  "admin-contact-submissions": "Contact Submissions",
+  "admin-contact-submissions": "Inquiry Management",
   "submission-detail": "Submission Details",
   "admin-records": "IP Records",
   "admin-marketplace": "Market Listing",
@@ -4652,6 +4886,7 @@ function navigateTo(page, isBack = false, params = null) {
     renderDashboardContent(page);
     updateTopbarRole();
     updateActiveNavLinks(page);
+    resetApplicantSessionTimeout();
     // NEW: Sync the Shopee-style bottom nav active state
     if (typeof updateBottomNavItemActive === 'function') updateBottomNavItemActive(page);
   }
@@ -5938,6 +6173,7 @@ window.verifyOtp = function () {
     setActiveUserForRole("applicant", DEFAULT_APPLICANT_USER_ID);
   }
   updateTopbarRole();
+  resetApplicantSessionTimeout();
   
   showToast("MFA verified — Successfully logged in!");
 
@@ -5950,7 +6186,8 @@ window.verifyOtp = function () {
   }
 };
 
-function logout() {
+function logout(options = {}) {
+  stopApplicantSessionTimeout();
   const logoutUser = isLoggedIn ? getCurrentUser() : null;
   const logoutRole = currentRole;
   const refresh = getRefreshToken();
@@ -5961,6 +6198,7 @@ function logout() {
     }).catch(() => {});
   }
   setStoredAuthSession(null);
+  clearTemporarySessionData();
   if (logoutUser) {
     addAuditLog({
       accountName: logoutUser.name,
@@ -5975,7 +6213,7 @@ function logout() {
   currentRole = "applicant";
   selectedLoginRole = "applicant";
   navigateTo("landing");
-  showToast("Logged out successfully");
+  showToast(options.message || "Logged out successfully", options.expired ? "warning" : "info");
 }
 
 function handleMarketplaceAccess() {
@@ -6318,7 +6556,7 @@ function renderSidebar() {
         badge: getNewContactSubmissionCount(),
         children: [
           { page: "messages", icon: "fa-comments", text: "Chat Monitoring" },
-          { page: "admin-contact-submissions", icon: "fa-ticket", text: "Contact Submissions", badge: getNewContactSubmissionCount() },
+          { page: "admin-contact-submissions", icon: "fa-ticket", text: "Inquiry Management", badge: getNewContactSubmissionCount() },
         ],
       },
       { page: "admin-records", icon: "fa-folder-open", text: "IP Records" },
@@ -7349,7 +7587,7 @@ function validateChatFile(file) {
   if (file.size > CHAT_MAX_FILE_SIZE) {
     return {
       valid: false,
-      message: "File is too large. Maximum upload size is 5 MB.",
+      message: CHAT_FILE_SIZE_ERROR_MESSAGE,
     };
   }
   return { valid: true };
@@ -7450,6 +7688,101 @@ function renderCopyrightPaymentMessageMeta(message, submission) {
               <input id="paymentReceiptInput-${safeMessageId}" type="file" accept=".jpg,.jpeg,.png,.pdf" onchange="handlePaymentReceiptUpload(this, '${submission.id}', '${message.id}')" />
             </div>`
           : ""
+      }
+    </div>
+  `;
+}
+
+function getCasePaymentRequests(submissionId) {
+  return getCaseChatMessages(submissionId).filter(isCopyrightPaymentRequest);
+}
+
+function getPaymentReceiptForRequest(requestId, caseId = "") {
+  return chatMessages.find(
+    (message) =>
+      isCopyrightPaymentReceipt(message) &&
+      Number(message.payment_request_id) === Number(requestId) &&
+      (!caseId || message.case_id === caseId),
+  );
+}
+
+function renderPaymentReceiptAttachment(receipt) {
+  if (!receipt) return "";
+  return `
+    <div class="payment-panel-receipt">
+      ${renderChatAttachment(receipt)}
+      <div class="chat-payment-meta receipt">
+        <i class="fa-solid fa-clock"></i>
+        <span>Uploaded ${formatChatDateTime(receipt.created_at)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCasePaymentPanel(submission) {
+  const role = normalizeRole(currentRole);
+  const canView =
+    submission &&
+    (role === "applicant" || role === "reviewer") &&
+    (role !== "applicant" || isOwnSubmission(submission)) &&
+    (role !== "reviewer" || isAssignedReviewerSubmission(submission));
+  if (!canView) return "";
+
+  const requests = getCasePaymentRequests(submission.id);
+  const safeCaseId = String(submission.id).replace(/[^a-zA-Z0-9_-]/g, "_");
+  const heading =
+    role === "reviewer"
+      ? "Payment Panel - Receipt Review"
+      : "Payment Panel - Send Receipt";
+
+  return `
+    <div class="detail-panel payment-panel">
+      <h3><i class="fa-solid fa-receipt"></i> ${heading}</h3>
+      ${
+        requests.length
+          ? `<div class="payment-panel-list">
+              ${requests
+                .map((request) => {
+                  const receipt = getPaymentReceiptForRequest(request.id, submission.id);
+                  const canUpload = role === "applicant" && !receipt && request.receiver_id === getCurrentUser().id;
+                  const safeRequestId = String(request.id).replace(/[^a-zA-Z0-9_-]/g, "_");
+                  return `
+                    <div class="payment-panel-card">
+                      <div class="payment-panel-card__top">
+                        <span>${escapeHtml(request.payment_amount || "Payment request")}</span>
+                        <strong>${receipt ? "Receipt Submitted" : "Awaiting Receipt"}</strong>
+                      </div>
+                      ${
+                        request.payment_details
+                          ? `<div class="chat-payment-details">${escapeHtml(request.payment_details)}</div>`
+                          : ""
+                      }
+                      ${request.payment_note ? `<p>${escapeHtml(request.payment_note)}</p>` : ""}
+                      ${
+                        receipt
+                          ? renderPaymentReceiptAttachment(receipt)
+                          : role === "reviewer"
+                            ? `<div class="deadline-empty"><i class="fa-solid fa-hourglass-half"></i> No receipt uploaded yet.</div>`
+                            : ""
+                      }
+                      ${
+                        canUpload
+                          ? `<div class="chat-payment-actions">
+                              <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('paymentPanelReceipt-${safeCaseId}-${safeRequestId}').click()">
+                                <i class="fa-solid fa-upload"></i> Upload Receipt
+                              </button>
+                              <input id="paymentPanelReceipt-${safeCaseId}-${safeRequestId}" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx" onchange="handlePaymentReceiptUpload(this, '${submission.id}', '${request.id}', 'submission-detail')" />
+                            </div>`
+                          : ""
+                      }
+                    </div>
+                  `;
+                })
+                .join("")}
+            </div>`
+          : role === "reviewer"
+            ? `<div class="deadline-empty"><i class="fa-solid fa-receipt"></i> No payment request has been sent for this case.</div>`
+            : `<div class="deadline-empty"><i class="fa-solid fa-receipt"></i> No payment request is available yet. When an evaluator requests payment, upload the receipt here.</div>`
       }
     </div>
   `;
@@ -7614,7 +7947,7 @@ function renderChatThread(submission) {
                   <i class="fa-solid fa-paper-plane"></i> Send
                 </button>
               </div>
-              <div class="chat-upload-hint">Allowed: JPG, PNG, PDF, DOCX. Maximum size: 5 MB.</div>
+              <div class="chat-upload-hint">${CHAT_UPLOAD_HELPER_TEXT}</div>
             </div>`
           : readOnly
             ? `<div class="chat-readonly-note"><i class="fa-solid fa-eye"></i> Admin monitoring is read-only. Messages cannot be sent from this view.</div>`
@@ -7822,7 +8155,11 @@ function getAllContactSubmissionTickets() {
           suggestedReply: `Thank you for your inquiry about ${inquiry.listingTitle}. The IP office can provide availability, licensing, or collaboration details after review.`,
         }));
   const existingIds = new Set(contactSubmissions.map((item) => item.id));
-  return [...contactSubmissions, ...emailTickets.filter((item) => !existingIds.has(item.id))];
+  return [...contactSubmissions, ...emailTickets.filter((item) => !existingIds.has(item.id))]
+    .map((item, index) => ({
+      ...item,
+      id: item.id || `INQ-${new Date(item.timestamp || Date.now()).getFullYear()}-${String(index + 1).padStart(3, "0")}`,
+    }));
 }
 
 function renderContactSubmissionStatus(status) {
@@ -7830,19 +8167,192 @@ function renderContactSubmissionStatus(status) {
   return `<span class="contact-ticket-status ${className}">${escapeHtml(status)}</span>`;
 }
 
+function getInquirySearchText(item) {
+  return [
+    item.id,
+    item.sender,
+    item.email,
+    item.type,
+    item.subject,
+    item.message,
+    item.sourceListingTitle,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function getInquiryKeywords(text = "") {
+  const stopWords = new Set([
+    "show",
+    "the",
+    "a",
+    "an",
+    "about",
+    "from",
+    "this",
+    "that",
+    "inquiries",
+    "inquiry",
+    "questions",
+    "question",
+    "most",
+    "less",
+    "popular",
+    "newest",
+    "oldest",
+    "unanswered",
+    "answered",
+    "read",
+    "new",
+    "last",
+    "week",
+    "month",
+  ]);
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !stopWords.has(word));
+}
+
+function getInquiryTopicOverlapScore(left, right) {
+  const leftWords = new Set(getInquiryKeywords(getInquirySearchText(left)));
+  const rightWords = new Set(getInquiryKeywords(getInquirySearchText(right)));
+  let score = 0;
+  leftWords.forEach((word) => {
+    if (rightWords.has(word)) score += 1;
+  });
+  return score;
+}
+
+function getMarketplaceListingInterestCount(listingId) {
+  if (!listingId || typeof marketplaceInquiries === "undefined") return 0;
+  return marketplaceInquiries.filter((inquiry) => String(inquiry.listingId) === String(listingId)).length;
+}
+
+function getInquiryPopularityCount(item, allTickets = getAllContactSubmissionTickets()) {
+  const sameTypeCount = allTickets.filter(
+    (entry) => entry.id !== item.id && String(entry.type || "").toLowerCase() === String(item.type || "").toLowerCase(),
+  ).length;
+  const repeatedTopicCount = allTickets.filter(
+    (entry) => entry.id !== item.id && getInquiryTopicOverlapScore(item, entry) >= 2,
+  ).length;
+  const responseCount = item.status === "Replied" ? 2 : item.status === "Read" ? 1 : 0;
+  const sourceListing = marketplaceItems.find((entry) => String(entry.id) === String(item.sourceListingId));
+  const marketplaceInterestCount =
+    getMarketplaceListingInterestCount(item.sourceListingId) + Number(sourceListing?.interestCount || 0);
+  const viewCount = Number(item.views || sourceListing?.views || 0);
+  return sameTypeCount + repeatedTopicCount + responseCount + marketplaceInterestCount + viewCount;
+}
+
+function getInquiryNlqFilters(query = "") {
+  const normalized = String(query || "").trim().toLowerCase();
+  const filters = {
+    raw: query,
+    keywords: getInquiryKeywords(query),
+    sortMode: "",
+    status: "",
+    type: "",
+    dateRange: "",
+  };
+  if (!normalized) return filters;
+  if (/most popular|highest|top|frequent|frequency|repeated/.test(normalized)) filters.sortMode = "popular";
+  if (/less popular|least popular|lowest/.test(normalized)) filters.sortMode = "less";
+  if (/newest|latest|recent/.test(normalized)) filters.sortMode = "newest";
+  if (/oldest|earliest/.test(normalized)) filters.sortMode = "oldest";
+  if (/unanswered|not answered|no response|new inquiries/.test(normalized)) filters.status = "New";
+  else if (/(^|\s)(answered|replied|responded)(\s|$)/.test(normalized)) filters.status = "Replied";
+  if (/\bread\b/.test(normalized)) filters.status = "Read";
+  if (/archived/.test(normalized)) filters.status = "Archived";
+  filters.type = IP_SERVICE_TYPES.find((type) => normalized.includes(type.toLowerCase())) || "";
+  if (/marketplace|licensing|license|commercial/.test(normalized)) filters.type = filters.type || "Marketplace";
+  if (/this month/.test(normalized)) filters.dateRange = "this-month";
+  if (/last week/.test(normalized)) filters.dateRange = "last-week";
+  if (/today/.test(normalized)) filters.dateRange = "today";
+  return filters;
+}
+
+function isInquiryInDateRange(item, range) {
+  if (!range) return true;
+  const date = new Date(item.timestamp);
+  if (Number.isNaN(date.getTime())) return true;
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  if (range === "today") return date >= start && date <= end;
+  if (range === "this-month") {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return date >= monthStart && date <= monthEnd;
+  }
+  if (range === "last-week") {
+    const lastWeekEnd = new Date(start);
+    lastWeekEnd.setDate(start.getDate() - start.getDay());
+    const lastWeekStart = new Date(lastWeekEnd);
+    lastWeekStart.setDate(lastWeekEnd.getDate() - 7);
+    return date >= lastWeekStart && date < lastWeekEnd;
+  }
+  return true;
+}
+
+function getFilteredContactSubmissionTickets() {
+  const allTickets = getAllContactSubmissionTickets();
+  const nlqFilters = getInquiryNlqFilters(contactSubmissionNlq);
+  const sortMode = nlqFilters.sortMode || contactSubmissionSortMode;
+  const keywordText = nlqFilters.keywords.join(" ");
+  const filtered = allTickets
+    .map((item) => ({
+      ...item,
+      popularityCount: getInquiryPopularityCount(item, allTickets),
+    }))
+    .filter((item) => nlqFilters.status || contactSubmissionStatusFilter === "All" || item.status === contactSubmissionStatusFilter)
+    .filter((item) => !nlqFilters.status || item.status === nlqFilters.status)
+    .filter((item) => {
+      if (!nlqFilters.type) return true;
+      if (nlqFilters.type === "Marketplace") return /marketplace|licensing/i.test(`${item.type} ${item.subject} ${item.source || ""}`);
+      return String(item.type || "").toLowerCase().includes(nlqFilters.type.toLowerCase()) || getInquirySearchText(item).includes(nlqFilters.type.toLowerCase());
+    })
+    .filter((item) => isInquiryInDateRange(item, nlqFilters.dateRange))
+    .filter((item) => !keywordText || nlqFilters.keywords.every((word) => getInquirySearchText(item).includes(word)));
+
+  return filtered.sort((a, b) => {
+    if (sortMode === "popular") return b.popularityCount - a.popularityCount || new Date(b.timestamp) - new Date(a.timestamp);
+    if (sortMode === "less") return a.popularityCount - b.popularityCount || new Date(b.timestamp) - new Date(a.timestamp);
+    if (sortMode === "oldest") return new Date(a.timestamp) - new Date(b.timestamp);
+    return new Date(b.timestamp) - new Date(a.timestamp);
+  });
+}
+
+function renderInquiryNlqSummary() {
+  if (!contactSubmissionNlq.trim()) return "";
+  const filters = getInquiryNlqFilters(contactSubmissionNlq);
+  const chips = [
+    filters.sortMode ? `Sort: ${filters.sortMode === "popular" ? "Most Popular" : filters.sortMode === "less" ? "Less Popular" : filters.sortMode}` : "",
+    filters.status ? `Status: ${filters.status}` : "",
+    filters.type ? `Type/topic: ${filters.type}` : "",
+    filters.dateRange ? `Date: ${filters.dateRange.replace("-", " ")}` : "",
+    filters.keywords.length ? `Keywords: ${filters.keywords.join(", ")}` : "",
+  ].filter(Boolean);
+  return `<div class="inquiry-nlq-summary">${chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join("") || "<span>Natural language filter applied</span>"}</div>`;
+}
+
 function renderContactSubmissionsPage() {
   const statuses = ["All", "New", "Read", "Replied", "Archived"];
+  const visible = getFilteredContactSubmissionTickets();
   const allTickets = getAllContactSubmissionTickets();
-  const visible = allTickets.filter((item) => contactSubmissionStatusFilter === "All" || item.status === contactSubmissionStatusFilter);
+  const totalPopularity = visible.reduce((sum, item) => sum + Number(item.popularityCount || 0), 0);
   return `
     <div class="page-header comms-page-header">
       <div>
-        <h1><i class="fa-solid fa-ticket"></i> Contact Submissions</h1>
-        <p>Manage website inquiry forms as service tickets for the IP office.</p>
+        <h1><i class="fa-solid fa-ticket"></i> Inquiry Management</h1>
+        <p>Sort, search, and analyze applicant, viewer, and marketplace inquiries.</p>
       </div>
       <div class="contact-ticket-kpi">
-        <span>${getNewContactSubmissionCount()}</span>
-        <small>New inquiries</small>
+        <span>${totalPopularity}</span>
+        <small>Popularity score</small>
       </div>
     </div>
     <div class="contact-submissions-toolbar" role="tablist" aria-label="Contact submission status filters">
@@ -7857,15 +8367,77 @@ function renderContactSubmissionsPage() {
         )
         .join("")}
     </div>
+    <div class="inquiry-management-controls">
+      <div class="form-group">
+        <label for="contactSubmissionSort">Sort by popularity</label>
+        <select id="contactSubmissionSort" onchange="setContactSubmissionSort(this.value)">
+          <option value="popular" ${contactSubmissionSortMode === "popular" ? "selected" : ""}>Most Popular</option>
+          <option value="less" ${contactSubmissionSortMode === "less" ? "selected" : ""}>Less Popular</option>
+          <option value="newest" ${contactSubmissionSortMode === "newest" ? "selected" : ""}>Newest</option>
+          <option value="oldest" ${contactSubmissionSortMode === "oldest" ? "selected" : ""}>Oldest</option>
+        </select>
+      </div>
+      <div class="form-group inquiry-nlq-field">
+        <label for="contactSubmissionNlq">Natural Language Query</label>
+        <div class="inquiry-nlq-input">
+          <input id="contactSubmissionNlq" type="text" value="${escapeHtml(contactSubmissionNlq)}" placeholder="Show the most popular inquiries this month." onkeydown="if(event.key==='Enter') applyContactSubmissionNlq()" />
+          <button type="button" class="btn btn-primary btn-sm" onclick="applyContactSubmissionNlq()"><i class="fa-solid fa-wand-magic-sparkles"></i> Analyze</button>
+          <button type="button" class="btn btn-outline-navy btn-sm" onclick="clearContactSubmissionNlq()">Clear</button>
+        </div>
+      </div>
+    </div>
+    ${renderInquiryNlqSummary()}
     <section class="contact-ticket-board">
       <div class="contact-ticket-board-header">
-        <strong>${visible.length} tickets</strong>
-        <span><i class="fa-solid fa-shield-halved"></i> Admin communication queue</span>
+        <strong>${visible.length} of ${allTickets.length} inquiries</strong>
+        <span><i class="fa-solid fa-chart-line"></i> Popularity uses similar inquiries, responses, repeated topics, views, and marketplace interest.</span>
       </div>
-      <div class="contact-ticket-list">
-        ${visible.map(renderContactSubmissionTicket).join("") || `<div class="chat-empty-state"><i class="fa-solid fa-inbox"></i><h3>No submissions found</h3><p>Try another ticket status filter.</p></div>`}
+      <div class="table-responsive">
+        <table class="data-table inquiry-management-table">
+          <thead>
+            <tr>
+              <th>Inquiry ID</th>
+              <th>Sender Name</th>
+              <th>Email Address</th>
+              <th>Inquiry Type</th>
+              <th>Subject</th>
+              <th>Popularity Count</th>
+              <th>Status</th>
+              <th>Date Received</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${visible.map(renderContactSubmissionTableRow).join("") || `<tr><td colspan="9" style="text-align:center;padding:42px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="display:block;font-size:2rem;margin-bottom:10px;"></i>No inquiries found. Try a broader status or NLQ search.</td></tr>`}
+          </tbody>
+        </table>
       </div>
     </section>
+  `;
+}
+
+function renderContactSubmissionTableRow(item) {
+  return `
+    <tr>
+      <td><strong>${escapeHtml(item.id)}</strong></td>
+      <td>${escapeHtml(item.sender || "Unknown")}</td>
+      <td>${escapeHtml(item.email || "")}</td>
+      <td>${typeBadge(item.type || "General")}</td>
+      <td>
+        <strong>${escapeHtml(item.subject || "Inquiry")}</strong>
+        <p class="inquiry-table-message">${escapeHtml(item.message || "")}</p>
+      </td>
+      <td><span class="inquiry-popularity-count"><i class="fa-solid fa-chart-simple"></i> ${Number(item.popularityCount || 0)}</span></td>
+      <td>${renderContactSubmissionStatus(item.status)}</td>
+      <td>${formatChatDateTime(item.timestamp)}</td>
+      <td>
+        <div class="action-btns">
+          <button type="button" class="btn btn-primary btn-sm" onclick="handleContactTicketAction('${item.id}', 'reply')"><i class="fa-solid fa-reply"></i> Reply</button>
+          <button type="button" class="btn btn-outline-navy btn-sm" onclick="handleContactTicketAction('${item.id}', 'archive')"><i class="fa-solid fa-box-archive"></i> Archive</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="handleContactTicketAction('${item.id}', 'suggest')"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Suggest</button>
+        </div>
+      </td>
+    </tr>
   `;
 }
 
@@ -7902,6 +8474,21 @@ function renderContactSubmissionTicket(item) {
 
 window.setContactSubmissionStatusFilter = function(status) {
   contactSubmissionStatusFilter = status;
+  renderDashboardContent("admin-contact-submissions");
+};
+
+window.setContactSubmissionSort = function(sortMode) {
+  contactSubmissionSortMode = sortMode || "newest";
+  renderDashboardContent("admin-contact-submissions");
+};
+
+window.applyContactSubmissionNlq = function() {
+  contactSubmissionNlq = document.getElementById("contactSubmissionNlq")?.value.trim() || "";
+  renderDashboardContent("admin-contact-submissions");
+};
+
+window.clearContactSubmissionNlq = function() {
+  contactSubmissionNlq = "";
   renderDashboardContent("admin-contact-submissions");
 };
 
@@ -8090,7 +8677,7 @@ window.confirmCopyrightPaymentValidation = function(submissionId) {
   navigateTo("messages", false, { caseId: submission.id });
 };
 
-window.handlePaymentReceiptUpload = function(input, caseId, requestId) {
+window.handlePaymentReceiptUpload = function(input, caseId, requestId, returnPage = "messages") {
   const file = input.files?.[0];
   if (!file) return;
   const result = validateChatFile(file);
@@ -8148,7 +8735,11 @@ window.handlePaymentReceiptUpload = function(input, caseId, requestId) {
   });
   showToast("Receipt uploaded and sent to the evaluator.");
   renderSidebar();
-  renderDashboardContent("messages");
+  if (returnPage === "submission-detail") {
+    renderDashboardContent("submission-detail");
+  } else {
+    renderDashboardContent("messages");
+  }
 };
 
 window.sendChatMessage = function(caseId) {
@@ -8696,6 +9287,56 @@ function renderTermsAndConditions(isModal = false) {
   `;
 }
 
+function renderApplicantHelpIpGuidelines() {
+  const types = getIpGuidelineTypes();
+  return `
+    <section class="help-guidelines-section">
+      <div class="help-guidelines-heading">
+        <span class="m-eyebrow">Applicant Reference</span>
+        <h2><i class="fa-solid fa-book-open"></i> IP Guidelines</h2>
+        <p>The same guidance from the General Viewer is available here after login, covering what each IP type is for and what to prepare before filing.</p>
+      </div>
+      <div class="help-guidelines-list">
+        ${types
+          .map(
+            (type) => `
+          <div class="faq-item help-guideline-item">
+            <button onclick="toggleFaq(this)" class="faq-q help-guideline-toggle">
+              <span><i class="fa-solid ${type.icon}"></i> ${type.title}</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div class="faq-a help-guideline-body">
+              <div class="help-guideline-grid">
+                <div class="help-guideline-block">
+                  <strong>Short definition</strong>
+                  <p>${type.definition}</p>
+                </div>
+                <div class="help-guideline-block">
+                  <strong>When to use it</strong>
+                  <p>${type.whenToUse}</p>
+                </div>
+                <div class="help-guideline-block">
+                  <strong>What to prepare</strong>
+                  <ul>${type.docs.map((doc) => `<li>${doc}</li>`).join("")}</ul>
+                </div>
+                <div class="help-guideline-block">
+                  <strong>Helpful reminders</strong>
+                  <ul>
+                    ${type.requirements.map((item) => `<li>${item}</li>`).join("")}
+                    ${type.reminders.map((item) => `<li>${item}</li>`).join("")}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderFaq() {
 
   const faqData = {
@@ -8830,6 +9471,7 @@ function renderFaq() {
     </div>
     
     <div class="faq-container" style="max-width: 900px; margin: 0 auto; padding-bottom: 50px;">
+      ${renderApplicantHelpIpGuidelines()}
       ${renderGroup("Patent Guidelines", faqData.patent, '<i class="fa-solid fa-lightbulb"></i>', "linear-gradient(135deg,#3b82f6,#1d4ed8)")}
       ${renderGroup("Trademark Information", faqData.trademark, '<i class="fa-solid fa-stamp"></i>', "linear-gradient(135deg,#f59e0b,#d97706)")}
       ${renderGroup("Utility Model Protections", faqData.utilityModel, '<i class="fa-solid fa-gears"></i>', "linear-gradient(135deg,#6366f1,#4338ca)")}
@@ -9732,12 +10374,15 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
 
   const isMyCasesView = adminCaseScope === "mine";
   const hideReviewerQueueStatus = normalizeRole(currentRole) === "reviewer" && adminCaseScope === "queue";
+  if (reviewerMode) {
+    filtered.sort(compareReviewerDeadlines);
+  }
 
   return `
     <div class="table-container ${reviewerMode ? "reviewer-cases-table" : ""}" id="adminSubmissionsTable">
       <div class="table-header">
         ${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<h3>Visible Cases <span style="font-size:.8rem;font-weight:400;color:var(--gray-400);">(${filtered.length} result${filtered.length !== 1 ? "s" : ""})</span></h3>`}
-        <select class="filter-select" onchange="filterAdminStatus(this.value)">
+        ${reviewerMode ? "" : `<select class="filter-select" onchange="filterAdminStatus(this.value)">
           <option value="All">All Status</option>
           ${
             reviewerMode && adminCaseScope === "mine"
@@ -9752,7 +10397,7 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
                  <option value="Rejected" ${(filterStatus || "") === "Rejected" ? "selected" : ""}>Rejected</option>
                  <option value="Archived" ${(filterStatus || "") === "Archived" ? "selected" : ""}>Archived</option>`
           }
-        </select>
+        </select>`}
       </div>
       <div style="padding:0 24px 10px;display:flex;gap:10px;flex-wrap:wrap;">
         <button class="filter-btn ${adminCaseView === "active" ? "active" : ""}" onclick="setAdminCaseView('active')">Active Cases (${activeCount})</button>
@@ -9766,16 +10411,50 @@ function renderAdminSubmissionsTable(filterType, filterStatus, searchQuery) {
         <button class="filter-btn ${(filterType || "") === "Utility Model" ? "active" : ""}" onclick="filterAdminTable('Utility Model')">Utility Model</button>
         <button class="filter-btn ${(filterType || "") === "Industrial Design" ? "active" : ""}" onclick="filterAdminTable('Industrial Design')">Industrial Design</button>
       </div>
-      <div class="table-responsive"><table class="data-table ${reviewerMode ? "reviewer-case-data-table" : ""}"><thead><tr><th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th>${reviewerMode && isMyCasesView ? "<th>Deadline</th>" : ""}${hideReviewerQueueStatus ? "" : "<th>Status</th>"}<th>Actions</th></tr></thead><tbody>
+      <div class="table-responsive"><table class="data-table ${reviewerMode ? "reviewer-case-data-table" : ""}"><thead><tr>${
+        reviewerMode && isMyCasesView
+          ? "<th>Case Number</th><th>Applicant</th><th>IP Type</th><th>Current Status</th><th>Deadline</th><th>Deadline Status</th><th>Action</th>"
+          : reviewerMode
+            ? "<th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th><th>Date</th><th>Deadline</th><th>Actions</th>"
+            : `<th>Reference No.</th><th>Type</th><th>Title</th><th>Applicant</th>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : "<th>Specialist</th>"}<th>Date</th>${hideReviewerQueueStatus ? "" : "<th>Status</th>"}<th>Actions</th>`
+      }</tr></thead><tbody>
         ${
           filtered.length === 0
-            ? `<tr><td colspan="${hideReviewerQueueStatus ? "6" : isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
+            ? `<tr><td colspan="${reviewerMode ? "7" : hideReviewerQueueStatus ? "6" : isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "7" : "8"}" style="text-align:center;padding:50px;color:var(--gray-400);"><i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;"></i>No submissions match your criteria.</td></tr>`
             : filtered
                 .map(
                   (s) => {
                     const display = getSubmissionDisplayData(s);
+                    const deadlineMeta = getReviewerDeadlineMeta(s);
+                    if (reviewerMode && isMyCasesView) {
+                      const deadlineLabel = deadlineMeta.deadline
+                        ? escapeHtml(formatReviewerDeadlineDate(deadlineMeta.deadline.dueDate))
+                        : "No Deadline";
+                      return `<tr class="reviewer-deadline-row deadline-row-${deadlineMeta.tone}">
+          <td><strong>${s.id}</strong></td>
+          <td>${escapeHtml(display.applicant)}</td>
+          <td>${typeBadge(s.type)}</td>
+          <td>${statusBadge(s.status)}</td>
+          <td><div class="reviewer-deadline-cell"><span>${deadlineLabel}</span>${renderReviewerDeadlineStatus(deadlineMeta)}</div></td>
+          <td>${renderReviewerDeadlineStatus(deadlineMeta)}</td>
+          <td><div class="action-btns">
+            <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
+          </div></td></tr>`;
+                    }
+                    if (reviewerMode) {
+                      const deadlineLabel = deadlineMeta.deadline
+                        ? `${escapeHtml(formatReviewerDeadlineDate(deadlineMeta.deadline.dueDate))} ${renderReviewerDeadlineStatus(deadlineMeta)}`
+                        : "No Deadline";
+                      return `<tr class="reviewer-deadline-row deadline-row-${deadlineMeta.tone}">
+          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td><td>${s.date}</td><td><div class="reviewer-deadline-cell">${deadlineLabel}</div></td>
+          <td><div class="action-btns">
+            <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
+            ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
+            ${!canTakeSubmission(s) && !isAssignedReviewerSubmission(s) ? `<button class="btn btn-sm btn-secondary" disabled title="Evaluator: ${getAssignedReviewerName(s)}"><i class="fa-solid fa-lock"></i> Read Only</button>` : ""}
+          </div></td></tr>`;
+                    }
                     return `<tr>
-          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td>${reviewerMode && isMyCasesView ? `<td>${renderReviewerDeadline(s)}</td>` : ""}${hideReviewerQueueStatus ? "" : `<td>${statusBadge(s.status)}</td>`}
+          <td><strong>${s.id}</strong></td><td>${typeBadge(s.type)}</td><td>${escapeHtml(display.title)}</td><td>${escapeHtml(display.applicant)}</td>${isMyCasesView || normalizeRole(currentRole) === "reviewer" ? "" : `<td>${getAssignedReviewerName(s)}</td>`}<td>${s.date}</td>${hideReviewerQueueStatus ? "" : `<td>${statusBadge(s.status)}</td>`}
           <td><div class="action-btns">
             <button class="btn btn-sm btn-outline-navy" onclick="viewSubmission('${s.id}')"><i class="fa-solid fa-eye"></i> View</button>
             ${canTakeSubmission(s) ? `<button class="btn btn-sm btn-primary" onclick="takeCase('${s.id}')"><i class="fa-solid fa-hand-holding-hand"></i> Take Case</button>` : ""}
@@ -9803,6 +10482,8 @@ let adminRecordsTypeFilter = "All";
 let adminUserRoleFilter = "All";
 let messageIpFilter = "All";
 let contactSubmissionStatusFilter = "All";
+let contactSubmissionSortMode = "newest";
+let contactSubmissionNlq = "";
 let adminEmailTypeFilter = "All";
 let dashboardAnalyticsType = "All";
 let dashboardAnalyticsPeriod = "ThisYear";
@@ -9811,7 +10492,6 @@ let dashboardAnalyticsTo = "";
 let dashboardAnalyticsStatus = "All";
 let dashboardAnalyticsApplicantType = "All";
 let dashboardAnalyticsResult = "All";
-let marketplaceMineOnly = false;
 let announcementCategoryFilter = "All";
 let securityKeyVisibility = {
   primary: false,
@@ -9987,7 +10667,11 @@ const CHAT_ALLOWED_MIME_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
-const CHAT_MAX_FILE_SIZE = 5 * 1024 * 1024;
+const CHAT_MAX_FILE_SIZE_MB = 25;
+const CHAT_MAX_FILE_SIZE = CHAT_MAX_FILE_SIZE_MB * 1024 * 1024;
+const CHAT_UPLOAD_HELPER_TEXT = "Allowed: JPG, PNG, PDF, DOCX. Maximum size: 25 MB.";
+const CHAT_FILE_SIZE_ERROR_MESSAGE =
+  "File upload failed. The selected file exceeds the 25 MB maximum size limit.";
 let userFilterType = "All",
   userFilterStatus = "All",
   userSearchQuery = "",
@@ -11464,6 +12148,7 @@ function renderSubmissionDetail() {
               : ""
           }
         </div>
+        ${renderCasePaymentPanel(s)}
         ${renderCaseDeadlinePanel(s)}
         ${
           normalizedRole === "reviewer"
@@ -11751,8 +12436,8 @@ function renderCaseActivityTimeline(submission, submittedSummary = {}, audience 
   return renderTimelineItems(items, "case-activity-timeline");
 }
 
-function renderIpGuidelines(filterId = null) {
-  let types = [
+function getIpGuidelineTypes() {
+  return [
     {
       id: "patent",
       icon: "fa-lightbulb",
@@ -11760,11 +12445,13 @@ function renderIpGuidelines(filterId = null) {
       gradient: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
       title: "Patent",
       subtitle: "Protect original inventions & technical breakthroughs",
+      definition: "Patent is for inventions that provide a new technical solution to a problem.",
+      whenToUse: "Use it when the work is a technical invention, product, or process with a clearly explainable problem and solution.",
       term: "20 years from filing date",
       requirements: [
-        "Global novelty - the invention has not been publicly disclosed before filing.",
-        "Inventive step - the solution is not obvious to a person skilled in the field.",
-        "Industrial applicability - the invention can be made, used, or practiced.",
+        "Describe the invention clearly and explain how it works.",
+        "Identify the technical problem it solves.",
+        "Include drawings or diagrams when they help explain the invention.",
       ],
       process: [
         { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
@@ -11774,11 +12461,15 @@ function renderIpGuidelines(filterId = null) {
         { n: 5, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
       ],
       docs: [
+        "Claims, description, abstract, and supporting documents",
         "Generated Advisory Service Sheet",
         "Generated IP Disclosure Form",
-        "Form 110 Supplemental Sheet when there are multiple inventors/authors",
-        "Optional: Technical Drawings / Diagrams, Abstract, and Claims Statement"
-      ]
+        "Form 110 Supplemental Sheet when there are multiple inventors/authors"
+      ],
+      reminders: [
+        "Keep the explanation focused on the technical solution, not only the idea.",
+        "Prepare supporting files before starting if the invention needs diagrams."
+      ],
     },
     {
       id: "trademark",
@@ -11787,11 +12478,13 @@ function renderIpGuidelines(filterId = null) {
       gradient: "linear-gradient(135deg,#f59e0b,#d97706)",
       title: "Trademark",
       subtitle: "Protect names, logos, labels, and brand identifiers",
+      definition: "Trademark protects brand names, logos, symbols, or signs used to identify products or services.",
+      whenToUse: "Use it when protecting how customers recognize a brand, product line, service, label, or source identifier.",
       term: "10 years, renewable",
       requirements: [
-        "Distinctiveness - the mark must identify a source of goods or services.",
-        "Availability - the mark should not conflict with prior registered or pending marks.",
-        "Clear classification - goods or services must be described for the intended use."
+        "Provide the proposed brand name, logo, symbol, or sign.",
+        "Identify the goods or services connected to the mark.",
+        "Check that the mark is unique and not confusingly similar to others."
       ],
       process: [
         { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
@@ -11803,7 +12496,11 @@ function renderIpGuidelines(filterId = null) {
         "Mark specimen / logo file",
         "Goods and services description",
         "Proof of ownership or authorization when applicable"
-      ]
+      ],
+      reminders: [
+        "Focus on the mark applicants want the public to associate with their goods or services.",
+        "Avoid marks that are generic, misleading, or confusingly close to existing ones."
+      ],
     },
     {
       id: "utility",
@@ -11812,11 +12509,13 @@ function renderIpGuidelines(filterId = null) {
       gradient: "linear-gradient(135deg,#6366f1,#4338ca)",
       title: "Utility Model",
       subtitle: "Rapid protection for practical innovations",
+      definition: "Utility Model is for practical improvements or innovations with functional use.",
+      whenToUse: "Use it for useful product improvements or practical technical changes that solve a real operating need.",
       term: "7 years (non-renewable)",
       requirements: [
-        "Novelty - the utility model has not been publicly disclosed before filing.",
-        "Industrial applicability - the model has a practical use.",
-        "Practical improvement - the model improves the usefulness or operation of an article."
+        "Describe the improvement or practical feature.",
+        "Explain how it is useful.",
+        "Identify what makes it different from existing products."
       ],
       process: [
         { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
@@ -11826,11 +12525,15 @@ function renderIpGuidelines(filterId = null) {
         { n: 5, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
       ],
       docs: [
+        "Description, drawings, claims, and required forms",
         "Generated Advisory Service Sheet",
         "Generated IP Disclosure Form",
-        "Optional: Technical Drawings / Diagrams",
-        "Optional: Abstract and Claims Statement"
-      ]
+        "Technical drawings or diagrams when available"
+      ],
+      reminders: [
+        "Keep the filing centered on the practical improvement and its usefulness.",
+        "Show the functional difference from existing products as clearly as possible."
+      ],
     },
     {
       id: "industrial",
@@ -11839,11 +12542,13 @@ function renderIpGuidelines(filterId = null) {
       gradient: "linear-gradient(135deg,#ec4899,#be185d)",
       title: "Industrial Design",
       subtitle: "Safeguard the unique visual style of products",
+      definition: "Industrial Design protects the visual appearance of a product.",
+      whenToUse: "Use it when the value lies in how a product looks, including its shape, pattern, ornament, or visual arrangement.",
       term: "5 years (renewable up to 15)",
       requirements: [
-        "Ornamental novelty - the visual appearance is new.",
-        "Applied to a practical article.",
-        "Protects appearance only, not technical function."
+        "Provide product images or drawings.",
+        "Describe the shape, pattern, ornament, or design.",
+        "Keep the focus on appearance, not function."
       ],
       process: [
         { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
@@ -11857,7 +12562,11 @@ function renderIpGuidelines(filterId = null) {
         "Generated IP Disclosure Form",
         "Required Drawings: perspective, front, back, left, right, top, and bottom views",
         "Description and claim of design"
-      ]
+      ],
+      reminders: [
+        "Use clear views that make the visual appearance easy to inspect.",
+        "Do not frame the filing around technical performance; that belongs elsewhere."
+      ],
     },
 
     {
@@ -11867,11 +12576,13 @@ function renderIpGuidelines(filterId = null) {
       gradient: "linear-gradient(135deg,#10b981,#059669)",
       title: "Copyright",
       subtitle: "Protect creative works, code, and literature",
+      definition: "Copyright protects original creative works.",
+      whenToUse: "Use it for literary, artistic, software, music, audiovisual, or other original expressive content.",
       term: "Lifetime + 50 years",
       requirements: [
-        "Originality - the work must be independently created.",
-        "Fixation - the work must be captured in a tangible or digital form.",
-        "Creative expression - protects expression, not ideas or procedures."
+        "Provide the title and description of the work.",
+        "Identify the author or creator.",
+        "Upload a copy or sample of the work."
       ],
       process: [
         { n: 1, t: "Profile Check", d: "Confirm first name, last name, personal email, and contact number in the applicant profile." },
@@ -11881,13 +12592,22 @@ function renderIpGuidelines(filterId = null) {
         { n: 5, t: "Review", d: "Submit for manual evaluator review and resolve any exact Action Required requests." }
       ],
       docs: [
+        "Explain the work type, such as literary, artistic, software, music, or visual content",
         "Generated Advisory Service Sheet",
         "BCRR Form 2025-1 or BCRR Form 2025-2",
         "Valid ID and copy of the work",
         "Affidavit of Ownership plus TIN/SSS/GSIS or business details when required"
-      ]
+      ],
+      reminders: [
+        "Protection covers original expression, not ideas by themselves.",
+        "Prepare a clean copy or representative sample of the submitted work."
+      ],
     }
   ];
+}
+
+function renderIpGuidelines(filterId = null) {
+  const types = getIpGuidelineTypes();
 
   const selectedType = filterId ? types.find((t) => t.id === filterId) : null;
   const visibleTypes = selectedType ? [selectedType] : types;
@@ -11924,6 +12644,17 @@ function renderIpGuidelines(filterId = null) {
             </div>
             <div style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); padding:8px 18px; border-radius:50px; color:white; font-size:0.8rem; font-weight:700;">
               Protection: ${t.term}
+            </div>
+          </div>
+
+          <div style="padding:24px 32px; display:grid; gap:14px; border-bottom:1px solid var(--gray-100); background:rgba(255,255,255,0.96);">
+            <div>
+              <strong style="display:block; color:var(--navy); font-size:0.9rem; margin-bottom:4px;">Short definition</strong>
+              <p style="margin:0; color:var(--gray-600); line-height:1.65;">${t.definition}</p>
+            </div>
+            <div>
+              <strong style="display:block; color:var(--navy); font-size:0.9rem; margin-bottom:4px;">When to use it</strong>
+              <p style="margin:0; color:var(--gray-600); line-height:1.65;">${t.whenToUse}</p>
             </div>
           </div>
           
@@ -11969,6 +12700,12 @@ function renderIpGuidelines(filterId = null) {
                   </div>
                 `).join('')}
               </div>
+              <h4 style="font-size:0.85rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:1px; margin:0 0 16px; display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-circle-info" style="color:${t.color}"></i> Helpful reminders
+              </h4>
+              <ul style="margin:0; padding-left:18px; display:grid; gap:10px; color:var(--gray-600); line-height:1.55;">
+                ${t.reminders.map((reminder) => `<li>${reminder}</li>`).join("")}
+              </ul>
             </div>
           </div>
         </div>
@@ -22611,10 +23348,13 @@ function buildMarketplaceListingFromCertifiedRecord(record, id) {
     title: record.title,
     fullTitle: record.title.toUpperCase(),
     type: record.type,
+    caseNumber: record.id,
     inventor: record.applicant,
     college: record.department,
     description,
     longDescription: description,
+    category: record.type,
+    availabilityStatus: "Available",
     features: [
       `Certified ${record.type} record ${record.id}.`,
       "Reviewed and locked in the IP Records archive for integrity.",
@@ -22690,8 +23430,12 @@ window.showMarketListingModal = function(id = null) {
     : {
         title: "",
         type: "Patent",
+        caseNumber: "",
         inventor: "",
         description: "",
+        longDescription: "",
+        category: "",
+        availabilityStatus: "Available",
         contactPerson: "",
         contactEmail: "",
         image: "",
@@ -22707,7 +23451,7 @@ window.showMarketListingModal = function(id = null) {
     <form onsubmit="saveMarketListing(event, ${id === null ? "null" : id})">
       <div class="form-row">
         <div class="form-group">
-          <label>Product Title *</label>
+          <label>Listing Title *</label>
           <input type="text" id="marketTitle" value="${escapeHtml(item.title || "")}" ${readOnly ? "disabled" : ""} required />
         </div>
         <div class="form-group">
@@ -22723,18 +23467,12 @@ window.showMarketListingModal = function(id = null) {
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Inventor / Lead *</label>
+          <label>Case Number *</label>
+          <input type="text" id="marketCaseNumber" value="${escapeHtml(item.caseNumber || item.sourceRecordId || "")}" ${readOnly ? "disabled" : ""} required />
+        </div>
+        <div class="form-group">
+          <label>Inventor/Applicant Name *</label>
           <input type="text" id="marketInventor" value="${escapeHtml(item.inventor || "")}" ${readOnly ? "disabled" : ""} required />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Contact Person</label>
-          <input type="text" id="marketContactPerson" value="${escapeHtml(item.contactPerson || item.inventor || "")}" ${readOnly ? "disabled" : ""} />
-        </div>
-        <div class="form-group">
-          <label>Contact Email</label>
-          <input type="email" id="marketContactEmail" value="${escapeHtml(item.contactEmail || "")}" ${readOnly ? "disabled" : ""} />
         </div>
       </div>
       <div class="form-group">
@@ -22742,12 +23480,44 @@ window.showMarketListingModal = function(id = null) {
         <textarea id="marketDescription" rows="4" ${readOnly ? "disabled" : ""} required>${escapeHtml(item.description || "")}</textarea>
       </div>
       <div class="form-group">
-        <label>Image Path / URL</label>
-        <input type="text" id="marketImage" value="${escapeHtml(item.image || "")}" ${readOnly ? "disabled" : ""} placeholder="images/your-image.png" />
+        <label>Full Description *</label>
+        <textarea id="marketLongDescription" rows="5" ${readOnly ? "disabled" : ""} required>${escapeHtml(item.longDescription || item.description || "")}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category *</label>
+          <input type="text" id="marketCategory" value="${escapeHtml(item.category || item.type || "")}" ${readOnly ? "disabled" : ""} required />
+        </div>
+        <div class="form-group">
+          <label>Availability Status *</label>
+          <select id="marketAvailabilityStatus" ${readOnly ? "disabled" : ""} required>
+            ${["Available", "Pending", "Unavailable"].map((status) => `<option value="${status}" ${(item.availabilityStatus || "Available") === status ? "selected" : ""}>${status}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="form-group marketplace-image-field">
+        <label>Upload Listing Image</label>
+        <p class="marketplace-image-helper">Upload an image that represents the invention, product, design, or technology being listed.</p>
+        <div class="marketplace-image-upload ${readOnly ? "disabled" : ""}" ${readOnly ? "" : "onclick=\"document.getElementById('marketImageInput').click()\""}>
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <div>
+            <strong id="marketImageStatus">${item.image ? "Image selected" : "Choose an image from your device"}</strong>
+            <span>${item.image ? "Click to replace the current image." : "A placeholder image will be used if nothing is uploaded."}</span>
+          </div>
+          <input type="file" id="marketImageInput" hidden accept="image/*" ${readOnly ? "disabled" : ""} onchange="handleMarketImageUpload(this)" />
+          <input type="hidden" id="marketImageUrl" value="${escapeHtml(item.image || "")}" />
+        </div>
+        <div class="marketplace-image-preview-shell">
+          <img id="marketImagePreview" class="marketplace-image-preview" src="${escapeHtml(item.image || "images/psu_logo_main.png")}" alt="Marketplace listing preview" />
+          ${readOnly ? "" : `<div class="marketplace-image-actions">
+            <button type="button" class="btn btn-sm btn-outline-navy" onclick="document.getElementById('marketImageInput').click()"><i class="fa-solid fa-rotate"></i> Replace</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="removeMarketListingImage()"><i class="fa-solid fa-trash"></i> Remove</button>
+          </div>`}
+        </div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
         <button type="button" class="btn btn-outline-navy" onclick="closeModal()">Cancel</button>
-        ${readOnly ? "" : `<button type="submit" class="btn btn-primary">${isEdit ? "Save Changes" : "Create Listing"}</button>`}
+        ${readOnly ? "" : `<button type="submit" class="btn btn-primary">${isEdit ? "Save Changes" : "Save Listing"}</button>`}
       </div>
     </form>
   `;
@@ -22759,14 +23529,15 @@ window.saveMarketListing = function(event, id) {
 
   const title = document.getElementById("marketTitle").value.trim();
   const type = document.getElementById("marketType").value;
+  const caseNumber = document.getElementById("marketCaseNumber").value.trim();
   const inventor = document.getElementById("marketInventor").value.trim();
   const description = document.getElementById("marketDescription").value.trim();
-  const contactPerson =
-    document.getElementById("marketContactPerson").value.trim() || inventor;
-  const contactEmail = document.getElementById("marketContactEmail").value.trim();
-  const image = document.getElementById("marketImage").value.trim();
+  const longDescription = document.getElementById("marketLongDescription").value.trim();
+  const category = document.getElementById("marketCategory").value.trim();
+  const availabilityStatus = document.getElementById("marketAvailabilityStatus").value;
+  const image = document.getElementById("marketImageUrl").value.trim() || "images/psu_logo_main.png";
 
-  if (!title || !type || !inventor || !description) {
+  if (!title || !type || !caseNumber || !inventor || !description || !longDescription || !category || !availabilityStatus) {
     showToast("Please complete all required listing fields.");
     return;
   }
@@ -22779,12 +23550,15 @@ window.saveMarketListing = function(event, id) {
       title,
       fullTitle: entry.fullTitle || title.toUpperCase(),
       type,
+      caseNumber,
       inventor,
       description,
-      longDescription: entry.longDescription || description,
-      contactPerson,
-      contactEmail: contactEmail || entry.contactEmail || "techtransfer@psu.edu.ph",
-      image: image || entry.image || "images/psu_logo_main.png",
+      longDescription,
+      category,
+      availabilityStatus,
+      contactPerson: entry.contactPerson || inventor,
+      contactEmail: entry.contactEmail || "techtransfer@psu.edu.ph",
+      image,
       icon: entry.icon || getMarketplaceIconForType(type),
       archived: Boolean(entry.archived),
     });
@@ -22805,17 +23579,20 @@ window.saveMarketListing = function(event, id) {
       title,
       fullTitle: title.toUpperCase(),
       type,
+      caseNumber,
       inventor,
       description,
-      longDescription: description,
+      longDescription,
+      category,
+      availabilityStatus,
       features: [],
       businessPotential:
         "Commercial potential assessment is pending admin enrichment.",
-      contactPerson,
-      contactEmail: contactEmail || "techtransfer@psu.edu.ph",
+      contactPerson: inventor,
+      contactEmail: "techtransfer@psu.edu.ph",
       year: new Date().getFullYear(),
       icon: getMarketplaceIconForType(type),
-      image: image || "images/psu_logo_main.png",
+      image,
       archived: false,
     });
     addAuditLog({
@@ -22830,6 +23607,39 @@ window.saveMarketListing = function(event, id) {
 
   closeModal();
   renderDashboardContent("admin-marketplace");
+};
+
+window.handleMarketImageUpload = function(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!file.type.startsWith("image/")) {
+    showToast("Please upload a valid image file.");
+    input.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const imageValue = event.target?.result || "";
+    const imageUrl = document.getElementById("marketImageUrl");
+    const preview = document.getElementById("marketImagePreview");
+    const status = document.getElementById("marketImageStatus");
+    if (imageUrl) imageUrl.value = imageValue;
+    if (preview) preview.src = imageValue || "images/psu_logo_main.png";
+    if (status) status.textContent = `Image uploaded: ${file.name}`;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.removeMarketListingImage = function() {
+  const imageInput = document.getElementById("marketImageInput");
+  const imageUrl = document.getElementById("marketImageUrl");
+  const preview = document.getElementById("marketImagePreview");
+  const status = document.getElementById("marketImageStatus");
+  if (imageInput) imageInput.value = "";
+  if (imageUrl) imageUrl.value = "";
+  if (preview) preview.src = "images/psu_logo_main.png";
+  if (status) status.textContent = "No image selected. Placeholder will be used.";
 };
 
 window.publishCertifiedRecordToMarketplace = function(recordId) {
@@ -23001,11 +23811,12 @@ window.archiveMarketListing = function(id) {
 
 function renderMarketplace() {
   const activeMarketplaceItems = getFilteredMarketplaceItems();
+  const showBookmarkControls = canUseMarketplaceBookmarks();
   return `
     <div class="page-header">
 
       <h1>Innovation Marketplace</h1>
-      <p>Discover and connect with PSU innovations and research outputs.</p>
+      <p>${marketplaceBookmarkedOnly ? "Review marketplace listings saved to your applicant bookmarks." : "Discover and connect with PSU innovations and research outputs."}</p>
     </div>
 
     <div class="mp-type-filters">
@@ -23028,9 +23839,9 @@ function renderMarketplace() {
         <i class="fa-solid fa-copyright"></i> Copyright
       </button>
       ${
-        normalizeRole(currentRole) === "applicant"
-          ? `<button class="mp-type-btn ${marketplaceMineOnly ? "active" : ""}" onclick="toggleMarketplaceMineOnly()">
-              <i class="fa-solid fa-user-check"></i> My Listing
+        showBookmarkControls
+          ? `<button class="mp-type-btn ${marketplaceBookmarkedOnly ? "active" : ""}" onclick="toggleBookmarkedMarketplaceFilter()">
+              <i class="fa-solid fa-bookmark"></i> Saved Innovations
             </button>`
           : ""
       }
@@ -23042,7 +23853,11 @@ function renderMarketplace() {
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="mpSearch" placeholder="Search by title, inventor, or description..." oninput="filterMarketplace()" />
         </div>
-        <div class="innovation-grid" id="innovationGrid">${renderInnovationCards(activeMarketplaceItems)}</div>
+        ${
+          marketplaceBookmarkedOnly && showBookmarkControls
+            ? `<div id="bookmarkedMarketplaceList">${renderBookmarkedMarketplaceList(activeMarketplaceItems)}</div>`
+            : `<div class="innovation-grid" id="innovationGrid">${renderInnovationCards(activeMarketplaceItems)}</div>`
+        }
       </div>
     </div>`;
 }
@@ -23051,18 +23866,83 @@ function renderMarketplace() {
 function renderInnovationCards(items) {
   return items
     .map(
-      (item) => `
+      (item) => {
+        const bookmark = getMarketplaceBookmark(item.id);
+        const showBookmarkControls = canUseMarketplaceBookmarks();
+        return `
     <div class="innovation-card" onclick="showInnovationDetail(${jsArg(item.id)})">
-      <div class="innovation-card-img" ${item.image ? `style="background:url('${item.image}') center/cover no-repeat"` : ""}>${!item.image ? `<i class="${item.icon}"></i>` : ""}</div>
+      <div class="innovation-card-img" style="background:url('${item.image || "images/psu_logo_main.png"}') center/cover no-repeat"></div>
       <div class="innovation-card-body">
         <h4>${item.title}</h4>
         <div class="innovation-meta">${typeBadge(item.type)} <span><i class="fa-solid fa-user"></i> ${item.inventor}</span></div>
         <p>${item.description.substring(0, 100)}...</p>
-        <span class="learn-more">Learn More <i class="fa-solid fa-arrow-right"></i></span>
+        <div class="marketplace-card-actions">
+          <span class="learn-more">Learn More <i class="fa-solid fa-arrow-right"></i></span>
+          ${
+            showBookmarkControls
+              ? `<button type="button" class="marketplace-bookmark-btn ${bookmark ? "saved" : ""}" onclick="event.stopPropagation(); toggleMarketplaceBookmark(${jsArg(item.id)})" title="${bookmark ? "Remove bookmark" : "Bookmark listing"}">
+                  <i class="fa-${bookmark ? "solid" : "regular"} fa-bookmark"></i> ${bookmark ? "Saved" : "Bookmark"}
+                </button>`
+              : ""
+          }
+        </div>
       </div>
-    </div>`,
+    </div>`;
+      },
     )
     .join("");
+}
+
+function renderBookmarkedMarketplaceList(items) {
+  const bookmarks = getApplicantBookmarks();
+  if (!bookmarks.length) {
+    return `<div class="chat-empty-state"><i class="fa-regular fa-bookmark"></i><h3>No saved innovations yet</h3><p>Use the Bookmark button on marketplace cards to save listings here.</p></div>`;
+  }
+  if (!items.length) {
+    return `<div class="chat-empty-state"><i class="fa-solid fa-magnifying-glass"></i><h3>No bookmarked listings match this search</h3><p>Clear the search box or change the IP type filter.</p></div>`;
+  }
+  return `
+    <section class="bookmarked-listings-panel">
+      <div class="contact-ticket-board-header">
+        <strong>Bookmarked Listings</strong>
+        <span>${items.length} saved innovation${items.length === 1 ? "" : "s"} shown</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table bookmarked-listings-table">
+          <thead>
+            <tr>
+              <th>Listing title</th>
+              <th>IP type</th>
+              <th>Inventor/Applicant name</th>
+              <th>Short description</th>
+              <th>Date bookmarked</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items
+              .map((item) => {
+                const bookmark = getMarketplaceBookmark(item.id);
+                return `
+                  <tr>
+                    <td><strong>${escapeHtml(item.title)}</strong></td>
+                    <td>${typeBadge(item.type)}</td>
+                    <td>${escapeHtml(item.inventor || "")}</td>
+                    <td>${escapeHtml(item.description || "")}</td>
+                    <td>${bookmark ? formatChatDateTime(bookmark.bookmarkedAt) : ""}</td>
+                    <td><div class="action-btns">
+                      <button type="button" class="btn btn-sm btn-outline-navy" onclick="showInnovationDetail(${jsArg(item.id)})"><i class="fa-solid fa-eye"></i> View Details</button>
+                      <button type="button" class="btn btn-sm btn-secondary" onclick="toggleMarketplaceBookmark(${jsArg(item.id)})"><i class="fa-solid fa-bookmark-slash"></i> Remove Bookmark</button>
+                    </div></td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
 }
 
 function getFilteredMarketplaceItems(searchValue = "") {
@@ -23070,15 +23950,8 @@ function getFilteredMarketplaceItems(searchValue = "") {
   const search = String(searchValue || "").toLowerCase();
   return marketplaceItems.filter((item) => {
     if (item.archived) return false;
-    if (marketplaceMineOnly) {
-      const user = getCurrentUser();
-      const mine =
-        normalizePersonLookup(item.inventor) === normalizePersonLookup(user.name) ||
-        normalizePersonLookup(item.contactPerson) === normalizePersonLookup(user.name) ||
-        String(item.contactEmail || "").toLowerCase() === String(user.email || "").toLowerCase();
-      if (!mine) return false;
-    }
     if (type !== "All" && item.type !== type) return false;
+    if (marketplaceBookmarkedOnly && !getMarketplaceBookmark(item.id)) return false;
     if (
       search &&
       !item.title.toLowerCase().includes(search) &&
@@ -23114,17 +23987,57 @@ function renderConversationStatusIndicator(submission) {
 function filterMarketplace() {
   const search = document.getElementById("mpSearch")?.value.toLowerCase() || "";
   let filtered = getFilteredMarketplaceItems(search);
+  const bookmarkList = document.getElementById("bookmarkedMarketplaceList");
+  if (bookmarkList) {
+    bookmarkList.innerHTML = renderBookmarkedMarketplaceList(filtered);
+    return;
+  }
+
   const grid = document.getElementById("innovationGrid");
   if (!grid) return;
-
   grid.innerHTML = filtered.length
     ? renderInnovationCards(filtered)
     : '<p style="grid-column:1/-1;text-align:center;color:var(--gray-400);padding:60px 0">No innovations found matching your criteria.</p>';
 }
 
-window.toggleMarketplaceMineOnly = function() {
-  marketplaceMineOnly = !marketplaceMineOnly;
+window.toggleBookmarkedMarketplaceFilter = function() {
+  if (!canUseMarketplaceBookmarks()) {
+    showToast("Please log in as an applicant to bookmark this listing.", "warning");
+    return;
+  }
+  marketplaceBookmarkedOnly = !marketplaceBookmarkedOnly;
+  if (marketplaceBookmarkedOnly) currentMpType = "All";
   renderDashboardContent("marketplace-dash");
+};
+
+window.toggleMarketplaceBookmark = function(id) {
+  if (!canUseMarketplaceBookmarks()) {
+    showToast("Please log in as an applicant to bookmark this listing.", "warning");
+    return;
+  }
+  const item = marketplaceItems.find((entry) => String(entry.id) === String(id));
+  if (!item) return;
+  const bookmarks = getApplicantBookmarks();
+  const existingIndex = bookmarks.findIndex((entry) => String(entry.listingId) === String(id));
+  if (existingIndex >= 0) {
+    bookmarks.splice(existingIndex, 1);
+    saveApplicantBookmarks(bookmarks);
+    showToast("Listing removed from your bookmarks.");
+  } else {
+    bookmarks.unshift({
+      listingId: String(id),
+      title: item.title,
+      type: item.type,
+      bookmarkedAt: new Date().toISOString(),
+    });
+    saveApplicantBookmarks(bookmarks);
+    showToast("Listing added to your bookmarks.");
+  }
+  if (currentPage === "marketplace-dash") {
+    renderDashboardContent("marketplace-dash");
+  } else if (currentPage === "marketplace") {
+    document.getElementById("marketplacePublicContent").innerHTML = renderMarketplace();
+  }
 };
 
 // In-memory store for expressed interests (prototype only)
@@ -23172,6 +24085,8 @@ function showInnovationDetail(id) {
   const isInterested = userInterests.includes(String(id));
   const role = normalizeRole(currentRole);
   const canSendInquiry = !["admin", "superadmin", "reviewer"].includes(role);
+  const bookmark = getMarketplaceBookmark(id);
+  const showBookmarkControls = canUseMarketplaceBookmarks();
   const modalOverlay = document.getElementById("modalOverlay");
   const modalCard = document.querySelector("#modalOverlay .modal-card");
   if (modalOverlay) modalOverlay.classList.add("marketplace-detail-overlay");
@@ -23188,6 +24103,7 @@ function showInnovationDetail(id) {
             <div class="ip-detail-badges">
               ${typeBadge(item.type)}
               <span class="interest-badge"><i class="fa-solid fa-eye"></i> 124 Views</span>
+              ${bookmark ? '<span class="badge badge-approved"><i class="fa-solid fa-bookmark"></i> Bookmarked</span>' : ""}
               ${isInterested ? '<span class="badge badge-approved"><i class="fa-solid fa-check-double"></i> Interest Sent</span>' : ''}
             </div>
           </div>
@@ -23209,21 +24125,28 @@ function showInnovationDetail(id) {
             <p class="ip-detail-text">${item.businessPotential || "High potential for commercialization and industry licensing within its respective sector."}</p>
           </section>
 
-          <footer class="detail-footer-contact">
-            Interested in this technology? Connect with the inventors to discuss licensing, partnerships, or acquisition.
-          </footer>
           ${
             canSendInquiry
-              ? `<button class="btn btn-primary" style="margin-top:16px;" onclick="sendMarketplaceInquiry(${jsArg(item.id)})">
+              ? `<footer class="detail-footer-contact">
+                  Interested in this technology? Connect with the inventors to discuss licensing, partnerships, or acquisition.
+                </footer>
+                <button class="btn btn-primary" style="margin-top:16px;" onclick="sendMarketplaceInquiry(${jsArg(item.id)})">
                   <i class="fa-solid fa-paper-plane"></i> Send Inquiry
-                </button>`
+                </button>
+                ${
+                  showBookmarkControls
+                    ? `<button class="btn btn-outline-navy" style="margin-top:16px;" onclick="toggleMarketplaceBookmark(${jsArg(item.id)}); showInnovationDetail(${jsArg(item.id)});">
+                        <i class="fa-${bookmark ? "solid" : "regular"} fa-bookmark"></i> ${bookmark ? "Remove Bookmark" : "Save Listing"}
+                      </button>`
+                    : ""
+                }`
               : ""
           }
         </div>
 
         <!-- Sidebar / Visuals -->
         <div class="ip-detail-side">
-          <div class="ip-product-visual" style="background-image: url('${item.image}')"></div>
+          <div class="ip-product-visual" style="background-image: url('${item.image || "images/psu_logo_main.png"}')"></div>
           <p class="ip-visual-caption">
             ${item.title.split(" ").slice(0, 2).join(" ")} visual
           </p>
@@ -23331,7 +24254,7 @@ window.submitMarketplaceInquiry = function(event, id) {
   }
 
   const nextNumber =
-    contactSubmissions.reduce((max, inquiry) => {
+    getAllContactSubmissionTickets().reduce((max, inquiry) => {
       const match = String(inquiry.id || "").match(/INQ-\d{4}-(\d+)/);
       return match ? Math.max(max, Number(match[1])) : max;
     }, 0) + 1;
@@ -23736,13 +24659,8 @@ function renderUserSubmissions() {
   `;
 }
 
-function renderReviewerDeadline(submission) {
-  const assignedDate = new Date(submission.assignedAt || submission.date || new Date());
-  const deadline = new Date(assignedDate);
-  deadline.setDate(deadline.getDate() + 90);
-  const daysLeft = Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24));
-  const tone = daysLeft < 0 ? "badge-rejected" : daysLeft <= 14 ? "badge-pending" : "badge-approved";
-  return `<span class="badge ${tone}">${deadline.toLocaleDateString()} (${daysLeft < 0 ? `${Math.abs(daysLeft)} overdue` : `${daysLeft} days left`})</span>`;
+function renderReviewerDeadlineStatus(meta) {
+  return `<span class="deadline-status-pill ${meta.tone}">${escapeHtml(meta.label)}</span>`;
 }
 
 function renderEvaluationContentPanel(submission, mode = "read") {
@@ -26361,6 +27279,7 @@ function getInitialPageFromUrl() {
 
 // ===== INIT =====
 document.addEventListener("DOMContentLoaded", async () => {
+  bindApplicantSessionActivityListeners();
   await initializeBackendConnection();
   if (currentRole === "applicant" && isLoggedIn) {
     navigateTo("user-dashboard");
