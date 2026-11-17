@@ -120,6 +120,10 @@
         <!-- Applicant Top Navigation -->
         <nav id="dashboard-top-nav" style="display: none; align-items: center; gap: 24px; margin-left: auto; margin-right: 32px;"></nav>
         <div class="topbar-right">
+          <button type="button" class="topbar-assistance-btn" id="assistedFilingTopBtn" onclick="window.AssistedFiling && window.AssistedFiling.togglePanel(this)" aria-expanded="false" aria-controls="assistedFilingPanel" title="Interaction Assistance (Voice & Gesture)" style="display:none;">
+            <i class="fa-solid fa-headset"></i>
+            <span class="assisted-filing-btn-text">Assisted Filing</span>
+          </button>
           <div class="notif-bell-wrap" id="notifBell" onclick="toggleNotifications()">
             <i class="fa-solid fa-bell"></i>
             <span class="notif-badge" id="notifBadge">2</span>
@@ -759,12 +763,436 @@
       <span class="toast-message" id="toastMessage"></span>
     </div>
 
+    <!-- ====== INTERACTION ASSISTANCE PANEL (ASSISTED FILING) ====== -->
+    <aside
+      id="assistedFilingPanel"
+      class="assisted-filing-panel"
+      role="region"
+      aria-label="Interaction assistance panel"
+      aria-hidden="true"
+    >
+      <div class="assistance-panel-inner">
+        <div class="assistance-panel-header">
+          <div class="assistance-panel-title-wrap">
+            <div class="assistance-panel-icon"><i class="fa-solid fa-headset"></i></div>
+            <div>
+              <h2 id="assistancePanelHeading" class="assistance-panel-title">Interaction Assistance</h2>
+              <p class="assistance-panel-sub">Multimodal Voice &amp; Gesture Filing Support</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="assistance-panel-close-btn"
+            id="closeAssistedFilingPanelBtn"
+            aria-label="Close interaction assistance panel"
+            onclick="window.AssistedFiling && window.AssistedFiling.closePanel()"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
 
+        <div class="assistance-panel-body">
+          <!-- Privacy & Service Notice (hidden per user request) -->
+          <div class="assistance-notice" role="note" style="display:none;" aria-hidden="true">
+            <i class="fa-solid fa-shield-halved assistance-notice-icon"></i>
+            <div class="assistance-notice-text">
+              <strong>Privacy &amp; Local Processing:</strong> Speech recognition and camera gesture detection operate locally via browser APIs. Microphone and webcam access are requested only upon explicit user action. Video and audio are processed strictly in-browser memory; zero frames or recordings are persisted or uploaded to servers.
+            </div>
+          </div>
 
+          <!-- Unsupported Browser Warning (shown only if SpeechRecognition is not available) -->
+          <div id="voiceUnsupportedNotice" class="assistance-warning" style="display:none;" role="alert">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <strong>Speech Recognition Unsupported:</strong> Your browser does not support the Web Speech API. You can continue using touchscreen taps and keyboard controls.
+            </div>
+          </div>
 
+          <!-- Voice Navigation Controls -->
+          <section class="assistance-section" aria-labelledby="voiceNavHeading">
+            <div class="assistance-section-header">
+              <h3 id="voiceNavHeading"><i class="fa-solid fa-microphone-lines"></i> Voice Navigation</h3>
+              <span id="voiceNavStatusBadge" class="voice-status-badge status-idle">Microphone Off</span>
+            </div>
+
+            <p class="assistance-section-desc">
+              Speak predictable navigation commands to navigate cases, forms, and steps without touching the screen.
+            </p>
+
+            <div class="assistance-action-row">
+              <button
+                type="button"
+                id="btnVoiceNavToggle"
+                class="btn btn-primary btn-voice-toggle"
+                aria-pressed="false"
+                onclick="window.AssistedFiling && window.AssistedFiling.toggleVoiceNav()"
+              >
+                <i class="fa-solid fa-microphone"></i>
+                <span id="btnVoiceNavToggleText">Start Listening</span>
+              </button>
+
+              <button
+                type="button"
+                id="btnClearVoiceLog"
+                class="btn btn-outline-navy btn-sm"
+                onclick="window.AssistedFiling && window.AssistedFiling.clearFeedback()"
+                title="Clear recognition log"
+              >
+                <i class="fa-solid fa-rotate-left"></i> Clear
+              </button>
+            </div>
+
+            <!-- Visible Recognition Feedback -->
+            <div class="voice-feedback-card" role="status" aria-live="polite">
+              <div class="voice-feedback-row">
+                <span class="voice-feedback-label">Heard Speech:</span>
+                <span id="voiceNavTranscript" class="voice-feedback-transcript">(None)</span>
+              </div>
+              <div class="voice-feedback-row">
+                <span class="voice-feedback-label">Action / Status:</span>
+                <span id="voiceNavMessage" class="voice-feedback-message">Ready. Click "Start Listening" to speak commands.</span>
+              </div>
+            </div>
+
+            <!-- Supported Commands List -->
+            <div class="assistance-commands-card">
+              <h4><i class="fa-solid fa-list-check"></i> Supported Voice Commands</h4>
+              <ul class="assistance-commands-list">
+                <li>
+                  <code>“Open my cases”</code>
+                  <span>Navigates to your applications and draft list</span>
+                </li>
+                <li>
+                  <code>“Show forms”</code>
+                  <span>Opens available filing forms and pre-filing hub</span>
+                </li>
+                <li>
+                  <code>“Open IP guidelines”</code>
+                  <span>Opens official PSU intellectual property guidelines</span>
+                </li>
+                <li>
+                  <code>“Open messages”</code>
+                  <span>Opens your evaluator chat and case inquiry messages</span>
+                </li>
+                <li>
+                  <code>“Open marketplace”</code>
+                  <span>Opens the university technology transfer marketplace</span>
+                </li>
+                <li>
+                  <code>“Home”</code>
+                  <span>Returns to the main applicant home dashboard</span>
+                </li>
+                <li>
+                  <code>“Back”</code>
+                  <span>Navigates back to the previous page</span>
+                </li>
+              </ul>
+              <p class="assistance-commands-note" style="display:none;" aria-hidden="true">
+                <i class="fa-solid fa-lock"></i> <strong>Safety Rule:</strong> Submitting, deleting, withdrawing, and approving applications cannot be voice-triggered.
+              </p>
+            </div>
+          </section>
+
+          <!-- Optional Enhancement: Read Step Instructions (Speech Synthesis) -->
+          <section class="assistance-section" aria-labelledby="audioGuidanceHeading">
+            <div class="assistance-section-header">
+              <h3 id="audioGuidanceHeading"><i class="fa-solid fa-volume-high"></i> Spoken Step Guidance</h3>
+            </div>
+            <p class="assistance-section-desc">
+              Listen to step instructions. Voice commands are automatically muted while reading so the system does not trigger itself.
+            </p>
+            <div class="assistance-action-row">
+              <button
+                type="button"
+                id="btnReadInstructions"
+                class="btn btn-outline-navy btn-read-instructions"
+                onclick="window.AssistedFiling && window.AssistedFiling.readCurrentStepInstructions()"
+              >
+                <i class="fa-solid fa-volume-high"></i> Read Instructions
+              </button>
+              <button
+                type="button"
+                id="btnStopReading"
+                class="btn btn-secondary btn-stop-reading"
+                style="display:none;"
+                onclick="window.AssistedFiling && window.AssistedFiling.stopReadingInstructions()"
+              >
+                <i class="fa-solid fa-volume-xmark"></i> Stop Reading
+              </button>
+            </div>
+          </section>
+
+          <!-- Gesture Interaction Controls (Camera-based Computer Vision) -->
+          <section class="assistance-section" aria-labelledby="gestureNavHeading">
+            <div class="assistance-section-header">
+              <h3 id="gestureNavHeading"><i class="fa-solid fa-video"></i> Gesture Interaction</h3>
+              <span id="gestureStatusBadge" class="gesture-status-badge status-idle">Camera Off</span>
+            </div>
+
+            <p class="assistance-section-desc">
+              Control wizard sections, document scrolling, and draft saving hands-free using real-time camera gesture recognition.
+            </p>
+
+            <!-- Camera Unsupported Notice -->
+            <div id="cameraUnsupportedNotice" class="assistance-warning" style="display:none;" role="alert">
+              <i class="fa-solid fa-video-slash"></i>
+              <div id="cameraUnsupportedNoticeText">
+                <strong>Camera Unavailable:</strong> Gesture navigation requires camera access. You can continue using voice commands and touchscreen/keyboard controls.
+              </div>
+            </div>
+
+            <div class="assistance-action-row">
+              <button
+                type="button"
+                id="btnGestureToggle"
+                class="btn btn-outline-navy btn-gesture-toggle"
+                aria-pressed="false"
+                onclick="window.AssistedFiling && window.AssistedFiling.toggleGestureRecognition()"
+              >
+                <i class="fa-solid fa-video"></i>
+                <span id="btnGestureToggleText">Enable Gesture Navigation</span>
+              </button>
+
+              <button
+                type="button"
+                id="btnToggleGesturePreview"
+                class="btn btn-outline-navy btn-sm"
+                onclick="window.AssistedFiling && window.AssistedFiling.toggleGesturePreview()"
+                title="Toggle camera preview HUD"
+              >
+                <i class="fa-solid fa-eye"></i> HUD Preview
+              </button>
+
+              <button
+                type="button"
+                id="btnClearGestureLog"
+                class="btn btn-outline-navy btn-sm"
+                onclick="window.AssistedFiling && window.AssistedFiling.clearGestureFeedback()"
+                title="Clear gesture feedback log"
+              >
+                <i class="fa-solid fa-rotate-left"></i> Clear
+              </button>
+            </div>
+
+            <!-- Collapsible Gesture HUD & Live Tracking Preview -->
+            <div id="gestureHudContainer" class="gesture-hud-container" style="display:none;">
+              <div class="gesture-hud-header">
+                <span class="gesture-hud-title"><i class="fa-solid fa-circle-dot gesture-hud-dot"></i> Live Computer Vision HUD</span>
+                <span class="gesture-hud-privacy-badge"><i class="fa-solid fa-shield-halved"></i> In-Browser Only</span>
+              </div>
+              <div class="gesture-hud-viewport">
+                <video id="gestureVideo" autoplay playsinline muted style="display:none;"></video>
+                <canvas id="gestureCanvas" class="gesture-canvas-preview" width="320" height="240" aria-label="Camera gesture recognition visual tracking canvas"></canvas>
+                <div id="gestureDetectionBadge" class="gesture-detection-overlay-badge">
+                  <i class="fa-solid fa-hand"></i>
+                  <span id="gestureDetectionText">No hand detected</span>
+                </div>
+                <div id="gestureHoldProgressWrap" class="gesture-hold-progress-wrap" style="display:none;">
+                  <div class="gesture-hold-progress-label">
+                    <span>Hold Progress:</span>
+                    <strong id="gestureHoldPercent">0%</strong>
+                  </div>
+                  <div class="gesture-hold-bar-bg">
+                    <div id="gestureHoldBar" class="gesture-hold-bar-fill" style="width:0%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Visible Recognition Feedback -->
+            <div class="voice-feedback-card gesture-feedback-card" role="status" aria-live="polite">
+              <div class="voice-feedback-row">
+                <span class="voice-feedback-label">Detected Gesture:</span>
+                <span id="gestureFeedbackDetected" class="voice-feedback-transcript">(None)</span>
+              </div>
+              <div class="voice-feedback-row">
+                <span class="voice-feedback-label">Action / Status:</span>
+                <span id="gestureFeedbackAction" class="voice-feedback-message">Ready. Click "Enable Gesture Navigation" to activate camera.</span>
+              </div>
+            </div>
+
+            <!-- Simplified Gesture Quick Guide -->
+            <div class="assistance-commands-card gesture-reference-card">
+              <h4><i class="fa-solid fa-hand-sparkles"></i> Gesture Quick Guide</h4>
+              <p class="gesture-card-subtitle">Show your hand clearly to the camera:</p>
+
+              <div class="gesture-simple-grid">
+                <!-- 1 Finger -->
+                <div class="gesture-simple-item">
+                  <div class="gesture-simple-badge">
+                    <span class="gesture-emoji">☝️</span> <strong>1 Finger</strong>
+                  </div>
+                  <div class="gesture-simple-action">
+                    <i class="fa-solid fa-arrow-right"></i> Next Page
+                  </div>
+                </div>
+
+                <!-- 2 Fingers -->
+                <div class="gesture-simple-item">
+                  <div class="gesture-simple-badge">
+                    <span class="gesture-emoji">✌️</span> <strong>2 Fingers</strong>
+                  </div>
+                  <div class="gesture-simple-action">
+                    <i class="fa-solid fa-arrow-left"></i> Previous Page
+                  </div>
+                </div>
+
+                <!-- Thumbs Up -->
+                <div class="gesture-simple-item">
+                  <div class="gesture-simple-badge">
+                    <span class="gesture-emoji">👍</span> <strong>Thumbs Up</strong>
+                  </div>
+                  <div class="gesture-simple-action">
+                    <i class="fa-solid fa-arrow-up"></i> Scroll Up
+                  </div>
+                </div>
+
+                <!-- Thumbs Down -->
+                <div class="gesture-simple-item">
+                  <div class="gesture-simple-badge">
+                    <span class="gesture-emoji">👎</span> <strong>Thumbs Down</strong>
+                  </div>
+                  <div class="gesture-simple-action">
+                    <i class="fa-solid fa-arrow-down"></i> Scroll Down
+                  </div>
+                </div>
+
+                <!-- 3 Fingers -->
+                <div class="gesture-simple-item">
+                  <div class="gesture-simple-badge">
+                    <span class="gesture-emoji">🤟</span> <strong>3 Fingers</strong>
+                  </div>
+                  <div class="gesture-simple-action">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Form
+                  </div>
+                </div>
+
+                <!-- 4 Fingers -->
+                <div class="gesture-simple-item">
+                  <div class="gesture-simple-badge">
+                    <span class="gesture-emoji">✋</span> <strong>4 Fingers</strong>
+                  </div>
+                  <div class="gesture-simple-action">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                  </div>
+                </div>
+              </div>
+
+              <p class="assistance-commands-note" style="display:none; margin-top:12px;" aria-hidden="true">
+                <i class="fa-solid fa-shield-halved"></i> <strong>Privacy Guard:</strong> Camera frames are processed strictly in local browser memory. Zero video frames are recorded, saved, or uploaded to any server.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ====== DICTATION REVIEW MODAL ====== -->
+    <div
+      id="dictationReviewModal"
+      class="modal-overlay dictation-review-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dictationModalTitle"
+      onclick="window.AssistedFiling && window.AssistedFiling.cancelDictation()"
+      style="display:none;"
+    >
+      <div class="modal-card dictation-review-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="dictation-modal-icon"><i class="fa-solid fa-microphone"></i></div>
+            <div>
+              <h3 id="dictationModalTitle" style="margin:0;">Review Dictated Speech</h3>
+              <span id="dictationFieldTargetName" style="font-size:0.82rem; color:var(--gray-500);">Field: Description of the Intellectual Property</span>
+            </div>
+          </div>
+          <button class="modal-close" type="button" aria-label="Cancel dictation" onclick="window.AssistedFiling && window.AssistedFiling.cancelDictation()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="modal-body" style="padding:20px;">
+          <p style="font-size:0.92rem; color:var(--gray-600); margin-bottom:12px;">
+            Review and edit the recognized text before inserting it into your application. You can edit using touch or keyboard:
+          </p>
+
+          <div class="form-group" style="margin-bottom:16px;">
+            <label for="dictationReviewInput" style="font-weight:700; color:var(--navy); font-size:0.88rem; margin-bottom:6px; display:block;">
+              Recognized Text (Editable):
+            </label>
+            <textarea
+              id="dictationReviewInput"
+              class="patent-editor-field__control patent-editor-field__control--textarea"
+              rows="5"
+              placeholder="Speak into your microphone..."
+              style="min-height:120px;"
+            ></textarea>
+          </div>
+
+          <div id="dictationExistingNotice" class="dictation-existing-notice" style="display:none; font-size:0.85rem; color:var(--navy); background:var(--gray-50); padding:10px 14px; border-radius:8px; margin-bottom:16px;">
+            <i class="fa-solid fa-circle-info" style="color:var(--gold-dark); margin-right:6px;"></i>
+            <span>This field already contains text. Choose whether to append to it or replace it.</span>
+          </div>
+
+          <div class="dictation-review-actions">
+            <button
+              type="button"
+              id="btnDictationInsert"
+              class="btn btn-primary"
+              onclick="window.AssistedFiling && window.AssistedFiling.insertDictatedText('replace')"
+            >
+              <i class="fa-solid fa-arrow-down-to-bracket"></i> Insert Text
+            </button>
+
+            <button
+              type="button"
+              id="btnDictationAppend"
+              class="btn btn-outline-navy"
+              style="display:none;"
+              onclick="window.AssistedFiling && window.AssistedFiling.insertDictatedText('append')"
+            >
+              <i class="fa-solid fa-plus"></i> Append to Existing
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="window.AssistedFiling && window.AssistedFiling.retryDictation()"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Try Again
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline"
+              onclick="window.AssistedFiling && window.AssistedFiling.cancelDictation()"
+            >
+              <i class="fa-solid fa-xmark"></i> Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Assistance Button for Touch / Mobile Screens -->
+    <button
+      type="button"
+      id="assistedFilingFloatingBtn"
+      class="assisted-filing-floating-btn"
+      onclick="window.AssistedFiling && window.AssistedFiling.togglePanel(this)"
+      aria-label="Open interaction assistance"
+      title="Interaction Assistance"
+      style="display:none;"
+    >
+      <i class="fa-solid fa-headset"></i>
+    </button>
 
   </div> <!-- End #app -->
 
+  <!-- Google MediaPipe Hands Computer Vision -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <script src="app.js?v=69"></script>
+  <script src="assisted-filing.js?v=2"></script>
 </body>
 </html>

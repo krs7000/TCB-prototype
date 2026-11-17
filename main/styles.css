@@ -1,4 +1,4 @@
-﻿/* =============== RESET & BASE =============== */
+/* =============== RESET & BASE =============== */
 *,
 *::before,
 *::after {
@@ -11472,4 +11472,803 @@ body.role-reviewer [data-applicant-only="true"] {
   color: var(--gray-600);
   line-height: 1.6;
   margin: 10px 0 14px;
+}
+
+
+/* ============================================================
+   ASSISTED FILING & MULTIMODAL INTERACTION STYLES
+   HCI Capstone Touch & Voice Integration
+   ============================================================ */
+
+/* --- 1. Touch Target Standards (approx 44x44px minimum) --- */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+.btn-outline-navy,
+.btn-success,
+.btn-danger,
+.topbar-assistance-btn,
+.assisted-filing-floating-btn,
+.btn-dictate-field,
+.btn-voice-toggle,
+.btn-gesture-toggle,
+.assistance-panel-close-btn,
+.patent-step-chip,
+.filing-card,
+.topbar-user,
+.notif-bell-wrap,
+.modal-close,
+.patent-editor-field__control {
+  min-height: 44px;
+  min-width: 44px;
+  box-sizing: border-box;
+}
+
+/* Enhanced touch spacing between adjacent interactive elements */
+.patent-gform-actions__left,
+.patent-gform-actions__right,
+.dictation-review-actions,
+.assistance-action-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Visible Keyboard & Touch Focus Ring */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--gold-dark, #b45309) !important;
+  outline-offset: 2px !important;
+}
+
+/* Touch Active Press Feedback (replaces hover dependency) */
+.btn:active,
+.btn-dictate-field:active,
+.topbar-assistance-btn:active,
+.assisted-filing-floating-btn:active,
+.patent-step-chip:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.1s ease;
+}
+
+/* --- 2. Topbar Assistance Toggle Button --- */
+.topbar-assistance-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--gold, #ff7f50);
+  background: rgba(255, 127, 80, 0.12);
+  color: var(--navy, #1e293b);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.topbar-assistance-btn i {
+  color: var(--gold-dark, #b45309);
+  font-size: 1rem;
+}
+.topbar-assistance-btn:hover {
+  background: rgba(255, 127, 80, 0.22);
+}
+.topbar-assistance-btn[aria-expanded="true"] {
+  background: var(--gold-dark, #b45309);
+  color: white;
+  border-color: var(--gold-dark, #b45309);
+}
+.topbar-assistance-btn[aria-expanded="true"] i {
+  color: white;
+}
+
+/* --- 3. Floating Assistance Launcher (Touchscreens / Mobile) --- */
+.assisted-filing-floating-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold, #ff7f50), var(--gold-dark, #e65c00));
+  color: white;
+  border: none;
+  box-shadow: 0 6px 20px rgba(230, 92, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  z-index: 1050;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.assisted-filing-floating-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 8px 24px rgba(230, 92, 0, 0.5);
+}
+.assisted-filing-floating-btn[aria-expanded="true"] {
+  background: var(--navy, #1e293b);
+}
+
+/* --- 4. Field Dictation Button & Row --- */
+.patent-editor-field__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.btn-dictate-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gold-dark, #b45309);
+  background: white;
+  color: var(--gold-dark, #b45309);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+.btn-dictate-field i {
+  font-size: 1rem;
+}
+.btn-dictate-field:hover {
+  background: rgba(255, 127, 80, 0.1);
+  border-color: var(--gold-dark, #b45309);
+}
+.btn-dictate-field.listening {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+  animation: pulse-recording 1.2s infinite;
+}
+.btn-dictate-field.listening i {
+  color: white !important;
+}
+
+@keyframes pulse-recording {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* --- 5. Interaction Assistance Panel (Accessible Drawer) --- */
+.assisted-filing-panel {
+  position: fixed;
+  top: 76px;
+  right: 20px;
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 96px);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  z-index: 1040;
+  transform: translateX(120%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  overflow: hidden;
+}
+.assisted-filing-panel.open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.assistance-panel-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.assistance-panel-header {
+  padding: 16px 20px;
+  background: var(--navy, #1e293b);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.assistance-panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.assistance-panel-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  color: var(--gold, #ff7f50);
+}
+.assistance-panel-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+}
+.assistance-panel-sub {
+  font-size: 0.76rem;
+  color: var(--gray-400, #94a3b8);
+  margin: 2px 0 0;
+}
+.assistance-panel-close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.assistance-panel-close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.assistance-panel-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Privacy & Warning Notices */
+.assistance-notice {
+  display: none !important;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--navy, #1e293b);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.82rem;
+  color: var(--gray-700, #334155);
+  line-height: 1.5;
+}
+.assistance-notice-icon {
+  font-size: 1.1rem;
+  color: var(--navy, #1e293b);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.assistance-warning {
+  display: flex;
+  gap: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.82rem;
+  color: #991b1b;
+  line-height: 1.5;
+}
+.assistance-warning i {
+  font-size: 1.1rem;
+  color: #ef4444;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* Assistance Sections */
+.assistance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: white;
+  border: 1px solid var(--gray-200, #e2e8f0);
+  border-radius: 12px;
+  padding: 16px;
+}
+.assistance-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.assistance-section-header h3 {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--navy, #1e293b);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.assistance-section-desc {
+  font-size: 0.82rem;
+  color: var(--gray-500, #64748b);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Status Badge */
+.voice-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.voice-status-badge.status-idle {
+  background: #f1f5f9;
+  color: #475569;
+}
+.voice-status-badge.status-listening {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  animation: pulse-recording 1.2s infinite;
+}
+.voice-status-badge.status-processing {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.voice-status-badge.status-error {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+/* Voice Toggle Button */
+.btn-voice-toggle {
+  min-height: 48px;
+  min-width: 160px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.btn-voice-toggle.listening {
+  background: #dc2626 !important;
+  color: white !important;
+  animation: pulse-recording 1.2s infinite;
+}
+
+/* Gesture Status Badge */
+.gesture-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.gesture-status-badge.status-idle {
+  background: #f1f5f9;
+  color: #475569;
+}
+.gesture-status-badge.status-active {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+  animation: pulse-recording 1.4s infinite;
+}
+.gesture-status-badge.status-holding {
+  background: #fefce8;
+  color: #b45309;
+  border: 1px solid #fef08a;
+  animation: pulse-recording 1.0s infinite;
+}
+.gesture-status-badge.status-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* Gesture Toggle Button */
+.btn-gesture-toggle {
+  min-height: 48px;
+  min-width: 175px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.btn-gesture-toggle.listening {
+  background: #dc2626 !important;
+  color: white !important;
+  animation: pulse-recording 1.2s infinite;
+}
+
+/* --- Gesture HUD & Preview Container --- */
+.gesture-hud-container {
+  position: relative;
+  background: #0f172a;
+  border: 1.5px solid #334155;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 10px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+}
+.gesture-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+.gesture-hud-dot {
+  color: #22c55e;
+  margin-right: 4px;
+  animation: pulse-recording 1.2s infinite;
+}
+.gesture-hud-privacy-badge {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.gesture-hud-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 220px;
+  background: #020617;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gesture-canvas-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.gesture-detection-overlay-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+  transition: all 0.2s ease;
+}
+.gesture-detection-overlay-badge.detected {
+  border-color: #22c55e;
+  color: #4ade80;
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+.gesture-hold-progress-wrap {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.92);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  z-index: 6;
+}
+.gesture-hold-progress-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.gesture-hold-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.gesture-hold-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7f50, #22c55e);
+  transition: width 0.08s linear;
+}
+.gesture-group-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--navy, #1e293b);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Simplified Gesture Quick Guide */
+.gesture-card-subtitle {
+  font-size: 0.8rem;
+  color: var(--gray-600, #475569);
+  margin-top: 2px;
+  margin-bottom: 10px;
+}
+.gesture-simple-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gesture-simple-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid var(--gray-200, #e2e8f0);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.15s ease;
+}
+.gesture-simple-item:hover {
+  border-color: var(--gold, #d97706);
+  background: var(--gray-50, #f8fafc);
+  transform: translateX(2px);
+}
+.gesture-simple-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--navy, #1e293b);
+}
+.gesture-emoji {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.gesture-simple-action {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--navy, #1e293b);
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gesture-simple-action i {
+  color: var(--gold, #d97706);
+  font-size: 0.8rem;
+}
+
+/* Recognition Feedback Card */
+.voice-feedback-card {
+  background: var(--gray-50, #f8fafc);
+  border: 1px solid var(--gray-200, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.voice-feedback-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.voice-feedback-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--gray-500, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.voice-feedback-transcript {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--navy, #1e293b);
+  font-style: italic;
+  word-break: break-word;
+}
+.voice-feedback-message {
+  font-size: 0.85rem;
+  color: var(--gray-700, #334155);
+  line-height: 1.4;
+}
+
+/* Supported Commands Card */
+.assistance-commands-card {
+  background: #fafaf9;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.assistance-commands-card h4 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--navy, #1e293b);
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.assistance-commands-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assistance-commands-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+.assistance-commands-list code {
+  font-weight: 700;
+  color: var(--gold-dark, #b45309);
+  background: rgba(255, 127, 80, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.82rem;
+}
+.assistance-commands-list span {
+  color: var(--gray-600, #475569);
+  margin-left: 2px;
+}
+.assistance-commands-note {
+  display: none !important;
+  font-size: 0.78rem;
+  color: #854d0e;
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 10px 0 0 0;
+  line-height: 1.4;
+}
+
+/* --- 6. Dictation Review Modal Styles --- */
+.dictation-review-overlay {
+  z-index: 1100;
+}
+.dictation-review-card {
+  max-width: 580px;
+  width: 92vw;
+  border-radius: 16px;
+}
+.dictation-modal-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 127, 80, 0.15);
+  color: var(--gold-dark, #b45309);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.dictation-review-textarea {
+  width: 100%;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 12px;
+  border: 1.5px solid var(--gray-300, #cbd5e1);
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+.dictation-review-textarea:focus {
+  border-color: var(--gold, #ff7f50);
+}
+.dictation-review-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* --- 7. Responsive Media Queries for Narrow Touchscreens --- */
+@media (max-width: 768px) {
+  /* Dock assistance panel as a bottom sheet on mobile screens */
+  .assisted-filing-panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 82vh;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(110%);
+  }
+  .assisted-filing-panel.open {
+    transform: translateY(0);
+  }
+  .assistance-panel-inner {
+    max-height: 82vh;
+  }
+  .topbar-assistance-btn .assisted-filing-btn-text {
+    display: none;
+  }
+  .topbar-assistance-btn {
+    padding: 8px 12px;
+    margin-right: 4px;
+  }
+
+  /* Form actions stack cleanly on narrow touch screens */
+  .patent-gform-actions,
+  .wizard-footer {
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+  .patent-gform-actions__left,
+  .patent-gform-actions__right,
+  .wizard-footer > div {
+    width: 100%;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .patent-gform-actions__left .btn,
+  .patent-gform-actions__right .btn,
+  .wizard-footer .btn,
+  .wizard-footer > div .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+  .dictation-review-actions {
+    flex-direction: column;
+  }
+  .dictation-review-actions .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .assistance-action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .assistance-action-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

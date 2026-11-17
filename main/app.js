@@ -4717,6 +4717,11 @@ function navigateTo(page, isBack = false, params = null) {
   // Ensure mobile menu closes on every navigation
   document.getElementById("navLinks")?.classList.remove("open");
 
+  if (page === "notifications") {
+    toggleNotifications();
+    return;
+  }
+
   if (params) currentParams = params;
   else if (!isBack) currentParams = {};
 
@@ -4739,40 +4744,6 @@ function navigateTo(page, isBack = false, params = null) {
     }
     return;
   }
-
-  if (!isBack && currentPage && currentPage !== page) {
-    if (
-      navHistory.length === 0 ||
-      navHistory[navHistory.length - 1] !== currentPage
-    ) {
-      navHistory.push(currentPage);
-    }
-  }
-  currentPage = page;
-  document.body.classList.toggle(
-    "portal-login-mode",
-    isLoginPage(page) && getLoginRoleForPage(page) !== "applicant",
-  );
-
-  // Hide all pages & states
-  document
-    .querySelectorAll(".page")
-    .forEach((p) => p.classList.remove("active"));
-  
-  const dashLayout = document.getElementById("dashboard-layout");
-  const dashTopbar = document.getElementById("dashboard-topbar");
-  const publicNav = document.getElementById("public-nav");
-
-  if (dashLayout) {
-    dashLayout.classList.remove("active");
-    dashLayout.style.display = ""; // Reset inline override
-  }
-  if (dashTopbar) {
-    dashTopbar.classList.remove("active");
-    dashTopbar.style.display = ""; // Reset inline override
-  }
-  if (publicNav) publicNav.classList.remove("active");
-
 
   const dashboardPages = [
     "user-dashboard",
@@ -4809,10 +4780,64 @@ function navigateTo(page, isBack = false, params = null) {
     "contact-dash",
   ];
 
-  if (page === "notifications") {
-    toggleNotifications();
-    return;
+  if (dashboardPages.includes(page)) {
+    if (!isLoggedIn) {
+      navigateTo(getProtectedPageLogin(page));
+      return;
+    }
+    if (!canAccessDashboardPage(page)) {
+      showToast(`${getRoleMeta().label} does not have access to this page.`);
+      const fallbackPage = getDefaultDashboardPage();
+      if (page !== fallbackPage) {
+        navigateTo(fallbackPage);
+      }
+      return;
+    }
   }
+
+  if (typeof window !== "undefined" && window.AssistedFiling && typeof window.AssistedFiling.onNavigate === "function") {
+    window.AssistedFiling.onNavigate(page, isBack);
+  }
+
+  if (page === "landing" || DASHBOARD_ROOT_PAGES.has(page)) {
+    navHistory = [];
+  } else if (isBack) {
+    const idx = navHistory.lastIndexOf(page);
+    if (idx !== -1) {
+      navHistory.splice(idx);
+    }
+  } else if (currentPage && currentPage !== page) {
+    if (
+      navHistory.length === 0 ||
+      navHistory[navHistory.length - 1] !== currentPage
+    ) {
+      navHistory.push(currentPage);
+    }
+  }
+  currentPage = page;
+  document.body.classList.toggle(
+    "portal-login-mode",
+    isLoginPage(page) && getLoginRoleForPage(page) !== "applicant",
+  );
+
+  // Hide all pages & states
+  document
+    .querySelectorAll(".page")
+    .forEach((p) => p.classList.remove("active"));
+  
+  const dashLayout = document.getElementById("dashboard-layout");
+  const dashTopbar = document.getElementById("dashboard-topbar");
+  const publicNav = document.getElementById("public-nav");
+
+  if (dashLayout) {
+    dashLayout.classList.remove("active");
+    dashLayout.style.display = ""; // Reset inline override
+  }
+  if (dashTopbar) {
+    dashTopbar.classList.remove("active");
+    dashTopbar.style.display = ""; // Reset inline override
+  }
+  if (publicNav) publicNav.classList.remove("active");
 
   if (page === "landing") {
     document.getElementById("public-nav").classList.add("active");
@@ -4868,18 +4893,6 @@ function navigateTo(page, isBack = false, params = null) {
       resetOtp.value = window.localStorage?.getItem(TCB_DEV_RESET_OTP_STORAGE_KEY) || "";
     }
   } else if (dashboardPages.includes(page)) {
-    if (!isLoggedIn) {
-      navigateTo(getProtectedPageLogin(page));
-      return;
-    }
-    if (!canAccessDashboardPage(page)) {
-      showToast(`${getRoleMeta().label} does not have access to this page.`);
-      const fallbackPage = getDefaultDashboardPage();
-      if (page !== fallbackPage) {
-        navigateTo(fallbackPage);
-      }
-      return;
-    }
     document.getElementById("dashboard-layout").classList.add("active");
     document.getElementById("dashboard-topbar").classList.add("active");
     renderSidebar();
@@ -6188,6 +6201,9 @@ window.verifyOtp = function () {
 
 function logout(options = {}) {
   stopApplicantSessionTimeout();
+  if (typeof window !== "undefined" && window.AssistedFiling && typeof window.AssistedFiling.onLogout === "function") {
+    window.AssistedFiling.onLogout();
+  }
   const logoutUser = isLoggedIn ? getCurrentUser() : null;
   const logoutRole = currentRole;
   const refresh = getRefreshToken();
@@ -6490,6 +6506,16 @@ function updateTopbarRole() {
   }
   updateBodyRoleClass(normRole);
   updateProfileDropdownRoleVisibility();
+
+  // Assisted Filing button visibility for Applicant
+  const isApplicantUser = isLoggedIn && normRole === "applicant";
+  const assistanceBtn = document.getElementById("assistedFilingTopBtn");
+  const floatingAssistanceBtn = document.getElementById("assistedFilingFloatingBtn");
+  if (assistanceBtn) assistanceBtn.style.display = isApplicantUser ? "inline-flex" : "none";
+  if (floatingAssistanceBtn) floatingAssistanceBtn.style.display = isApplicantUser ? "flex" : "none";
+  if (!isApplicantUser && typeof window !== "undefined" && window.AssistedFiling && typeof window.AssistedFiling.onLogout === "function") {
+    window.AssistedFiling.onLogout();
+  }
 
   // Hide topbar branding for Admin/Evaluator (they have sidebar brand)
   const isAdminOrEvaluator = normRole === "superadmin" || normRole === "reviewer";
@@ -14230,16 +14256,23 @@ function renderPatentCountryOptions(selectedValue) {
     .join("");
 }
 
-function renderPatentEditorFieldShell(label, body, fullWidth = false) {
+function renderPatentEditorFieldShell(label, body, fullWidth = false, extraAction = "", inputId = "") {
   const modifier = fullWidth ? " patent-editor-field--full" : "";
+  const labelTag = inputId
+    ? `<label class="patent-editor-field__label" for="${escapeHtml(inputId)}">`
+    : `<span class="patent-editor-field__label">`;
+  const labelTagClose = inputId ? `</label>` : `</span>`;
   return `
-    <label class="patent-editor-field${modifier}">
-      <span class="patent-editor-field__label">
-        <span>${escapeHtml(t(label))}</span>
-        ${renderApplicationInfoGuide(label)}
-      </span>
+    <div class="patent-editor-field${modifier}">
+      <div class="patent-editor-field__header">
+        ${labelTag}
+          <span>${escapeHtml(t(label))}</span>
+          ${renderApplicationInfoGuide(label)}
+        ${labelTagClose}
+        ${extraAction || ""}
+      </div>
       ${body}
-    </label>
+    </div>
   `;
 }
 
@@ -14259,6 +14292,8 @@ function renderPatentEditorInput(
     label,
     `<input class="patent-editor-field__control" type="${type}" id="${id}" value="${escapeHtml(value || "")}" placeholder="${escapeHtml(placeholder)}" ${disabled ? "disabled" : ""} ${required ? "required" : ""} />`,
     fullWidth,
+    "",
+    id,
   );
 }
 
@@ -14268,10 +14303,19 @@ function renderPatentEditorTextarea(
   value,
   { placeholder = "", fullWidth = false, required = false } = {},
 ) {
+  const isTargetField = id === "disclosure-description";
+  const dictationAction = isTargetField
+    ? `<button type="button" class="btn-dictate-field" id="btnDictateDesc" onclick="event.preventDefault(); window.AssistedFiling && window.AssistedFiling.startDictation('${id}', '${escapeHtml(label)}', this)" aria-label="Dictate ${escapeHtml(label)}">
+        <i class="fa-solid fa-microphone"></i> <span>Dictate</span>
+      </button>`
+    : "";
+
   return renderPatentEditorFieldShell(
     label,
     `<textarea class="patent-editor-field__control patent-editor-field__control--textarea" id="${id}" placeholder="${escapeHtml(placeholder)}" ${required ? "required" : ""}>${escapeHtml(value || "")}</textarea>`,
     fullWidth,
+    dictationAction,
+    id,
   );
 }
 
@@ -27289,4 +27333,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     navigateTo(getInitialPageFromUrl());
   }
 });
+
+// Expose core navigation, state, and form functions for external assistance modules
+if (typeof window !== "undefined") {
+  window.navigateTo = navigateTo;
+  window.nextWizardStep = nextWizardStep;
+  window.prevWizardStep = prevWizardStep;
+  window.saveFormDraft = saveFormDraft;
+  window.saveDraft = saveDraft;
+  window.submitForm = submitForm;
+  window.getMaxWizardSteps = getMaxWizardSteps;
+  window.isAdvancedGuidedFlow = isAdvancedGuidedFlow;
+  window.normalizeRole = normalizeRole;
+  window.showToast = showToast;
+  window.logout = logout;
+  window.handleLogin = handleLogin;
+  window.completeLoginAfterOtp = completeLoginAfterOtp;
+
+  Object.defineProperty(window, "isLoggedIn", {
+    get() { return isLoggedIn; },
+    set(v) { isLoggedIn = v; },
+    configurable: true,
+  });
+  Object.defineProperty(window, "currentRole", {
+    get() { return currentRole; },
+    set(v) { currentRole = v; },
+    configurable: true,
+  });
+  Object.defineProperty(window, "currentPage", {
+    get() { return currentPage; },
+    set(v) { currentPage = v; },
+    configurable: true,
+  });
+  Object.defineProperty(window, "currentWizardStep", {
+    get() { return currentWizardStep; },
+    set(v) { currentWizardStep = v; },
+    configurable: true,
+  });
+  Object.defineProperty(window, "wizardData", {
+    get() { return wizardData; },
+    set(v) { wizardData = v; },
+    configurable: true,
+  });
+  Object.defineProperty(window, "submissions", {
+    get() { return submissions; },
+    set(v) { submissions = v; },
+    configurable: true,
+  });
+}
+
 
